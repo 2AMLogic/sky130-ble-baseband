@@ -1,0 +1,25 @@
+*.raw
+*.log
+*.vcd
+*.vvp
+__pycache__/
+.DS_Store
+
+# sim/ harness: per-corner ngspice logs under corners/ are committed evidence
+# (append-only record trail), so they escape the *.log rule.
+!sim/*/corners/**/*.log
+sim/build/
+# flow/ synthesis: per-record Yosys logs are committed evidence (the same
+# append-only rationale as sim/*/corners above), so they escape *.log too.
+!flow/*/reports/**/*.log
+# sim/harness scratch: generated ngspice decks, disposable (sim/harness/README.md)
+sim/.work/
+# machine-local PDK override (sim/harness/pdk.py); never committed
+sim/pdk.local.json
+# synthesis / P&R scratch
+flow/build/
+# cocotb/Icarus build + result artifacts (verification/)
+sim_build/
+results.xml
+# local klt install, created by the setup script
+.venv/
