@@ -90,9 +90,9 @@ preamble-time timing estimate is not enough.
 
 ### Modelling choices for the above (non-normative)
 
-| Parameter | Value | Verification method | Governing section | Simulated? |
-|---|---|---|---|---|
-| RX input sample rate / width | 8 Msps complex, ≤ 8-bit (README draft; interface detail is #7) | quantization stage in CM-A | none applies (interface choice) | **Simulated**, CM-A |
+| Parameter | Target | Fallback | Verification method | Governing section | Simulated? |
+|---|---|---|---|---|---|
+| RX input sample rate / width | 8 Msps complex, ≤ 8-bit (README draft; interface detail is #7) | 4 Msps complex, ≤ 8-bit (decision [0001](decisions/0001-phy-set.md)) | quantization stage in CM-A; the 4 Msps case is also run through the CM-A quantization/resampling stage as a sweep point (no BER/PER claim is made for it by this row) | none applies (interface choice) | **Simulated**, CM-A |
 
 ## Channel model
 
