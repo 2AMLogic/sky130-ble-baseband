@@ -1,0 +1,19 @@
+name: flow
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  test-lint:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install tools
+        # Ubuntu apt versions differ from the flow/versions.mk pins, so CI
+        # runs with ALLOW_TOOL_DRIFT=1 (warnings, not failures).
+        run: sudo apt-get update && sudo apt-get install -y iverilog verilator yosys
+      - run: make venv
+      - run: make test test-negative lint ALLOW_TOOL_DRIFT=1
