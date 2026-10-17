@@ -50,7 +50,7 @@ meet with no software in the loop.
 - **Not claimed**: any qualification, certification or standards
   compliance. See `CLAUDE.md` for what may be said.
 
-## Target specification (DRAFT — engineering to ratify, see issue #1)
+## Target specification (DRAFT — engineering to ratify, see issue #2)
 
 | Parameter | Target | Fallback | Stretch |
 |---|---|---|---|
