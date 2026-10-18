@@ -16,7 +16,7 @@ effects are in [timing-and-area.md](timing-and-area.md).
 | Data width | 32 bits |
 | Address width | 12 bits, byte addressed (4 KiB window); word accesses, `PSTRB` honoured on writes |
 | Clock | Core clock (32 MHz target, 16 MHz fallback). Single clock domain, so no synchronizers inside the block. |
-| Wait states | `PREADY` is high in one access except FIFO-data reads, which never block (empty read returns 0 and sets `RX_UNDERFLOW`) |
+| Wait states | `PREADY` is high in one access except FIFO-data reads, which never block (empty read returns 0 and sets `RX_UNDERFLOW` in `ERR_STATUS`) |
 | Errors | `PSLVERR` on access to an unmapped address or write to a read-only register |
 | Reset | Asynchronous assert, synchronous release; all registers return the documented reset value, FIFOs empty, radio idle |
 
@@ -25,10 +25,10 @@ effects are in [timing-and-area.md](timing-and-area.md).
 | Offset | Block | Contents |
 |---|---|---|
 | 0x000 | Control / status | PHY select (LE 1M, 15.4), channel/frequency hint to front end, enable, TX-start and RX-start commands, state (idle, RX, TX, turnaround), abort |
-| 0x040 | Interrupts | `INT_STATUS`, `INT_ENABLE`, `INT_RAW` (see section 3) |
+| 0x040 | Interrupts, error status | `INT_STATUS`, `INT_ENABLE`, `INT_RAW` (see section 3); `ERR_STATUS`, write-1-to-clear, holds the status-only flags `RX_UNDERFLOW` and `TX_OVERFLOW` (section 2) |
 | 0x080 | Timing | Turnaround override registers (default to spec values), ACK enable, trigger compare value and arm |
 | 0x0C0 | Link config | LE access address, CRC init, whitening channel index, LE own address (48 bit + type bits); 15.4 PAN ID, short address, extended address (64 bit), frame-pending bit, promiscuous mode |
-| 0x100 | FIFO windows | `TX_DATA`, `TX_LEVEL`, `RX_DATA`, `RX_LEVEL`, packet-descriptor registers (section 2) |
+| 0x100 | FIFO windows | `TX_DATA`, `TX_LENGTH`, `TX_LEVEL`, `RX_DATA`, `RX_LEVEL`, packet-descriptor registers (section 2) |
 | 0x140 | Timestamp | Free-running counter read, per-event capture registers (section 4) |
 | 0x180 | Front end | RSSI readback and the hooks defined in #7 |
 | 0xFF0 | ID | Block identification and version, read-only |
@@ -63,31 +63,35 @@ head. A fifth packet while four are held is dropped, as with data overflow.
 | Descriptor FIFO full at packet start | Packet ignored from the start; `RX_OVERFLOW` set. |
 | TX start with fewer octets than `TX_LENGTH` | Start refused, `TX_ERROR` set, no emission. |
 | TX FIFO runs empty mid-packet | Not reachable if the start check passes; if forced (e.g. a host reset of the FIFO), transmission is aborted, `TX_ERROR` set, modulator returns to idle. |
-| RX read when empty | Returns 0, sets `RX_UNDERFLOW` (status only; not an interrupt by default). |
-| TX write when full | Write ignored, `TX_OVERFLOW` set. |
+| RX read when empty | Returns 0, sets `RX_UNDERFLOW` in `ERR_STATUS` (status only; not an interrupt bit). |
+| TX write when full | Write ignored, `TX_OVERFLOW` set in `ERR_STATUS` (status only; not an interrupt bit). |
 
 ## 3. Interrupts
 
-One level-sensitive output `irq` (high when any enabled status bit is set).
+One level-sensitive output `irq` (`irq` = `|INT_STATUS`: high when any enabled raw bit is set).
 
 | Bit | Name | Set when | Cleared by |
 |---|---|---|---|
-| 0 | `RX_SYNC` | Access address (LE) or SFD (15.4) detected | Write 1 to `INT_STATUS` bit |
-| 1 | `RX_DONE_OK` | Packet received, CRC/FCS ok, passed filter, descriptor pushed | Write 1 |
-| 2 | `RX_DONE_BAD` | Packet ended with CRC/FCS failure or filter reject (reject only if promiscuous capture is on) | Write 1 |
-| 3 | `RX_OVERFLOW` | Section 2 conditions | Write 1 |
-| 4 | `TX_DONE` | Last bit of transmitted packet emitted | Write 1 |
-| 5 | `TX_ERROR` | Start refused or underflow | Write 1 |
-| 6 | `ACK_SENT` | Automatic ACK emitted (15.4) | Write 1 |
-| 7 | `ACK_TIMEOUT` | ACK-wait timer expired with no ACK (15.4) | Write 1 |
-| 8 | `RESPONSE_SENT` | LE timed response emitted at T_IFS | Write 1 |
-| 9 | `TRIGGER` | Timestamp trigger reached its compare value | Write 1 |
+| 0 | `RX_SYNC` | Access address (LE) or SFD (15.4) detected | Write 1 to `INT_RAW` bit, or to `INT_STATUS` bit while enabled |
+| 1 | `RX_DONE_OK` | Packet received, CRC/FCS ok, passed filter, descriptor pushed | As bit 0 |
+| 2 | `RX_DONE_BAD` | Packet ended with CRC/FCS failure or filter reject (reject only if promiscuous capture is on) | As bit 0 |
+| 3 | `RX_OVERFLOW` | Section 2 conditions | As bit 0 |
+| 4 | `TX_DONE` | Last bit of transmitted packet emitted | As bit 0 |
+| 5 | `TX_ERROR` | Start refused or underflow | As bit 0 |
+| 6 | `ACK_SENT` | Automatic ACK emitted (15.4) | As bit 0 |
+| 7 | `ACK_TIMEOUT` | ACK-wait timer expired with no ACK (15.4) | As bit 0 |
+| 8 | `RESPONSE_SENT` | LE timed response emitted at T_IFS | As bit 0 |
+| 9 | `TRIGGER` | Timestamp trigger reached its compare value | As bit 0 |
 
-Semantics: `INT_STATUS` is the masked view of `INT_RAW`; `INT_ENABLE` masks
-only the output. Raw bits are sticky and cleared by write-1-to-clear on
-`INT_RAW`; clearing `INT_STATUS` clears the matching raw bit. An event that
-arrives in the same cycle as a clear wins (the bit stays set), so no event is
-lost. There is no read-to-clear, to avoid side effects on debug reads.
+Semantics: `INT_STATUS = INT_RAW & INT_ENABLE` and `irq = |INT_STATUS`, so
+`INT_ENABLE` gates both the status view and the output. Raw bits are sticky.
+Write-1-to-clear on `INT_RAW` clears a raw bit whether or not it is enabled;
+write-1 on `INT_STATUS` clears the matching raw bit only if that bit is
+enabled, and has no effect on a disabled one. An event that arrives in the
+same cycle as a clear wins (the bit stays set), so no event is lost. There is
+no read-to-clear, to avoid side effects on debug reads. `ERR_STATUS` bits
+follow the same sticky, write-1-to-clear and same-cycle rules and do not drive
+`irq`.
 
 ## 4. Timestamping
 
