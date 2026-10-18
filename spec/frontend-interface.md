@@ -84,7 +84,7 @@ on clipping.
 ### 3.1 Modulation output
 
 The baseband emits a **signed frequency-deviation word** (decision record
-[0002](decisions/0002-tx-modulation-output.md)). The front end maps it onto
+[0005](decisions/0005-tx-modulation-output.md)). The front end maps it onto
 its modulator (direct VCO, two-point or fractional-N); how it does so is
 not specified here.
 
@@ -172,5 +172,5 @@ binding PHY.
 
 ## 6. Decisions referenced
 
-- [0001: shared RX/TX interface for both PHYs](decisions/0001-shared-frontend-path.md)
-- [0002: TX modulation output is a frequency-deviation word](decisions/0002-tx-modulation-output.md)
+- [0004: shared RX/TX interface for both PHYs](decisions/0004-shared-frontend-path.md)
+- [0005: TX modulation output is a frequency-deviation word](decisions/0005-tx-modulation-output.md)

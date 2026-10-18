@@ -146,8 +146,4 @@ despreading is likewise non-coherent. The decision criteria and the exact
 
 ## Decision records
 
-| Id | Subject |
-|---|---|
-| [0001](decisions/0001-phy-set.md) | PHY set |
-| [0002](decisions/0002-channel-model.md) | Channel model |
-| [0003](decisions/0003-demod-architecture.md) | LE demodulator architecture |
+The index of all decision records is [README.md](README.md).
