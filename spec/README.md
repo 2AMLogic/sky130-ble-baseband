@@ -18,7 +18,7 @@ claim of qualification, certification or compliance.
 | [decisions/0008-ratification-and-amendment.md](decisions/0008-ratification-and-amendment.md) | Ratification scope, open items, amendment rule, changelog |
 | [timing-and-area.md](timing-and-area.md) | Liberty corners, clock targets, digital latency `L_dig`, area budget |
 | [frontend-interface.md](frontend-interface.md) | RX/TX signal tables, turnaround budget |
-| [host-interface.md](host-interface.md) | Host interface (held until #15) |
+| [host-interface.md](host-interface.md) | Host interface |
 
 Rules: cite specification section numbers only (never copy text or figures);
 mark unchecked citations `unverified`; agents do not relax a ratified spec to

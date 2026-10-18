@@ -1,6 +1,6 @@
 # Host interface
 
-Status: **held, not yet ratified**: ratification of this file waits for the wording fix in #15 ([0008](decisions/0008-ratification-and-amendment.md)). Proposed under #9. Parent: #2. Split rationale:
+Status: **ratified, revision 1** ([0008](decisions/0008-ratification-and-amendment.md)); the wording fix in #15 landed first, so the file was ratified without a decision record. Proposed under #9. Parent: #2. Split rationale:
 `spec/decisions/0006-lower-mac-split.md`. This file gives widths and semantics at
 outline level. A bit-level register map comes with the RTL.
 

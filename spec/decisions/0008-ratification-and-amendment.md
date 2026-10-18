@@ -15,15 +15,8 @@ verified fact, and this record says which is which.
 - `spec/target-spec.md`: every row's target, fallback and stretch, the channel model (CM-A / CM-B), seeds policy and statistics rule.
 - `spec/frontend-interface.md`: signal tables, rates, widths, turnaround budget formulae.
 - `spec/timing-and-area.md`: corner set, clock targets, `L_dig`, area budget.
+- `spec/host-interface.md`: host-interface widths and semantics, as corrected by #15 (wording only; no decision record, per the amendment rule below).
 - Decision records 0001 to 0008.
-
-### Not yet frozen
-
-- `spec/host-interface.md` is **excluded** until issue #15 (a wording-only
-  correction of the interrupt-status and error-flag text) merges. Ratification
-  freezes a file, and the file is known to need that edit. When #15 merges, its
-  PR adds a changelog line below and the file becomes ratified without a
-  decision record, because #15 changes wording and no requirement.
 
 ### Open items carried into revision 1 (none is a relaxation)
 
@@ -77,7 +70,8 @@ Rules that apply to all kinds:
 
 Newest last. One line per amendment: date, kind, files, issue/PR.
 
-- 2026-10-18 — revision 1 ratified (this record; issue #9). `host-interface.md` held pending #15.
+- 2026-10-18 — revision 1 ratified (this record; issue #9).
+- 2026-10-18 — wording-only: `host-interface.md` interrupt-status gating and error-flag text corrected, adds `ERR_STATUS` and `TX_LENGTH` to the map (issue #15, PR #20). The file is ratified in revision 1; no decision record.
 
 ## Rejected
 
