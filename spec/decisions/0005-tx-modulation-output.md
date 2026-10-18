@@ -1,4 +1,4 @@
-# 0002: TX modulation output is a signed frequency-deviation word
+# 0005 — TX modulation output is a signed frequency-deviation word
 
 Status: proposed (issue #7, parent #2). Date: 2026-10-17.
 

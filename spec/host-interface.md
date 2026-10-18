@@ -1,7 +1,7 @@
 # Host interface
 
 Status: proposed, for ratification under #9. Parent: #2. Split rationale:
-`spec/decisions/lower-mac-split.md`. This file gives widths and semantics at
+`spec/decisions/0006-lower-mac-split.md`. This file gives widths and semantics at
 outline level. A bit-level register map comes with the RTL.
 
 Section citations in this file are unverified (see the citation-status note in

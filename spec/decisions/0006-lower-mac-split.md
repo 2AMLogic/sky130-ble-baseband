@@ -1,4 +1,4 @@
-# Decision record: lower-MAC hardware/software split
+# 0006 — Lower-MAC hardware/software split
 
 Status: proposed, for ratification under #9. Parent: #2. Sibling interface
 documents: `spec/host-interface.md` (this change); the front-end interface
