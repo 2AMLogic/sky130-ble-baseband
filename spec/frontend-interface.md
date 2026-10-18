@@ -1,8 +1,7 @@
 # Front-end interface: RX/TX signal tables and turnaround budget
 
-Status: DRAFT, pending ratification with [target spec](target-spec.md)
-(parent #2; that file lands with sibling A, so the link is dangling until
-then). Issue #7.
+Status: ratified in revision 1 with the [target spec](target-spec.md)
+([0008](decisions/0008-ratification-and-amendment.md)). Parent #2, issue #7.
 
 This document specifies the **digital interface** between this baseband and
 an external RF front end. It does not design any RF, ADC, DAC or synthesizer
@@ -137,10 +136,10 @@ assumes a maximum, derived below, and the front end must meet it.
 |---|---|---|
 | `T_IFS` | LE inter-frame space, receive-to-transmit and transmit-to-receive | 150 us (Core Vol 6 Pt B, 4.1.1; *unverified*; tolerance per same section, *unverified*) |
 | `T_TA` | 802.15.4 aTurnaroundTime | 12 symbol periods; symbol = 16 us at 2.4 GHz O-QPSK, so 192 us (802.15.4 PHY constants, MAC constants clauses; *unverified*) |
-| `L_dig` | Digital latency: last on-air bit received to the TX decision, plus TX decision to the first `tx_valid` word | **Symbol; resolved by sibling D (#9)** |
+| `L_dig` | Digital latency: last on-air bit received to the TX decision, plus TX decision to the first `tx_valid` word | Resolved in [timing-and-area §3](timing-and-area.md): LE 1M ≤ 10 µs, 802.15.4 ≤ 32 µs |
 | `D_fe` | Front-end group delay, RX chain plus TX chain (antenna to `rx_valid` plus `tx_valid` to antenna) | Front end |
 | `T_settle` | Maximum time from `fe_tx_en`/`fe_rx_en` change to `fe_ready`=1 | Requirement derived here |
-| `M` | Margin | 10 % of the governing interval, floor 2 us (draft; ratify in #1) |
+| `M` | Margin | 10 % of the governing interval, floor 2 us |
 
 `L_dig` is the sum of the RX-side detection latency (from the last bit
 at the antenna to the baseband knowing the packet ended) and the TX-side
@@ -163,7 +162,7 @@ where `T_gov` is the governing interval of the PHY in use.
 | 802.15.4 | `T_TA` = 192 us | 19.2 us | `T_settle <= 172.8 us - L_dig - D_fe` |
 
 LE is the binding case. As a worked illustration only (not a requirement):
-if sibling D sets `L_dig` = 10 us and the front end has `D_fe` = 5 us, then
+with `L_dig` = 10 us (the LE bound ratified in timing-and-area §3) and the front end has `D_fe` = 5 us, then
 `T_settle <= 120 us`.
 
 The front end must state its own `D_fe` and `T_settle` in its datasheet; this

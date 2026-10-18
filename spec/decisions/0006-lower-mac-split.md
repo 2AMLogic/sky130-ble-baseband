@@ -1,6 +1,6 @@
 # 0006 — Lower-MAC hardware/software split
 
-Status: proposed, for ratification under #9. Parent: #2. Sibling interface
+Status: ratified in revision 1, [0008](0008-ratification-and-amendment.md). Parent: #2. Sibling interface
 documents: `spec/host-interface.md` (this change); the front-end interface
 and synthesizer-settling budget are owned by #7 and are only referenced here.
 
@@ -13,7 +13,7 @@ text is reproduced.
 
 **Every section number in this record was written from memory. No copy of
 either specification was available to the author, so none has been checked.
-All are unverified** and must be checked before ratification (#9). Edition
+All are unverified** and must be checked; checking is an editorial amendment under 0008. Edition
 differences in numbering are likely, especially for 802.15.4 (2011 vs. 2015
 numbering differ). Where a clause could not be named at all, the table says
 "clause unidentified".
@@ -28,7 +28,7 @@ else is host software. Area is the tiebreaker for functions with no deadline.
 Deadlines are stated at the air interface (end of last received bit to start of
 first transmitted bit). The digital latency inside the block, and the
 front-end ready budget, are separate: the timer fires the TX command early
-by those amounts (symbols `L_dig` from #9 and the budget from #7). That
+by those amounts (`L_dig` from [timing-and-area §3](../timing-and-area.md) and the budget from #7). That
 arithmetic is not restated here.
 
 Cycle counts assume the 32 MHz target clock (31.25 ns/cycle); at the 16 MHz
@@ -81,8 +81,8 @@ budget, and its ready strobe, are a front-end requirement in #7.
 - **R1, LE response contents.** The 150 µs window leaves no time for the host
   to react to the received header. The host must preload the response
   (including SN/NESN) assuming the common case. If the received SN/NESN make
-  that assumption wrong, the host cannot repair it in time. Options for #9
-  (to ratify, not decided here): hardware SN/NESN patch of the preloaded
+  that assumption wrong, the host cannot repair it in time. Options (an
+  open item in 0008, not decided here): hardware SN/NESN patch of the preloaded
   header, or a documented loss of that exchange. Hardware transmits only if
   the CRC check passed (configurable), so a bad CRC never triggers a response.
 - **R2, security.** No hardware AES. A link that needs encryption works only
