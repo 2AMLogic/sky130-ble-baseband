@@ -1,10 +1,12 @@
 # Target specification
 
-Status: **DRAFT — pre-ratification.** Ratification is sibling issue #9; until
-then nothing here is a ratified requirement and no row is a measured result.
-Siblings #7 (front-end tables, TX interface, turnaround), #8 (hardware/software
-split, host interface) and #9 (timing/area/corners, bit-exactness, ratification)
-add sections to this file; they do not add parallel spec files.
+Status: **RATIFIED, revision 1** ([0008](decisions/0008-ratification-and-amendment.md),
+issue #9). Rows are requirements, frozen: changes follow the amendment rule in
+0008 and agents never relax a row to make a result pass. No row is a measured
+result. Open items carried into revision 1 (provisional error-rate ceilings,
+unverified citations) are listed in 0008. Timing, corners, latency and area
+live in [timing-and-area.md](timing-and-area.md); the front-end interface in
+[frontend-interface.md](frontend-interface.md).
 
 ## Rules for this file
 
@@ -12,7 +14,8 @@ add sections to this file; they do not add parallel spec files.
   specification text or figures are copied here.
 - **Every citation below is marked `unverified`**: it was written from memory
   and has not been checked against the specification. A row's number is
-  engineering intent until its citation is checked (tracked for #9).
+  engineering intent until its citation is checked; checking is an editorial
+  amendment (0008).
 - This block implements the LE 1M physical layer as described in the Bluetooth
   Core Specification, and an IEEE 802.15.4 2.4 GHz O-QPSK baseband. Nothing here
   claims qualification, certification or standards conformance.
@@ -29,7 +32,7 @@ decision record [0002](decisions/0002-channel-model.md).
 ## Parameter table
 
 Governing-spec shorthand: **BCS** = Bluetooth Core Specification, Vol 6
-(Low Energy Controller); **154** = IEEE 802.15.4 (revision to be pinned by #9;
+(Low Energy Controller); **154** = IEEE 802.15.4 (revision not yet pinned;
 2015 numbering assumed below). All citations `unverified`.
 
 ### PHY set
@@ -56,9 +59,9 @@ PHYs (decision [0001](decisions/0001-phy-set.md)).
 Note 1. The two ceilings are placeholders chosen so the architecture decision
 ([0003](decisions/0003-demod-architecture.md)) has a bar to be judged against.
 No reference model exists yet; no gap, margin or achievability is claimed.
-Ratification (#9) replaces each with a value justified by a `sim/` result, and
-may only tighten or confirm a ceiling in the light of the simulated
-non-coherent baseline, never relax it to make a result pass.
+Ratification (0008) keeps them as ceilings: a later decision record may
+tighten or confirm a ceiling in the light of the simulated non-coherent
+baseline, never relax it to make a result pass.
 
 ### Carrier-frequency offset and drift tolerance
 
@@ -122,7 +125,7 @@ interference, DC offset, I/Q imbalance, ADC clock jitter.
 - One PRNG family fixed in `sim/` (PCG64 via NumPy) — changing it is a superseding record.
 - Seed for a point = a stable hash of (row id, impairment settings, sweep-point index, run index). No wall-clock or OS-entropy seeds anywhere in a ratified sweep.
 - Every reported result records: seed, PRNG family and version, `sim/` git SHA, row id, channel-model id (CM-A / CM-B) and every parameter above.
-- The RTL bit-exactness stimulus (#9) is generated from the same seeds, so shared stimulus is reproducible.
+- The RTL bit-exactness stimulus ([0007](decisions/0007-bit-exactness.md)) is generated from the same seeds, so shared stimulus is reproducible.
 
 ### Statistics
 

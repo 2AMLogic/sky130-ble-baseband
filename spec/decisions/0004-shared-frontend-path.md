@@ -1,6 +1,6 @@
 # 0004 — One front-end sample interface serves both PHYs
 
-Status: proposed (issue #7, parent #2). Date: 2026-10-17.
+Status: ratified in revision 1, [0008](0008-ratification-and-amendment.md) (issue #7, parent #2). Date: 2026-10-17.
 
 ## Context
 

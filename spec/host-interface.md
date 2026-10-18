@@ -1,12 +1,12 @@
 # Host interface
 
-Status: proposed, for ratification under #9. Parent: #2. Split rationale:
+Status: **held, not yet ratified**: ratification of this file waits for the wording fix in #15 ([0008](decisions/0008-ratification-and-amendment.md)). Proposed under #9. Parent: #2. Split rationale:
 `spec/decisions/0006-lower-mac-split.md`. This file gives widths and semantics at
 outline level. A bit-level register map comes with the RTL.
 
 Section citations in this file are unverified (see the citation-status note in
 the decision record). Values in this file are proposals; area and clock
-effects are assessed in sibling D (#9), not here.
+effects are in [timing-and-area.md](timing-and-area.md).
 
 ## 1. Register bus
 
@@ -107,7 +107,7 @@ lost. There is no read-to-clear, to avoid side effects on debug reads.
 - Whether the timed LE response needs a hardware SN/NESN patch is open
   (decision record R1).
 - Register-level bit map is out of scope until RTL.
-- Front-end signals, settling-time budget and digital-latency symbol: #7 and #9.
+- Front-end signals and settling-time budget: [frontend-interface.md](frontend-interface.md); digital latency `L_dig`: [timing-and-area.md](timing-and-area.md) §3.
 - No qualification, certification or compliance claim is made by this
   interface; it describes a digital block that implements the LE 1M physical
   layer and an 802.15.4 O-QPSK baseband.

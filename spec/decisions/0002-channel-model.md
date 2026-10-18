@@ -1,6 +1,6 @@
 # 0002 — Channel model for error-rate claims
 
-- Status: accepted (draft spec; ratification is #9)
+- Status: ratified in revision 1, [0008](0008-ratification-and-amendment.md)
 - Date: 2026-10-17
 - Parent: #2; issue #6
 

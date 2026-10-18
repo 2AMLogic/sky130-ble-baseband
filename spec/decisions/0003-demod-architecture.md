@@ -1,6 +1,6 @@
 # 0003 — LE demodulator architecture: coherent vs. non-coherent
 
-- Status: accepted as a **provisional default**; supersede criteria below
+- Status: accepted as a **provisional default**, ratified in revision 1 ([0008](0008-ratification-and-amendment.md)); supersede criteria below
 - Date: 2026-10-17
 - Parent: #2; issue #6
 
