@@ -8,6 +8,7 @@ triage role. Newest first.
 - **PR #21**: docs(spec): ratify spec revision 1 with timing, L_dig, area and bit-exactness
 - **PR #20**: docs(spec): clarify host-interface interrupt gating, add ERR_STATUS and TX_LENGTH
 - **PR #19**: docs(spec): renumber decision records into one 0001-0006 sequence
+- **Issue #2** (closed): Draft and ratify the target spec
 - **Issue #9** (closed): Spec: timing/area across corners, bit-exactness decision, ratification
 - **Issue #15** (closed): spec: host-interface interrupt masking wording and unlisted status bits
 - **Issue #18** (closed): Simplify spec decisions: colliding 0001/0002 numbers and split indexes
