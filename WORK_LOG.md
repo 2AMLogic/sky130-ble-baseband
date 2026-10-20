@@ -3,6 +3,11 @@
 Chronological record of merged PRs and closed issues, maintained by the Guide
 triage role. Newest first.
 
+### 2026-10-20
+
+- **PR #17**: feat(flow): pinned cocotb, lint and Yosys smoke flow on a placeholder LFSR
+- **Issue #3** (closed): Bring up the digital flow on a placeholder: cocotb + Icarus, lint, Yosys to sky130_fd_sc_hd (T1 item 9 groundwork)
+
 ### 2026-10-18
 
 - **PR #21**: docs(spec): ratify spec revision 1 with timing, L_dig, area and bit-exactness
