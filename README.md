@@ -9,7 +9,7 @@ designed by AI agents driving
 open-source digital flow: cocotb + Icarus for verification, Yosys for
 synthesis, OpenROAD for place-and-route.
 
-**Status: just opened, specification phase.** Nothing is designed yet.
+**Status: specification ratified (revision 1); nothing is designed yet.**
 
 **Built agent-native.** Every specification, decision record, testbench, and
 line of documentation here is produced by AI agents working from a ratified
@@ -50,7 +50,7 @@ meet with no software in the loop.
 - **Not claimed**: any qualification, certification or standards
   compliance. See `CLAUDE.md` for what may be said.
 
-## Target specification (DRAFT — engineering to ratify, see issue #2)
+## Target specification (RATIFIED, revision 1 — see [spec/](spec/README.md), issue #2)
 
 | Parameter | Target | Fallback | Stretch |
 |---|---|---|---|
@@ -68,7 +68,7 @@ simulated.
 Maturity ladder: spec ratified → reference receiver meets error-rate targets
 in link-level simulation → RTL bit-exact against the reference → turnaround
 timing verified → layout DRC/LVS-clean → timing closed across corners →
-shuttle seat → measured silicon. **Current position: pre-spec.**
+shuttle seat → measured silicon. **Current position: spec ratified (revision 1); no reference receiver or RTL yet.**
 
 ## Repo layout
 

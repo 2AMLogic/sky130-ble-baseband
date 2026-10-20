@@ -133,7 +133,7 @@ case "$HRC $HC" in
   "0 "*" state=clear "*|"0 "*" state=champion-hold "*|"2 ") ;;
   "0 "*" state=stray-operator "*) gh pr edit "$PR_NUMBER" --remove-label "loom:operator" ;;
   "0 "*" state=contradiction "*) OTHER_VERDICT_LABEL=${HC##* detail=} ;;
-  *) echo "SKIP #$PR_NUMBER: ${HC:-rc=$HRC} — no merge, no comment"; continue ;;
+  *) echo "SKIP #$PR_NUMBER: ${HC:-rc=$HRC} — no merge, no comment"; continue ;;  # single-PR step: outcome=skipped reason=janitor_rc3
 esac
 
 if [ -n "$OTHER_VERDICT_LABEL" ]; then
@@ -200,7 +200,7 @@ VERDICT_RC=$?
 |------|---------|--------|
 | `0` | **FRESH** — the approval was rendered against the current head SHA | Proceed to criterion 1. |
 | `10` | No verdict label (raced away between listing and now) | **Skip this PR** — it is no longer merge-eligible. |
-| `11` | **UNVERIFIABLE** — no trusted marker could be confirmed for this verdict (on `loom:pr` this now means markers `could not be authenticated`: loom-daemon lacks `forge trusted-comments`, #9548) | **Do NOT merge** a `loom:pr` PR on `11`: skip it and report it in the completion summary. `post-verdict.sh` marks every verdict (#6382), so an approval with no confirmed marker approves no known tree (#9258: one merged with the literal body `@-`). |
+| `11` | **UNVERIFIABLE** — no trusted marker could be confirmed for this verdict (on `loom:pr` this now means markers `could not be authenticated`: loom-daemon lacks `forge trusted-comments`, #9548) | **Do NOT merge** a `loom:pr` PR on `11`: skip it (a single-PR step: `outcome=skipped reason=verdict_rc11`) and report it in the completion summary. `post-verdict.sh` marks every verdict (#6382), so an approval with no confirmed marker approves no known tree (#9258: one merged with the literal body `@-`). |
 | `12` | **STALE** — the approval covers a tree that is gone, or (#9258) it carried no trusted marker at all, so it never covered a known tree. Never anchored | **Do NOT merge.** The guard already removed `loom:pr`, re-queued the PR as `loom:review-requested`, and posted a comment naming both SHAs. `continue` to the next PR. |
 | any other | `gh`/environment error | **Do NOT merge.** Treat exactly like any other `gh` failure in this document — skip the PR this pass and retry next tick. Never read an error as "the approval is fine". |
 
@@ -265,7 +265,7 @@ printf '%s\n' "$P" "$K" "$C" | jq -s '.[0] as $p | {labels: [$p.labels[] | {name
   mergeable: (if $p.mergeable == true then "MERGEABLE" elif $p.mergeable == false then "CONFLICTING" else "UNKNOWN" end),
   createdAt: $p.created_at, updatedAt: $p.updated_at, additions: $p.additions, deletions: $p.deletions,
   commits: [.[1:-1][][] | {oid: .sha, committedDate: .commit.committer.date}], comments: .[-1]}' > "$PR_FACTS" \
-  || { rm -f "$PR_FACTS"; echo "SKIP #$PR_NUMBER: PR facts unread (or comments unauthenticated) — no merge, no comment"; continue; }
+  || { rm -f "$PR_FACTS"; echo "SKIP #$PR_NUMBER: PR facts unread (or comments unauthenticated) — no merge, no comment"; continue; }  # single-PR step: outcome=skipped reason=facts_unread
 ```
 
 The other blocks re-derive the path with the same `PR_FACTS=` line, because
@@ -873,12 +873,99 @@ If `$STANDING_AUTH_RESULT` is anything other than `ELIGIBLE` (including "no
 `champion.standingAuthorizations` configured"), fall through to the normal
 four-axis judgment below.
 
+**Vetted CI-workflow change (#12677, operator ruling 2026-10-17).** A change
+to a CI workflow is not red on blast radius *because it is a workflow* when
+`ci_workflow_blast_eval` returns `WF_BLAST=green`:
+
+- no changed or renamed workflow file is in the kept set, or has
+  publish, release, deploy or merge in its name (case-insensitive);
+- every workflow file has a non-empty patch, and no added or removed workflow
+  line matches, case-insensitively, the words `permissions`, `secrets`,
+  `publish`, `release`, `deploy` or `merge`, or `id-token`,
+  `pull_request_target`, `workflow_run`, `github.token`, `GITHUB_TOKEN`;
+- the PR carries `loom:pr` (criterion #1 has already checked that the approval
+  is for this head) and CI is green right now, with at least one passing
+  check and none pending, failing or cancelled.
+
+The rest of the PR is still judged on all four axes as usual. `WF_BLAST=red`
+keeps the "CI workflows" entry red, and the rationale names `WF_BLAST_REASON`;
+`WF_BLAST=none` means no workflow file changed. Every failed or incomplete read
+is red.
+
+```bash
+# ci_workflow_blast_eval: sets WF_BLAST (none|green|red) and WF_BLAST_REASON.
+# Reads PR_NUMBER, LABELS, KEPT_SET_PATTERNS, read_ci_checks. Always reads the
+# PR's files afresh and checks the list is complete (count == changed_files).
+ci_workflow_blast_eval() {
+  local WF_FILES CHANGED_COUNT f lf pattern LINES_JSON rx rc
+  WF_BLAST=red
+  WF_BLAST_REASON=""
+  [ "${#KEPT_SET_PATTERNS[@]}" -gt 0 ] 2>/dev/null || { WF_BLAST_REASON="kept set not loaded"; return 0; }
+  standing_auth_fetch_diff || { WF_BLAST_REASON="files API unreadable"; return 0; }
+  CHANGED_COUNT=$(gh api "repos/{owner}/{repo}/pulls/$PR_NUMBER" --jq '.changed_files' 2>/dev/null) \
+    || { WF_BLAST_REASON="changed_files unreadable"; return 0; }
+  printf '%s' "$DIFF_JSON" | jq -e --argjson n "${CHANGED_COUNT:-null}" 'type == "array" and length == $n' >/dev/null 2>&1 \
+    || { WF_BLAST_REASON="files API list incomplete"; return 0; }
+  WF_FILES=$(printf '%s' "$DIFF_JSON" | jq -r '.[] | .filename, (.previous_filename // empty) | select(ascii_downcase | startswith(".github/workflows/"))' 2>/dev/null) \
+    || { WF_BLAST_REASON="files API unreadable"; return 0; }
+  if [ -z "$WF_FILES" ]; then
+    WF_BLAST=none
+    return 0
+  fi
+  while IFS= read -r f; do
+    [ -z "$f" ] && continue
+    lf=$(printf '%s' "$f" | tr '[:upper:]' '[:lower:]')
+    case "${lf##*/}" in
+      *publish* | *release* | *deploy* | *merge*)
+        WF_BLAST_REASON="$f is a publish/release/deploy/merge workflow"
+        return 0
+        ;;
+    esac
+    for pattern in "${KEPT_SET_PATTERNS[@]}"; do
+      # Lowercased: Loom-Champion.yml is as much a kept-set path as champion.yml.
+      # shellcheck disable=SC2053
+      if [[ "$f" == $pattern || "$lf" == $pattern ]]; then
+        WF_BLAST_REASON="$f is in the kept set ($pattern)"
+        return 0
+      fi
+    done
+  done <<<"$WF_FILES"
+  # Every workflow file needs a non-empty patch: a binary, oversized or
+  # pure-rename entry cannot be checked line by line.
+  LINES_JSON=$(printf '%s' "$DIFF_JSON" | jq -c '
+    [.[] | select(((.filename | ascii_downcase) | startswith(".github/workflows/")) or (((.previous_filename // "") | ascii_downcase) | startswith(".github/workflows/")))]
+    | if all(.[]; ((.patch // "") | length) > 0) then [.[].patch | split("\n")[] | select(test("^[+-]")) | .[1:]] else error("no patch") end' 2>/dev/null) \
+    || { WF_BLAST_REASON="a workflow file has no readable patch"; return 0; }
+  for rx in '\bpermissions\b' '\bsecrets\b' 'id-token' 'pull_request_target' 'workflow_run' \
+    'github\.token' 'github_token' '\b(publish|release|deploy|merge)\b'; do
+    printf '%s' "$LINES_JSON" | jq -e --arg rx "$rx" 'any(.[]; test($rx; "i"))' >/dev/null 2>&1
+    rc=$?
+    # rc 1 = no such line; 0 = a hit; anything else = an error. Only 1 passes.
+    [ "$rc" -eq 1 ] || { WF_BLAST_REASON="a workflow line matches '$rx'"; return 0; }
+  done
+  echo "$LABELS" | grep -q "loom:pr" || { WF_BLAST_REASON="no loom:pr approval"; return 0; }
+  read_ci_checks "$PR_NUMBER"
+  # Green = at least one passing check and nothing pending, failing or
+  # cancelled: a workflow edit that skips every job must not pass on its own CI.
+  if [ "$NO_CHECKS" != "false" ] \
+    || ! printf '%s\n' "$CHECKS" | jq -e 'any(.[]; .bucket == "pass") and all(.[]; .bucket == "pass" or .bucket == "skipping")' >/dev/null 2>&1; then
+    WF_BLAST_REASON="CI is not green"
+    return 0
+  fi
+  WF_BLAST=green
+  WF_BLAST_REASON="vetted workflow change: $(printf '%s' "$WF_FILES" | sort -u | tr '\n' ' ')"
+}
+
+ci_workflow_blast_eval
+echo "WF_BLAST=$WF_BLAST${WF_BLAST_REASON:+ ($WF_BLAST_REASON)}"
+```
+
 **The four risk axes** — answer each; **any red answer holds the PR**:
 
 | Axis | Green (safe to auto-merge) | Red (hold for a human) |
 |------|----------------------------|------------------------|
 | **Diff composition** | The bulk of the diff is tests, docs/markdown, fixtures, or a self-contained new module not yet wired into an existing path. The load-bearing hunks are few and you can name them. | Load-bearing hunks change the *existing* behavior of a shared runtime path, and you cannot enumerate them — or the diff is dense enough that you skimmed rather than read it. |
-| **Blast radius** | Changes are confined to one crate/module/role file, or to surfaces whose failure affects a single feature. | Touches anything that mediates merging, branch/worktree deletion, credential/token selection, guard hooks, installers/updaters, CI workflows, or shared config schema — e.g. `merge-pr.sh`, `worktree.sh`, `loom-clean`, `.loom/hooks/guard-*.sh`, `spawn-claude.sh` / `spawn-worker.sh`, `install-loom.sh`, `resync-installed.sh`. Failure there damages the repo or the whole fleet, not one feature. |
+| **Blast radius** | Changes are confined to one crate/module/role file, or to surfaces whose failure affects a single feature. | Touches anything that mediates merging, branch/worktree deletion, credential/token selection, guard hooks, installers/updaters, CI workflows (unless `WF_BLAST=green`, #12677), or shared config schema — e.g. `merge-pr.sh`, `worktree.sh`, `loom-clean`, `.loom/hooks/guard-*.sh`, `spawn-claude.sh` / `spawn-worker.sh`, `install-loom.sh`, `resync-installed.sh`. Failure there damages the repo or the whole fleet, not one feature. |
 | **Judge review depth** | The Judge's verdict cites specifics from the diff — named files/functions, concrete behavior, what was run or verified. | A short generic approval ("LGTM", "looks good") with no evidence the diff was read, or a review that explicitly defers verification of some part ("did not check X"). |
 | **Revertability** | `git revert -m 1 <merge-sha>` fully undoes it: no data/schema migration, no published artifact, no state written outside the repo. | The change performs a one-way action when it runs (deletes branches/worktrees, rewrites installed files, publishes a release, migrates data, moves credentials), so reverting the commit does not undo the effect. |
 
@@ -887,7 +974,7 @@ four-axis judgment below.
 **Claim/label machinery is not red by itself (#11416).** Loom's own claim, lease, label-transition, dispatch and hand-back code is judged like any other code. Writing labels or claims *when it runs* is not a one-way action: `git revert` restores the old writer, and the state it wrote is re-derivable (janitors, lease reapers, `loom-recover-orphans` and the next tick repair a stranded claim or misrouted label). "Reverting cannot undo forge labels already changed" or "a defect could strand work fleet-wide" is **not** a red reason. Judge-approved + CI green + revert restores the behavior -> green on blast radius and revertability. "Mediates merging" in the table means kept-set item 2, nothing wider. **Kept set** — only these stay red, held for an operator (name the item in the hold bullet):
 1. **Irreversible migration, no rollback step**: a bulk relabel, or a rename/delete in `.github/labels.yml`, of live labels without a restore step; a lease/checkpoint/registry format the previous release cannot read.
 2. **The merge gate itself** — code whose output decides *whether a PR merges*: criteria #1-#6 and the sticky-hold logic (this file, `champion-critical-file-hold.md`); `merge-pr.sh`'s verdict/label/ordering guards; any code that writes or invalidates a verdict label or marker (`post-verdict.sh`, `verdict-staleness-guard.sh`, the daemon's `reconcile_pr_verdicts`, `check-review-feedback.sh`) or decides whose markers and comments are trusted (`comment_trust.rs`, `forge trusted-comments`). The gate cannot vouch for a change to itself. Writing a verdict label (the Judge's `loom:pr` approval) is part of the gate, not a role hand-back; only routing that cannot make a PR mergeable (Builder/Doctor hand-backs, claims) is outside it.
-3. **The other red entries in the table above**, unchanged. Criterion #3 critical files fail #3 regardless, except where a `coversCriticalFiles` or `criticalFilesOnly` class applies (criterion #3 below). A `criticalFilesOnly` class (#12648) does not change this judgment: the PR is judged on these axes as usual.
+3. **The other red entries in the table above**, unchanged. A CI-workflow change with `WF_BLAST=green` (#12677) is not red for being a workflow; the rest of its diff is judged as usual. Criterion #3 critical files fail #3 regardless, except where a `coversCriticalFiles` or `criticalFilesOnly` class applies (criterion #3 below). A `criticalFilesOnly` class (#12648) does not change this judgment: the PR is judged on these axes as usual.
 
 **No standing authorization satisfies the kept set (#12528).** Items 1 and 2 and the remaining red entries (credential/token selection, guard hooks, installers/updaters that rewrite installed files on roll) can never be waived for criterion #3 by a class, with or without `coversCriticalFiles` or `criticalFilesOnly`: the `KEPT_SET_PATTERNS` floor in "Standing operator authorization" disqualifies the PR from every covering class.
 
@@ -2267,6 +2354,19 @@ observation over time), so this is where "PR merged" becomes "issue done".
 ```bash
 PR_NUMBER=$1
 
+# Per-repo switch (#12703): `champion.outOfBandAcGate`, resolved through the
+# daemon's config tiers (fleet / repo-class / .loom/config.json). Only an
+# explicit boolean `false` turns the gate off; absent, unreadable, a missing
+# verb or any non-boolean value keeps it ON (fail closed).
+ac_gate_enabled() {
+  local out
+  command -v loom-daemon >/dev/null 2>&1 || return 0
+  out=$(loom-daemon config get champion.outOfBandAcGate --json 2>/dev/null) || return 0
+  printf '%s' "$out" | jq -e '.found == true and .value == false' >/dev/null 2>&1 && return 1
+  return 0
+}
+if ac_gate_enabled; then AC_GATE=on; else AC_GATE=off; fi
+
 # GitHub's own parser (closingIssuesReferences): the set it auto-closes on
 # merge. Ignores `Updates #N`, `See #N`, code fences, `Discloses #N` (#3267) —
 # but is NOT negation-aware, hence the #1057 check in the loop.
@@ -2296,9 +2396,15 @@ for issue in $LINKED_ISSUES; do
   # Exit codes: 0 CLEAR / 10 NO-AC / 11 SATISFIED (current-SHA marker present)
   #             12 UNVERIFIED / 13 STALE-MARKER / 1 ERROR.
   # 0, 10 and 11 fall through to the unchanged close logic below.
-  AC_REPORT=$(./.loom/scripts/classify-ac-verification.sh \
-    --issue "$issue" --pr "$PR_NUMBER" --head-sha "$HEAD_SHA")
-  AC_RC=$?
+  # `champion.outOfBandAcGate=false` (#12703): skip the classifier entirely
+  # (exit 10 = NO-AC, which falls through to the unchanged close logic).
+  if [ "$AC_GATE" = "off" ]; then
+    AC_REPORT=""; AC_RC=10
+  else
+    AC_REPORT=$(./.loom/scripts/classify-ac-verification.sh \
+      --issue "$issue" --pr "$PR_NUMBER" --head-sha "$HEAD_SHA")
+    AC_RC=$?
+  fi
 
   # 1 (ERROR) is grouped with 12/13 deliberately: "the classifier could not
   # run" is not "the criteria are met". Fail closed — see item 5 below.
@@ -2350,6 +2456,19 @@ the pipeline noticed it had not been performed. The shape generalizes: any issue
 of the form "X was silently missed / dropped / not observed" has it, because the
 thing to verify is an **absence**, and an absence is exactly what a unit test
 cannot distinguish from a correctly-passing filter.
+
+**Per-repo switch: `champion.outOfBandAcGate` (#12703).** Boolean, **absent =
+`true`** (the gate as described below). A repo that tests on its live deployment
+and does not want a human hold waiting on a confirmation of a real run sets it
+`false` through the normal config tiers (for fleet-gitops: the repo's override
+in `fleet.yml`; no new plumbing, same resolution as `champion.standingAuthorizations`).
+First use case: 2AMLogic/loom-ui. With `false`, Step 4 runs neither the
+classifier nor `hold_issue_on_unverified_ac` for any linked issue: no
+`loom:operator` is added for an out-of-band criterion and the issue closes as
+normal. Only an explicit boolean `false` disables the gate; absent, unreadable,
+a missing `loom-daemon config` verb or a non-boolean value (including the
+string `"false"`) leaves it on. The gate text below stays in this file and is
+inert when the switch is off.
 
 **What the gate does.** `./.loom/scripts/classify-ac-verification.sh` reads the
 linked issue's body, extracts its acceptance-criteria checklist, classifies each
