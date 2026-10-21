@@ -3,8 +3,15 @@
 Chronological record of merged PRs and closed issues, maintained by the Guide
 triage role. Newest first.
 
+### 2026-10-21
+
+- **PR #13**: ci: add T1 block manifest and klt signoff freshness workflow
+- **Issue #4** (closed): Commit a T1 block manifest and a klt signoff CI job (T1 item 10)
+
 ### 2026-10-20
 
+- **PR #26**: build: point package.json test/lint/check scripts at Makefile targets
+- **Issue #22** (closed): Make package.json placeholder scripts honest: test/lint/check:ci always exit 0
 - **PR #17**: feat(flow): pinned cocotb, lint and Yosys smoke flow on a placeholder LFSR
 - **Issue #3** (closed): Bring up the digital flow on a placeholder: cocotb + Icarus, lint, Yosys to sky130_fd_sc_hd (T1 item 9 groundwork)
 
