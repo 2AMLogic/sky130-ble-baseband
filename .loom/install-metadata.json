@@ -1,6 +1,6 @@
 {
-  "loom_version": "0.19.1196",
-  "loom_commit": "87e5cf2d87aae146e97e8bbba81ceec5faf9337f",
+  "loom_version": "0.19.1201",
+  "loom_commit": "e05172ecbf8e2759f0f181dd76dd64ba33ca8d40",
   "requires_daemon": "0.19.1088",
   "install_date": "2026-10-17",
   "loom_source_remote": "git@github.com:rjwalters/loom.git",
@@ -763,7 +763,10 @@
     ".loom/scripts/tests/test-guide-work-log-rotation.sh",
     ".agents/skills/loom-builder-pr/SKILL.md",
     ".agents/skills/loom-doctor/SKILL.md",
-    ".agents/skills/loom-judge/SKILL.md"
+    ".agents/skills/loom-judge/SKILL.md",
+    ".loom/scripts/tests/test-ci-wait-prompt-consistency.sh",
+    ".loom/hooks/guard-loom-workflow.sh",
+    ".loom/hooks/tests/test-guard-secret-scan.sh"
   ],
-  "last_resync": "2026-10-20"
+  "last_resync": "2026-10-21"
 }
