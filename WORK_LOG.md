@@ -5,6 +5,7 @@ triage role. Newest first.
 
 ### 2026-10-21
 
+- **PR #27**: Bump Repo Skills 0.24.3 -> 0.24.7
 - **PR #13**: ci: add T1 block manifest and klt signoff freshness workflow
 - **Issue #4** (closed): Commit a T1 block manifest and a klt signoff CI job (T1 item 10)
 
