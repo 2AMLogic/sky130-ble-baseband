@@ -1,1 +1,3 @@
+numpy==1.26.4
 cocotb==2.0.1
+pytest==9.1.1

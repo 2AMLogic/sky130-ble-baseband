@@ -65,3 +65,12 @@ synth: check-tools check-pdk
 
 clean:
 	rm -rf flow/build
+
+# sim/: CM-A channel, integer LE 1M receiver, BER sweep (needs numpy, pytest from `make venv`)
+.PHONY: sim-test sim-quick
+
+sim-test:
+	$(PYTHON) -m pytest -q sim/tests
+
+sim-quick:
+	$(PYTHON) sim/sweep/ber_sweep.py --quick --out $(CURDIR)/flow/build/sim/ber.json
