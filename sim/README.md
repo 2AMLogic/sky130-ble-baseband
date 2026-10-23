@@ -10,12 +10,14 @@ here is **simulated** and says so.
 | `model/le1m_rx.py` | Integer non-coherent LE 1M receiver; widths in [model/README.md](model/README.md) |
 | `model/traces.py` | Shared 0007 trace reader/writer |
 | `sweep/ber_sweep.py` | Seeded BER sweep, Clopper-Pearson stop rule, writes `results/<date>-<sha>/ber.json` |
+| `model/le1m_tx.py` | Integer LE 1M TX reference model (PDU to whitened, CRC'd, Gaussian-shaped `tx_dev` words); trace format in [model/trace_format.md](model/trace_format.md); `model/golden/tx_adv_ch37.trace` is a generated golden trace |
 | `tests/` | pytest controls |
 
 ## Commands
 
 ```
 make sim-test                              # pytest controls (about 10 s)
+make model-test                            # sim/tests plus the TX CRC negative control
 python3 sim/sweep/ber_sweep.py --quick     # CI sweep; writes sim/results/<date>-<sha>/ber.json
 python3 sim/sweep/ber_sweep.py             # full sweep (below)
 ```
@@ -60,5 +62,5 @@ identity is not claimed.
 - AGC: one settled gain per capture from the rms of the noisy record, 1.5 dB steps,
   target 32 LSB complex rms. A closed AGC loop is out of scope here.
 - Data whitening is not modelled (random payload; see `model/README.md`).
-- The TX reference model (`le1m_tx.py`) is a separate issue; this sweep uses its
+- The TX reference model (`model/le1m_tx.py`) is not used by this sweep; the sweep uses its
   own float GFSK source, which is a channel-side stimulus, not a swept model.
