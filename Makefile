@@ -75,3 +75,12 @@ model-test:
 	  echo "ERROR: model negative control passed; the CRC known-answer test does not detect a flipped init"; exit 1; \
 	else grep -q 'crc24 KAT mismatch' $(BUILD)/model_negative.log || { echo "ERROR: model negative control failed for the wrong reason; see $(BUILD)/model_negative.log"; exit 1; }; \
 	  echo "model negative control OK (flipped CRC init was rejected)"; fi
+
+# sim/: CM-A channel, integer LE 1M receiver, BER sweep (needs numpy, pytest from `make venv`)
+.PHONY: sim-test sim-quick
+
+sim-test:
+	$(PYTHON) -m pytest -q sim/tests
+
+sim-quick:
+	$(PYTHON) sim/sweep/ber_sweep.py --quick --out $(CURDIR)/flow/build/sim/ber.json
