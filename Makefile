@@ -1,5 +1,5 @@
 # Single entry point for the verification / lint / synthesis flow.
-#   make            -> all: check-tools, test, test-negative, lint, synth
+#   make            -> all: check-tools, test, test-negative, lint, synth, model-test
 # Cold start: see verification/README.md. ALLOW_TOOL_DRIFT=1 downgrades tool
 # version mismatches to warnings (CI only; local runs must match the pins).
 
@@ -12,9 +12,9 @@ CIEL_HOME?= $(HOME)/.ciel
 PDK_ROOT ?= $(CIEL_HOME)/ciel/$(PDK_FAMILY)/versions/$(PDK_REV)
 LIB_FILE := $(PDK_ROOT)/$(PDK_VARIANT)/libs.ref/$(STD_CELL_LIB)/lib/$(STD_CELL_LIB)__$(LIB_CORNER).lib
 
-.PHONY: all venv check-tools check-pdk test test-negative lint synth clean
+.PHONY: all venv check-tools check-pdk test test-negative lint synth clean model-test
 
-all: check-tools test test-negative lint synth
+all: check-tools test test-negative lint synth model-test
 
 venv:
 	python3 -m venv $(VENV)
@@ -65,3 +65,13 @@ synth: check-tools check-pdk
 
 clean:
 	rm -rf flow/build
+
+# LE 1M TX reference model tests (sim/model). Pure Python: no simulator, so no
+# check-tools. The CRC negative control must FAIL the CRC known-answer test.
+model-test:
+	@mkdir -p $(BUILD)
+	$(PYTHON) -m pytest -q sim/tests
+	@if CRC_NEGATIVE=1 $(PYTHON) -m pytest -q sim/tests -k crc24_kat >$(BUILD)/model_negative.log 2>&1; then \
+	  echo "ERROR: model negative control passed; the CRC known-answer test does not detect a flipped init"; exit 1; \
+	else grep -q 'crc24 KAT mismatch' $(BUILD)/model_negative.log || { echo "ERROR: model negative control failed for the wrong reason; see $(BUILD)/model_negative.log"; exit 1; }; \
+	  echo "model negative control OK (flipped CRC init was rejected)"; fi
