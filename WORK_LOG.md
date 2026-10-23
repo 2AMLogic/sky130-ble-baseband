@@ -3,6 +3,11 @@
 Chronological record of merged PRs and closed issues, maintained by the Guide
 triage role. Newest first.
 
+### 2026-10-23
+
+- **PR #33**: feat(sim): CM-A channel, integer LE 1M receiver and seeded BER sweep
+- **Issue #31** (closed): sim: CM-A channel model and a fixed-point non-coherent LE 1M receiver with a seeded BER sweep harness (Clopper-Pearson stop rule)
+
 ### 2026-10-21
 
 - **PR #27**: Bump Repo Skills 0.24.3 -> 0.24.7
