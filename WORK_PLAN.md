@@ -31,7 +31,7 @@ _None._
 
 Issues currently being built (`loom:building`).
 
-- **#30**: sim: fixed-point LE 1M TX reference model (PDU to whitened, CRC'd, Gaussian-shaped tx_dev words) and the golden-trace file format of decision 0007
+_None._
 
 ## PRs Awaiting Review
 
@@ -50,7 +50,6 @@ _None._
 Issues carrying `loom:curated`.
 
 - **#5**: Track the gap to T1 (klayout-tools design-evidence-tiers.md) *(curated)*
-- **#30**: sim: fixed-point LE 1M TX reference model (PDU to whitened, CRC'd, Gaussian-shaped tx_dev words) and the golden-trace file format of decision 0007 *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -68,10 +67,10 @@ _None._
 | Very important | 0 |
 | Important | 0 |
 | Ready (`loom:issue`) | 0 |
-| In Progress (`loom:building`) | 1 |
+| In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 2 |
+| Curated | 1 |
 | Architect / Hermit proposals | 0 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->

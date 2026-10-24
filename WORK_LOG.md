@@ -5,6 +5,8 @@ triage role. Newest first.
 
 ### 2026-10-23
 
+- **PR #32**: feat(sim): integer LE 1M TX reference model, trace format, model-test
+- **Issue #30** (closed): sim: fixed-point LE 1M TX reference model (PDU to whitened, CRC'd, Gaussian-shaped tx_dev words) and the golden-trace file format of decision 0007
 - **PR #33**: feat(sim): CM-A channel, integer LE 1M receiver and seeded BER sweep
 - **Issue #31** (closed): sim: CM-A channel model and a fixed-point non-coherent LE 1M receiver with a seeded BER sweep harness (Clopper-Pearson stop rule)
 
