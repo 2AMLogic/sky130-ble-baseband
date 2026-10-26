@@ -1,6 +1,6 @@
 {
-  "loom_version": "0.19.1225",
-  "loom_commit": "e237f318d659d87858625088df650aa45ec72657",
+  "loom_version": "0.19.1227",
+  "loom_commit": "3f8d69bdce593a6d9fdb798414fa4453cc018c6b",
   "requires_daemon": "0.19.1146",
   "install_date": "2026-10-17",
   "loom_source_remote": "git@github.com:rjwalters/loom.git",
@@ -792,5 +792,5 @@
     ".loom/hooks/guard-worktree-paths.sh",
     ".loom/hooks/tests/test-guard-worktree-paths.sh"
   ],
-  "last_resync": "2026-10-25"
+  "last_resync": "2026-10-26"
 }
