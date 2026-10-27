@@ -12,90 +12,32 @@ RTL's agc_gain is a constant), and the clock cycle of any event.
 """
 
 import os
-import random
 import sys
 from pathlib import Path
 
 import cocotb
 from cocotb.clock import Clock
-from cocotb.triggers import ClockCycles, FallingEdge, ReadOnly, RisingEdge
+from cocotb.triggers import RisingEdge
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
-sys.path[:0] = [str(ROOT / "sim" / "model"), str(ROOT / "sim" / "channel"), str(HERE)]
+sys.path[:0] = [str(ROOT / "sim" / "model"), str(ROOT / "sim" / "channel"), str(HERE), str(ROOT / "verification")]
 import cases  # noqa: E402
 import traces  # noqa: E402
+from rx_common import GAP, RxHarness  # noqa: E402
 
 KIND = {2: "sync", 3: "tbound", 5: "crc", 6: "rssi", 7: "octet"}
 NOT_COMPARED = {"gain"}
-GAP = 4           # nominal clk per sample (32 MHz clk, 8 Msps)
-DRAIN = 40        # clk after the last strobe before rx_flush (pipeline is 18)
-SETTLE = 600      # clk after rx_flush for the engine to finish and emit
 
 
-class Harness:
+class Harness(RxHarness):
     def __init__(self, dut):
-        self.dut = dut
-        self.events = []
-        self.done_pulses = 0
+        super().__init__(dut, KIND)
         self.rssi_pulses = []
-        self.running = True
 
-    async def monitor(self):
-        d = self.dut
-        while self.running:
-            await RisingEdge(d.clk)
-            await ReadOnly()
-            if int(d.ev_valid.value):
-                self.events.append((int(d.ev_index.value), KIND[int(d.ev_kind.value)],
-                                    int(d.ev_value.value)))
-            if int(d.pkt_done.value):
-                self.done_pulses += 1
-            if int(d.rssi_valid.value):
-                self.rssi_pulses.append(int(d.rssi_lin.value))
-
-    async def reset(self):
-        d = self.dut
-        d.rx_valid.value = 0
-        d.rx_i.value = 0
-        d.rx_q.value = 0
-        d.rx_sat.value = 0
-        d.rx_flush.value = 0
-        d.agc_settled.value = 1
-        d.rst_n.value = 0
-        await ClockCycles(d.clk, 4)
-        d.rst_n.value = 1
-        await ClockCycles(d.clk, 2)
-
-    async def drive(self, iq, flags, jitter_seed, gap=GAP):
-        """One rx_valid strobe per sample on a `gap`-clk grid, +/-1 clk jitter when gap > 1."""
-        d = self.dut
-        rng = random.Random(jitter_seed)
-        await FallingEdge(d.clk)
-        clk = 0
-        for n in range(len(iq)):
-            due = gap * n + (rng.choice((-1, 0, 0, 1)) if gap > 1 else 0)
-            due = max(due, clk)
-            while clk < due:
-                d.rx_valid.value = 0
-                await FallingEdge(d.clk)
-                clk += 1
-            d.rx_valid.value = 1
-            d.rx_i.value = int(iq[n][0])
-            d.rx_q.value = int(iq[n][1])
-            d.rx_sat.value = int(flags[n]) & 1
-            await FallingEdge(d.clk)
-            clk += 1
-        d.rx_valid.value = 0
-
-    async def flush(self):
-        d = self.dut
-        await ClockCycles(d.clk, DRAIN)
-        await FallingEdge(d.clk)
-        d.rx_flush.value = 1
-        await FallingEdge(d.clk)
-        d.rx_flush.value = 0
-        await ClockCycles(d.clk, SETTLE)
+    def on_cycle(self):
+        if int(self.dut.rssi_valid.value):
+            self.rssi_pulses.append(int(self.dut.rssi_lin.value))
 
 
 def compare(name, rtl_records, model_records, negative):
