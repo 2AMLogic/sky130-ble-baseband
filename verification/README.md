@@ -13,7 +13,18 @@ make venv   # once: .venv with the pinned cocotb
 make        # check-tools, test, test-negative, lint, synth; exit 0 = all pass
 ```
 
-Individual steps: `make test`, `make test-negative`, `make lint`, `make synth`.
+Individual steps: `make test`, `make test-negative`, `make test-le1m-rx`,
+`make test-le1m-rx-negative`, `make lint`, `make synth`.
+
+- `test-le1m-rx` replays the shared RX stimulus of `verification/le1m_rx/cases.py`
+  (CM-A noiseless and noisy, offset/drift/clock corners, bad CRC, missed detect,
+  access-address errors, clipping, truncation) through `rtl/le1m_rx` and compares
+  the RTL trace with the model trace exactly, by `rx_valid` sample index. Vectors
+  are regenerated into `flow/build/le1m_rx/sim/vectors/` from the seeds in
+  `cases.py`; they are simulated stimulus, not measurements. The `gain` records
+  (stimulus echo) are not compared.
+- `test-le1m-rx-negative` flips one expected `bit` record and fails unless the
+  replay rejects it with an `expected=` mismatch.
 
 - `test-negative` runs the same test with one expected value deliberately
   wrong (`LFSR_NEGATIVE=1`) and fails if the test does *not* fail, so a broken
@@ -46,7 +57,7 @@ is absent rather than using any other. Fetch it with
 
 ## CI
 
-`.github/workflows/flow.yml` runs `make test test-negative lint ALLOW_TOOL_DRIFT=1` (apt tool versions differ
+`.github/workflows/flow.yml` runs `make test test-negative test-le1m-rx test-le1m-rx-negative lint ALLOW_TOOL_DRIFT=1` (apt tool versions differ
 from the pins, so mismatches are warnings there; local runs must match). Synthesis is
 not run in CI: it needs the full PDK fetch, which this workflow does not
 perform. Run `make synth` locally.
