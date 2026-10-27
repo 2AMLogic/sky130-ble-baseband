@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "kind": "t1-attestation-inventory",
+  "t1_item": 10,
+  "description": "Repo hygiene: README, license, CI workflows, and the cheap deterministic commands those workflows run.",
+  "hygiene": [
+    "README.md",
+    "LICENSE",
+    "sim/README.md",
+    "verification/README.md",
+    "manifests/README.md",
+    ".github/workflows/flow.yml",
+    ".github/workflows/sim.yml",
+    ".github/workflows/signoff.yml"
+  ],
+  "checks": [
+    {
+      "name": "lint smoke RTL (make lint)",
+      "argv": [
+        "make",
+        "lint",
+        "ALLOW_TOOL_DRIFT=1"
+      ],
+      "local_only": true
+    },
+    {
+      "name": "reference-model tests (make sim-test)",
+      "argv": [
+        "make",
+        "sim-test"
+      ],
+      "local_only": true
+    }
+  ]
+}

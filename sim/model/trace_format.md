@@ -17,3 +17,7 @@ Implements the trace format of decision
 TX fields written by `le1m_tx.py`: `txdev` (every word) and `txact` (value 1
 at the first index, value 0 at the first index where it is low).
 Rows within one index keep writer order; compare by (index, field).
+
+TX fields written by `oqpsk_tx.py` are the same two (`txdev`, `txact`). RX
+fields written by `oqpsk_rx.py`: `gain`, `sync`, `octet`, `tbound`, `crc`,
+`rssi` (README "IEEE 802.15.4 2.4 GHz O-QPSK models").

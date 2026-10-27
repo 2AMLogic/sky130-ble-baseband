@@ -19,7 +19,8 @@ _None._
 
 `loom:important`; taken before unlabelled work.
 
-_None._
+- **#48**: T1 item 1a: LE 1M TX RTL (whitening, CRC-24, framing, Gaussian shaping to tx_dev) bit-exact with le1m_tx.py
+- **#50**: T1 item 1d: host interface RTL (APB4 register map, TX/RX FIFOs, descriptor FIFO, interrupts, timestamp)
 
 ## Ready
 
@@ -31,7 +32,8 @@ _None._
 
 Issues currently being built (`loom:building`).
 
-_None._
+- **#48**: T1 item 1a: LE 1M TX RTL (whitening, CRC-24, framing, Gaussian shaping to tx_dev) bit-exact with le1m_tx.py
+- **#50**: T1 item 1d: host interface RTL (APB4 register map, TX/RX FIFOs, descriptor FIFO, interrupts, timestamp)
 
 ## PRs Awaiting Review
 
@@ -50,6 +52,9 @@ _None._
 Issues carrying `loom:curated`.
 
 - **#5**: Track the gap to T1 (klayout-tools design-evidence-tiers.md) *(curated)*
+- **#48**: T1 item 1a: LE 1M TX RTL (whitening, CRC-24, framing, Gaussian shaping to tx_dev) bit-exact with le1m_tx.py *(curated)*
+- **#50**: T1 item 1d: host interface RTL (APB4 register map, TX/RX FIFOs, descriptor FIFO, interrupts, timestamp) *(curated)*
+- **#55**: T1 item 6a: committed full LE 1M BER sweeps (all rows, CM-A) with negative control *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -65,12 +70,12 @@ _None._
 |------|-------|
 | Operator merge-risk holds | 0 |
 | Very important | 0 |
-| Important | 0 |
+| Important | 2 |
 | Ready (`loom:issue`) | 0 |
-| In Progress (`loom:building`) | 0 |
+| In Progress (`loom:building`) | 2 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 1 |
+| Curated | 4 |
 | Architect / Hermit proposals | 0 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
