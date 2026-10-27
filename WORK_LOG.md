@@ -3,6 +3,17 @@
 Chronological record of merged PRs and closed issues, maintained by the Guide
 triage role. Newest first.
 
+### 2026-10-27
+
+- **PR #62**: docs: refresh README status, add reproduce section, attest repo hygiene
+- **Issue #46** (closed): T1 item 10 (repo hygiene): README status, reproduction steps for every result, hygiene inventory attested with klt signoff --attest 10
+- **PR #61**: feat(rtl): LE 1M RX path bit-exact with the integer reference receiver
+- **Issue #53** (closed): T1 item 1b: LE 1M RX RTL (non-coherent demod, AA correlation, de-whitening, CRC-24 check) bit-exact with le1m_rx.py
+- **PR #59**: feat(sim): integer 802.15.4 O-QPSK TX/RX reference models and golden traces
+- **Issue #49** (closed): sim: fixed-point 802.15.4 O-QPSK TX/RX reference model, golden traces and loopback tests
+- **PR #58**: feat(mac): add lower-MAC timers, trigger, auto-ACK and address filters
+- **Issue #51** (closed): T1 item 1e: hardware timers (T_IFS, 15.4 turnaround/ACK-wait), timed trigger, auto-ACK and address filtering RTL
+
 ### 2026-10-23
 
 - **PR #32**: feat(sim): integer LE 1M TX reference model, trace format, model-test
