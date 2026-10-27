@@ -12,7 +12,7 @@ CIEL_HOME?= $(HOME)/.ciel
 PDK_ROOT ?= $(CIEL_HOME)/ciel/$(PDK_FAMILY)/versions/$(PDK_REV)
 LIB_FILE := $(PDK_ROOT)/$(PDK_VARIANT)/libs.ref/$(STD_CELL_LIB)/lib/$(STD_CELL_LIB)__$(LIB_CORNER).lib
 
-.PHONY: all venv check-tools check-pdk test test-negative lint synth clean model-test
+.PHONY: all venv check-tools check-pdk test test-negative lint synth clean model-test host-test host-test-negative host-lint
 
 all: check-tools test test-negative lint synth model-test
 
@@ -41,18 +41,18 @@ check-pdk:
 	@test -f "$(LIB_FILE)" || { echo "ERROR: pinned PDK $(PDK_REV) liberty not found: $(LIB_FILE)"; \
 	  echo "Fetch it: pip install ciel && ciel enable --pdk-family $(PDK_FAMILY) $(PDK_REV)"; exit 1; }
 
-test: check-tools
+test: check-tools host-test
 	$(PYTHON) verification/smoke/run_smoke.py $(CURDIR)/$(BUILD)/sim
 
 # The test must FAIL when an expectation is wrong; invert the exit status.
-test-negative: check-tools
+test-negative: check-tools host-test-negative
 	@mkdir -p $(BUILD)
 	@if LFSR_NEGATIVE=1 $(PYTHON) verification/smoke/run_smoke.py $(CURDIR)/$(BUILD)/sim_neg >$(BUILD)/negative.log 2>&1; then \
 	  echo "ERROR: negative control passed; the test does not detect a broken expectation"; exit 1; \
 	else grep -q 'expected=' $(BUILD)/negative.log || { echo "ERROR: negative control failed for the wrong reason; see $(BUILD)/negative.log"; exit 1; }; \
 	  echo "negative control OK (broken expectation was rejected)"; fi
 
-lint: check-tools
+lint: check-tools host-lint
 	verilator --lint-only -Wall --top-module lfsr8 rtl/smoke/lfsr8.v
 
 synth: check-tools check-pdk
@@ -62,6 +62,24 @@ synth: check-tools check-pdk
 	   echo "yosys: $$(yosys -V)"; } > $(BUILD)/liberty_record.txt
 	@grep -q sky130_fd_sc_hd $(BUILD)/lfsr8_netlist.v || { echo "ERROR: netlist has no sky130_fd_sc_hd cells"; exit 1; }
 	@echo "synth OK: $(BUILD)/lfsr8_netlist.v, cell_count.rpt, liberty_record.txt"
+
+# Host interface (rtl/host/): APB registers, FIFOs, interrupts, timestamps.
+HOST_BUILD := flow/build/host
+HOST_RTL   := $(addprefix rtl/host/,host_fifo.v host_desc_fifo.v host_irq.v host_timestamp.v host_regs.v host_top.v)
+
+host-test: check-tools
+	$(PYTHON) verification/host/run_host.py $(CURDIR)/$(HOST_BUILD)/sim
+
+# A broken expectation (W1C on a disabled INT_STATUS bit) must FAIL the bench.
+host-test-negative: check-tools
+	@mkdir -p $(HOST_BUILD)
+	@if HOST_NEGATIVE=1 $(PYTHON) verification/host/run_host.py $(CURDIR)/$(HOST_BUILD)/sim_neg >$(HOST_BUILD)/negative.log 2>&1; then \
+	  echo "ERROR: host negative control passed; the test does not detect a broken expectation"; exit 1; \
+	else grep -q 'expected=' $(HOST_BUILD)/negative.log || { echo "ERROR: host negative control failed for the wrong reason; see $(HOST_BUILD)/negative.log"; exit 1; }; \
+	  echo "host negative control OK (broken expectation was rejected)"; fi
+
+host-lint: check-tools
+	verilator --lint-only -Wall --top-module host_top $(HOST_RTL)
 
 clean:
 	rm -rf flow/build
