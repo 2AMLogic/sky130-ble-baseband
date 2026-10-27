@@ -98,9 +98,9 @@ module oqpsk_rx_corr #(
     // --- RSSI window ------------------------------------------------------------
     reg [SIDE_W-1:0] mbuf [0:RSSI_WIN-1];
     reg [8:0]        mpos;
+    reg              mfull;      // every window slot written since reset (slots read as zero until then)
     reg [16:0]       wsum;
-    wire [16:0]      wsum_next = wsum + {{(17-SIDE_W){1'b0}}, in_mag} - {{(17-SIDE_W){1'b0}}, mbuf[mpos]};
-    integer          q;
+    wire [16:0]      wsum_next = wsum + {{(17-SIDE_W){1'b0}}, in_mag} - (mfull ? {{(17-SIDE_W){1'b0}}, mbuf[mpos]} : 17'd0);
 
     // --- stage 1: vector --------------------------------------------------------
     reg                s1_valid;
@@ -116,12 +116,13 @@ module oqpsk_rx_corr #(
             nin  <= 32'd0;
             mpos <= 9'd0;
             wsum <= 17'd0;
-            for (q = 0; q < RSSI_WIN; q = q + 1) mbuf[q] <= {SIDE_W{1'b0}};
+            mfull <= 1'b0;
         end else if (in_valid) begin
             ghp  <= {ghp[(HIST-1)*18-1:0], in_g};
             nin  <= nin + 32'd1;
             mbuf[mpos] <= in_mag;
             mpos <= (mpos == RSSI_WIN - 1) ? 9'd0 : mpos + 9'd1;
+            if (mpos == RSSI_WIN - 1) mfull <= 1'b1;
             wsum <= wsum_next;
             if (nin >= HIST) begin
                 s1_valid <= 1'b1;
