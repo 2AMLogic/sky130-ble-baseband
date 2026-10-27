@@ -1,20 +1,21 @@
 # Single entry point for the verification / lint / synthesis flow.
-#   make            -> all: check-tools, test, test-negative, lint, synth, model-test
+#   make            -> all: check-tools, test, test-negative, test-le1m-rx, test-le1m-rx-negative, lint, synth, model-test
 # Cold start: see verification/README.md. ALLOW_TOOL_DRIFT=1 downgrades tool
 # version mismatches to warnings (CI only; local runs must match the pins).
 
 include flow/versions.mk
 
 BUILD    := flow/build/smoke
+LE1M_RX  := flow/build/le1m_rx
 VENV     := .venv
 PYTHON   ?= $(VENV)/bin/python
 CIEL_HOME?= $(HOME)/.ciel
 PDK_ROOT ?= $(CIEL_HOME)/ciel/$(PDK_FAMILY)/versions/$(PDK_REV)
 LIB_FILE := $(PDK_ROOT)/$(PDK_VARIANT)/libs.ref/$(STD_CELL_LIB)/lib/$(STD_CELL_LIB)__$(LIB_CORNER).lib
 
-.PHONY: all venv check-tools check-pdk test test-negative lint synth clean model-test
+.PHONY: all venv check-tools check-pdk test test-negative lint synth clean model-test test-le1m-rx test-le1m-rx-negative
 
-all: check-tools test test-negative lint synth model-test
+all: check-tools test test-negative test-le1m-rx test-le1m-rx-negative lint synth model-test
 
 venv:
 	python3 -m venv $(VENV)
@@ -52,8 +53,24 @@ test-negative: check-tools
 	else grep -q 'expected=' $(BUILD)/negative.log || { echo "ERROR: negative control failed for the wrong reason; see $(BUILD)/negative.log"; exit 1; }; \
 	  echo "negative control OK (broken expectation was rejected)"; fi
 
+# LE 1M RX RTL: shared stimulus replayed through cocotb + Icarus, compared with
+# sim/model/le1m_rx.py by sample index (decision 0007). Vectors are regenerated
+# from the case table in verification/le1m_rx/cases.py.
+test-le1m-rx: check-tools
+	$(PYTHON) verification/le1m_rx/run_le1m_rx.py $(CURDIR)/$(LE1M_RX)/sim
+
+# A perturbed expectation must be rejected, and for the right reason: the
+# mismatch report carries `expected=`.
+test-le1m-rx-negative: check-tools
+	@mkdir -p $(LE1M_RX)
+	@if LE1M_RX_NEGATIVE=1 $(PYTHON) verification/le1m_rx/run_le1m_rx.py $(CURDIR)/$(LE1M_RX)/sim_neg nominal_noiseless >$(LE1M_RX)/negative.log 2>&1; then \
+	  echo "ERROR: le1m_rx negative control passed; the replay does not detect a broken expectation"; exit 1; \
+	else grep -q 'first mismatch.*expected=' $(LE1M_RX)/negative.log || { echo "ERROR: le1m_rx negative control failed for the wrong reason; see $(LE1M_RX)/negative.log"; exit 1; }; \
+	  echo "le1m_rx negative control OK (perturbed expectation was rejected)"; fi
+
 lint: check-tools
 	verilator --lint-only -Wall --top-module lfsr8 rtl/smoke/lfsr8.v
+	verilator --lint-only -Wall --top-module le1m_rx rtl/le1m_rx/*.v
 
 synth: check-tools check-pdk
 	mkdir -p $(BUILD)
