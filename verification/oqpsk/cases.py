@@ -27,7 +27,6 @@ import traces  # noqa: E402
 GOLDEN_TX = ROOT / "sim" / "model" / "golden" / "tx_154_psdu20.trace"
 GOLDEN_RX = ROOT / "sim" / "model" / "golden" / "rx_154_loopback_psdu20.trace"
 GOLDEN_PAYLOAD = bytes(range(1, 19))     # the golden traces' 18-octet payload (+ FCS = 20)
-AMPLITUDE = 100
 
 
 def _payload(seed, n):
@@ -53,18 +52,7 @@ def tx_model_trace(payload):
 
 
 # ---------------------------------------------------------------- RX cases
-def modulate(words, lead=37, tail=300, amplitude=AMPLITUDE):
-    """Ideal frequency modulator standing in for the front end (as
-    sim/tests/test_oqpsk_rx.py): phase += 64 * tx_dev per sample, turns/2**16;
-    int8 I/Q at 8 Msps with a quiet lead-in and tail."""
-    dev = np.concatenate([np.zeros(lead, dtype=np.int64), np.array(words, dtype=np.int64),
-                          np.zeros(tail, dtype=np.int64)])
-    phase = np.cumsum(64 * dev)
-    ang = 2.0 * np.pi * (phase % (1 << 16)) / (1 << 16)
-    iq = np.stack([np.rint(amplitude * np.cos(ang)), np.rint(amplitude * np.sin(ang))], axis=1)
-    iq = iq.astype(np.int8)
-    iq[:lead] = 0
-    return iq
+modulate = oqpsk_tx.modulate     # shared ideal modulator; also used by verification/top
 
 
 def _stim(iq):

@@ -19,19 +19,7 @@ import oqpsk_tx as tx  # noqa: E402
 import traces  # noqa: E402
 
 GOLDEN = os.path.join(HERE, "..", "model", "golden", "rx_154_loopback_psdu20.trace")
-AMPLITUDE = 100
-
-
-def modulate(words, lead=37, tail=300, amplitude=AMPLITUDE):
-    """Ideal FM modulator: int8 I/Q at 8 Msps, quiet lead-in and tail."""
-    dev = np.concatenate([np.zeros(lead, dtype=np.int64), np.array(words, dtype=np.int64),
-                          np.zeros(tail, dtype=np.int64)])
-    phase = np.cumsum(64 * dev)
-    ang = 2.0 * np.pi * (phase % (1 << 16)) / (1 << 16)
-    iq = np.stack([np.rint(amplitude * np.cos(ang)), np.rint(amplitude * np.sin(ang))], axis=1)
-    iq = iq.astype(np.int8)
-    iq[:lead] = 0
-    return iq
+modulate = tx.modulate
 
 
 def loopback(psdu, **kw):
