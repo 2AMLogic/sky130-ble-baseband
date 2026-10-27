@@ -5,6 +5,7 @@ triage role. Newest first.
 
 ### 2026-10-27
 
+- **PR #74**: feat(top): baseband_top integration, glue and top-level bench
 - **PR #68**: ci: run LE 1M TX replay and negative control in flow.yml
 - **Issue #67** (closed): ci: run test-le1m-tx and its negative control in flow.yml
 - **PR #66**: feat: 802.15.4 O-QPSK TX and RX RTL with bit-exact trace replay
