@@ -13,7 +13,7 @@ Implements the hardware rows of
 | `mac_addr_filter_154` | 15.4 PAN / short / extended / broadcast / promiscuous filter (13) |
 | `mac_le_filter` | LE own-address (SCAN_REQ, CONNECT_IND) and AA compare (14) |
 
-Registers are module ports; the APB map is #50 and top integration is #52.
+Registers are module ports; the APB map is #50 and top integration (#52) is `rtl/top/`.
 Strobe outputs map to the host events `ACK_SENT` (`ack_tx_req`), `ACK_TIMEOUT`
 (`ev_ack_timeout`), `RESPONSE_SENT` (`resp_tx_req`), `TRIGGER` (`trig_fire`).
 
@@ -25,12 +25,13 @@ the 16 MHz fallback values are the halved counts (`verification/mac/run_mac.py`
 overrides them). All numbers are **simulated at RTL level, on cycle counts**;
 no µs figure is claimed without a named clock.
 
-Limits of the evidence: the benches model `L_rx` and `L_tx` at their section 3
+Limits of the evidence: the benches here model `L_rx` and `L_tx` at their section 3
 bounds, so "end of packet to first `tx_valid` equals the deadline" holds by
 construction of `L_DIG_CYCLES`. The measured quantity of this block is
-`rx_end` to the TX command (5120 / 4480 cycles at 32 MHz, jitter 0). If the
-integrated design's real `L_rx + L_tx` is below the bound, the 15.4 ACK starts
-early; #52 must set `L_DIG_CYCLES` from the measured latency.
+`rx_end` to the TX command (5120 / 4480 cycles at 32 MHz, jitter 0). The integrated
+top (#52) measures the real latency: at the bounds the 15.4 ACK started 983 clk
+early, so `baseband_top` sets `L_DIG_CYCLES` to 41 (15.4) and 139 (LE) at 32 MHz.
+See `rtl/top/README.md`, "L_DIG_CYCLES". The 16 MHz values are not measured.
 
 ## Assumptions to check (spec clauses are unverified, see 0006)
 
@@ -38,4 +39,6 @@ early; #52 must set `L_DIG_CYCLES` from the measured latency.
   ACK in promiscuous mode; frames with no destination are accepted and left to
   software.
 - Frame-pending is sampled at `rx_end`, not at ACK transmit time.
-- Turnaround override registers (host-interface 0x080) are not implemented here.
+- Turnaround override registers (host-interface 0x080) are not implemented; the
+  top wires the ACK / response enables and the trigger (`rtl/top/bb_timing_regs.v`)
+  but not an override, because the counts here are parameters.

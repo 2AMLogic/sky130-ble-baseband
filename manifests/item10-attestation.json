@@ -17,7 +17,7 @@
         "role": "hygiene",
         "path": ".github/workflows/flow.yml",
         "passed": true,
-        "content_hash": "sha256:c378cd690abca40c0cd2b9688cc3b36d1b24272b2b617c856810d2e4b5713cc3"
+        "content_hash": "sha256:810e86c5fb618c717c5b34d6ad6ebf884aff36cdff7f21833d6151824f4a4767"
       },
       {
         "check": "present",
@@ -45,7 +45,7 @@
         "role": "hygiene",
         "path": "README.md",
         "passed": true,
-        "content_hash": "sha256:006de25878da6e8a496cae691806c3d465bb9e421c1684f5ebe4412f61943037"
+        "content_hash": "sha256:c15626680dab5a1beeee97de6230cb79bd7714594fa5ddc3bae393416f1c8e3b"
       },
       {
         "check": "present",
@@ -66,12 +66,12 @@
         "role": "hygiene",
         "path": "verification/README.md",
         "passed": true,
-        "content_hash": "sha256:00b69893f1536c326fdb0d97c75f88a5a12a860ad2aff10631c78228125da353"
+        "content_hash": "sha256:c13ece546735c330eb896b0312ea6fe77a3302be378256e7eb4b9c3f6e33c757"
       },
       {
         "check": "command",
         "role": "audit",
-        "name": "lint smoke RTL (make lint)",
+        "name": "lint RTL (make lint)",
         "argv": [
           "make",
           "lint",
@@ -107,7 +107,7 @@
         "path": "manifests/hygiene-inventory.json",
         "scope": "repo"
       },
-      "content_hash": "sha256:651e34557f25a0dea41a782d29827a068d60119709cd65377b9d0c5184624d1d"
+      "content_hash": "sha256:0a151f626ac45cd99b5fe85c96f4f123adb138bc59845d8bafec089ed8650278"
     }
   }
 }

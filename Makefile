@@ -1,13 +1,21 @@
 # Single entry point for the verification / lint / synthesis flow.
 #   make            -> all: check-tools, test, test-negative, test-le1m-rx, test-le1m-rx-negative, lint, synth,
-#                      model-test, test-le1m-tx, test-le1m-tx-negative, test-oqpsk, test-oqpsk-negative
-#                      (test/test-negative/lint include the rtl/mac/ lower-MAC benches)
+#                      model-test, test-le1m-tx, test-le1m-tx-negative, test-oqpsk, test-oqpsk-negative,
+#                      test-top, test-top-negative
+#                      (test/test-negative/lint include the rtl/host and rtl/mac benches)
+# `make synth` rewrites the committed netlist flow/synth/baseband_top_netlist.v;
+# `make synth-check` regenerates it in flow/build/ and fails if it differs.
 # Cold start: see verification/README.md. ALLOW_TOOL_DRIFT=1 downgrades tool
 # version mismatches to warnings (CI only; local runs must match the pins).
 
 include flow/versions.mk
 
-BUILD    := flow/build/smoke
+BUILD    := flow/build/model
+TOP      := flow/build/top
+SYNTH_BUILD := flow/build/synth
+NETLIST  := flow/synth/baseband_top_netlist.v
+LIBREC   := flow/synth/liberty_record.txt
+RTL_LIST := rtl/baseband.f
 LE1M_TX_BUILD := flow/build/le1m_tx
 LE1M_TX_RTL := $(addprefix rtl/le1m_tx/,le1m_whiten.v le1m_crc24.v le1m_frame.v le1m_gauss.v le1m_tx.v)
 LE1M_RX  := flow/build/le1m_rx
@@ -18,9 +26,9 @@ CIEL_HOME?= $(HOME)/.ciel
 PDK_ROOT ?= $(CIEL_HOME)/ciel/$(PDK_FAMILY)/versions/$(PDK_REV)
 LIB_FILE := $(PDK_ROOT)/$(PDK_VARIANT)/libs.ref/$(STD_CELL_LIB)/lib/$(STD_CELL_LIB)__$(LIB_CORNER).lib
 
-.PHONY: all venv check-tools check-pdk test test-negative lint synth clean model-test host-test host-test-negative host-lint test-le1m-rx test-le1m-rx-negative test-le1m-tx test-le1m-tx-negative test-oqpsk test-oqpsk-negative mac-test mac-test-negative mac-lint
+.PHONY: all venv check-tools check-pdk test test-negative lint synth clean model-test host-test host-test-negative host-lint test-le1m-rx test-le1m-rx-negative test-le1m-tx test-le1m-tx-negative test-oqpsk test-oqpsk-negative test-top test-top-negative synth-check mac-test mac-test-negative mac-lint
 
-all: check-tools test test-negative test-le1m-rx test-le1m-rx-negative lint synth model-test test-le1m-tx test-le1m-tx-negative test-oqpsk test-oqpsk-negative
+all: check-tools test test-negative test-le1m-rx test-le1m-rx-negative lint synth model-test test-le1m-tx test-le1m-tx-negative test-oqpsk test-oqpsk-negative test-top test-top-negative
 
 venv:
 	python3 -m venv $(VENV)
@@ -48,16 +56,10 @@ check-pdk:
 	  echo "Fetch it: pip install ciel && ciel enable --pdk-family $(PDK_FAMILY) $(PDK_REV)"; exit 1; }
 
 test: check-tools host-test
-	$(PYTHON) verification/smoke/run_smoke.py $(CURDIR)/$(BUILD)/sim
 	$(MAKE) mac-test
 
-# The test must FAIL when an expectation is wrong; invert the exit status.
+# The tests must FAIL when an expectation is wrong; invert the exit status.
 test-negative: check-tools host-test-negative
-	@mkdir -p $(BUILD)
-	@if LFSR_NEGATIVE=1 $(PYTHON) verification/smoke/run_smoke.py $(CURDIR)/$(BUILD)/sim_neg >$(BUILD)/negative.log 2>&1; then \
-	  echo "ERROR: negative control passed; the test does not detect a broken expectation"; exit 1; \
-	else grep -q 'expected=' $(BUILD)/negative.log || { echo "ERROR: negative control failed for the wrong reason; see $(BUILD)/negative.log"; exit 1; }; \
-	  echo "negative control OK (broken expectation was rejected)"; fi
 	$(MAKE) mac-test-negative
 
 # LE 1M RX RTL: shared stimulus replayed through cocotb + Icarus, compared with
@@ -97,20 +99,48 @@ OQPSK_RX_SRC := rtl/oqpsk/oqpsk_rx_fir.v rtl/le1m_rx/le1m_rx_disc.v rtl/le1m_rx/
                 rtl/oqpsk/oqpsk_rx_corr.v rtl/oqpsk/oqpsk_rx_sync.v rtl/oqpsk/oqpsk_rx_pkt.v rtl/oqpsk/oqpsk_rx.v
 
 lint: check-tools host-lint
-	verilator --lint-only -Wall --top-module lfsr8 rtl/smoke/lfsr8.v
+	verilator --lint-only -Wall --top-module baseband_top -f $(RTL_LIST)
 	verilator --lint-only -Wall --top-module le1m_tx $(LE1M_TX_RTL)
 	verilator --lint-only -Wall --top-module le1m_rx rtl/le1m_rx/*.v
 	verilator --lint-only -Wall --top-module oqpsk_tx rtl/oqpsk/oqpsk_tx.v
 	verilator --lint-only -Wall --top-module oqpsk_rx $(OQPSK_RX_SRC)
 	$(MAKE) mac-lint
 
+# Synthesis of baseband_top at the pinned liberty corner (flow/versions.mk), flattened
+# and mapped to sky130_fd_sc_hd. Cell counts and area are not timing claims (those
+# belong to the STA item and name their own corner). The committed netlist and its
+# liberty record are the item-1 derived artifacts; `synth-check` is their freshness check.
+define run_synth
+mkdir -p $(1)
+SYNTH_TOP=baseband_top SYNTH_LIST=$(RTL_LIST) SYNTH_LIB=$(LIB_FILE) SYNTH_OUT=$(1) SYNTH_NETLIST=$(2) \
+  yosys -q -l $(1)/yosys.log -c flow/synth/synth.tcl
+@{ echo "pdk_rev: $(PDK_REV)"; echo "liberty: $(STD_CELL_LIB)__$(LIB_CORNER).lib"; echo "corner: $(LIB_CORNER)"; \
+   echo "yosys: $$(yosys -V)"; } > $(3)
+@grep -q sky130_fd_sc_hd $(2) || { echo "ERROR: netlist has no sky130_fd_sc_hd cells"; exit 1; }
+endef
+
 synth: check-tools check-pdk
-	mkdir -p $(BUILD)
-	SMOKE_LIB=$(LIB_FILE) SMOKE_OUT=$(BUILD) yosys -q -l $(BUILD)/yosys.log -c flow/synth/smoke.tcl
-	@{ echo "pdk_rev: $(PDK_REV)"; echo "liberty: $(LIB_FILE)"; echo "corner: $(LIB_CORNER)"; \
-	   echo "yosys: $$(yosys -V)"; } > $(BUILD)/liberty_record.txt
-	@grep -q sky130_fd_sc_hd $(BUILD)/lfsr8_netlist.v || { echo "ERROR: netlist has no sky130_fd_sc_hd cells"; exit 1; }
-	@echo "synth OK: $(BUILD)/lfsr8_netlist.v, cell_count.rpt, liberty_record.txt"
+	$(call run_synth,$(SYNTH_BUILD),$(NETLIST),$(LIBREC))
+	@echo "synth OK: $(NETLIST), $(LIBREC); reports in $(SYNTH_BUILD)/"
+
+synth-check: check-tools check-pdk
+	$(call run_synth,$(SYNTH_BUILD)/fresh,$(SYNTH_BUILD)/fresh/netlist.v,$(SYNTH_BUILD)/fresh/liberty_record.txt)
+	@cmp $(NETLIST) $(SYNTH_BUILD)/fresh/netlist.v || { echo "ERROR: committed netlist is stale; run 'make synth' and commit"; exit 1; }
+	@cmp $(LIBREC) $(SYNTH_BUILD)/fresh/liberty_record.txt || { echo "ERROR: committed liberty record is stale; run 'make synth' and commit"; exit 1; }
+	@echo "synth-check OK: committed netlist reproduced byte-for-byte"
+
+# Integration bench (verification/top): baseband_top with every sub-block, APB in,
+# samples / tx words at the front-end pins.
+test-top: check-tools
+	$(PYTHON) verification/top/run_top.py $(CURDIR)/$(TOP)/sim
+
+# Each test perturbs one expected value; the run must fail with `expected=`.
+test-top-negative: check-tools
+	@mkdir -p $(TOP)
+	@if TOP_NEGATIVE=1 $(PYTHON) verification/top/run_top.py $(CURDIR)/$(TOP)/sim_neg >$(TOP)/negative.log 2>&1; then \
+	  echo "ERROR: top negative control passed; the bench does not detect a broken expectation"; exit 1; \
+	else n=$$(grep -c 'expected=' $(TOP)/negative.log); [ "$$n" -ge 6 ] || { echo "ERROR: top negative control failed for the wrong reason ($$n expected= reports of 6); see $(TOP)/negative.log"; exit 1; }; \
+	  echo "top negative control OK (every perturbed expectation was rejected)"; fi
 
 # Host interface (rtl/host/): APB registers, FIFOs, interrupts, timestamps.
 HOST_BUILD := flow/build/host

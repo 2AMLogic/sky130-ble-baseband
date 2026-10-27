@@ -1,9 +1,9 @@
 # rtl
 
-Synthesizable RTL. `rtl/smoke/` holds a **placeholder** 8-bit LFSR
-(`lfsr8.v`) that exists only to exercise the verification, lint and synthesis
-flow; it is not part of the baseband and goes away once real RTL uses the same
-flow. See `verification/README.md` for the flow.
+Synthesizable RTL. `rtl/baseband.f` is the one file list of the integrated
+design (lint, synthesis and the integration bench read it); `rtl/top/` is the top
+level that ties the blocks below together, see [`rtl/top/README.md`](top/README.md).
+See `verification/README.md` for the flow.
 
 ## host
 

@@ -16,5 +16,5 @@ jobs:
         # runs with ALLOW_TOOL_DRIFT=1 (warnings, not failures).
         run: sudo apt-get update && sudo apt-get install -y iverilog verilator yosys
       - run: make venv
-      - run: make test test-negative test-le1m-rx test-le1m-rx-negative test-le1m-tx test-le1m-tx-negative test-oqpsk test-oqpsk-negative lint ALLOW_TOOL_DRIFT=1
+      - run: make test test-negative test-le1m-rx test-le1m-rx-negative test-le1m-tx test-le1m-tx-negative test-oqpsk test-oqpsk-negative test-top test-top-negative lint ALLOW_TOOL_DRIFT=1
       - run: make model-test

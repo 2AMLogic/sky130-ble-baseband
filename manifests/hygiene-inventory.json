@@ -15,7 +15,7 @@
   ],
   "checks": [
     {
-      "name": "lint smoke RTL (make lint)",
+      "name": "lint RTL (make lint)",
       "argv": [
         "make",
         "lint",
