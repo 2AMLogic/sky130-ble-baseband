@@ -14,7 +14,8 @@ make        # check-tools, test, test-negative, lint, synth; exit 0 = all pass
 ```
 
 Individual steps: `make test`, `make test-negative`, `make test-le1m-rx`,
-`make test-le1m-rx-negative`, `make lint`, `make synth`.
+`make test-le1m-rx-negative`, `make test-oqpsk`, `make test-oqpsk-negative`,
+`make lint`, `make synth`.
 
 - `test-le1m-rx` replays the shared RX stimulus of `verification/le1m_rx/cases.py`
   (CM-A noiseless and noisy, offset/drift/clock corners, bad CRC, missed detect,
@@ -25,6 +26,18 @@ Individual steps: `make test`, `make test-negative`, `make test-le1m-rx`,
   (stimulus echo) are not compared.
 - `test-le1m-rx-negative` flips one expected `bit` record and fails unless the
   replay rejects it with an `expected=` mismatch.
+
+- `test-oqpsk` replays `verification/oqpsk/cases.py` through `rtl/oqpsk`: TX payloads
+  of 0, 1, 3, 18 (golden), 60 and 125 octets (127-octet PSDU) against
+  `oqpsk_tx` words and `tx_active` edges, and RX loopback (PSDU 0..127, idle leads
+  including one shorter than the filter/CORDIC latency, bad FCS, SFD miss, noise,
+  silence, truncation, Gaussian noise, sample-clock drift with timing steps)
+  against `oqpsk_rx` trace taps, by sample index, exactly. The committed
+  `sim/model/golden/{tx_154_psdu20,rx_154_loopback_psdu20}.trace` are compared
+  directly. The RX half is also run with `rx_valid` on every clk. Vectors land in
+  `flow/build/oqpsk/sim/{tx,rx}/vectors/`; they are simulated stimulus, not measurements.
+- `test-oqpsk-negative` flips one expected record in each half and fails unless
+  each replay rejects it with a `first mismatch ... expected=` report.
 
 - `test-negative` runs the same test with one expected value deliberately
   wrong (`LFSR_NEGATIVE=1`) and fails if the test does *not* fail, so a broken
@@ -57,7 +70,7 @@ is absent rather than using any other. Fetch it with
 
 ## CI
 
-`.github/workflows/flow.yml` runs `make test test-negative test-le1m-rx test-le1m-rx-negative lint ALLOW_TOOL_DRIFT=1` (apt tool versions differ
+`.github/workflows/flow.yml` runs `make test test-negative test-le1m-rx test-le1m-rx-negative test-oqpsk test-oqpsk-negative lint ALLOW_TOOL_DRIFT=1` (apt tool versions differ
 from the pins, so mismatches are warnings there; local runs must match). Synthesis is
 not run in CI: it needs the full PDK fetch, which this workflow does not
 perform. Run `make synth` locally.
