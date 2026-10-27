@@ -5,6 +5,8 @@ triage role. Newest first.
 
 ### 2026-10-27
 
+- **PR #78**: refactor: share cocotb trace compare and RX load_case in traces.py
+- **Issue #71** (closed): Dedupe cocotb trace compare across replay testbenches
 - **PR #74**: feat(top): baseband_top integration, glue and top-level bench
 - **PR #68**: ci: run LE 1M TX replay and negative control in flow.yml
 - **Issue #67** (closed): ci: run test-le1m-tx and its negative control in flow.yml
