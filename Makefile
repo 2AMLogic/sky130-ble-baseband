@@ -1,5 +1,6 @@
 # Single entry point for the verification / lint / synthesis flow.
 #   make            -> all: check-tools, test, test-negative, lint, synth, model-test
+#                      (test/test-negative/lint include the rtl/mac/ lower-MAC benches)
 # Cold start: see verification/README.md. ALLOW_TOOL_DRIFT=1 downgrades tool
 # version mismatches to warnings (CI only; local runs must match the pins).
 
@@ -12,7 +13,7 @@ CIEL_HOME?= $(HOME)/.ciel
 PDK_ROOT ?= $(CIEL_HOME)/ciel/$(PDK_FAMILY)/versions/$(PDK_REV)
 LIB_FILE := $(PDK_ROOT)/$(PDK_VARIANT)/libs.ref/$(STD_CELL_LIB)/lib/$(STD_CELL_LIB)__$(LIB_CORNER).lib
 
-.PHONY: all venv check-tools check-pdk test test-negative lint synth clean model-test host-test host-test-negative host-lint
+.PHONY: all venv check-tools check-pdk test test-negative lint synth clean model-test host-test host-test-negative host-lint mac-test mac-test-negative mac-lint
 
 all: check-tools test test-negative lint synth model-test
 
@@ -43,6 +44,7 @@ check-pdk:
 
 test: check-tools host-test
 	$(PYTHON) verification/smoke/run_smoke.py $(CURDIR)/$(BUILD)/sim
+	$(MAKE) mac-test
 
 # The test must FAIL when an expectation is wrong; invert the exit status.
 test-negative: check-tools host-test-negative
@@ -51,9 +53,11 @@ test-negative: check-tools host-test-negative
 	  echo "ERROR: negative control passed; the test does not detect a broken expectation"; exit 1; \
 	else grep -q 'expected=' $(BUILD)/negative.log || { echo "ERROR: negative control failed for the wrong reason; see $(BUILD)/negative.log"; exit 1; }; \
 	  echo "negative control OK (broken expectation was rejected)"; fi
+	$(MAKE) mac-test-negative
 
 lint: check-tools host-lint
 	verilator --lint-only -Wall --top-module lfsr8 rtl/smoke/lfsr8.v
+	$(MAKE) mac-lint
 
 synth: check-tools check-pdk
 	mkdir -p $(BUILD)
@@ -102,3 +106,27 @@ sim-test:
 
 sim-quick:
 	$(PYTHON) sim/sweep/ber_sweep.py --quick --out $(CURDIR)/flow/build/sim/ber.json
+
+# rtl/mac/: lower-MAC timers, trigger, auto-ACK, address filters (issue #51).
+# Cycle-count benches at the 32 MHz target counts and the 16 MHz fallback counts.
+MAC_BUILD := flow/build/mac
+MAC_MODULES := mac_timer mac_trigger mac_ack_ctrl mac_ackwait mac_le_resp mac_addr_filter_154 mac_le_filter
+
+mac-test: check-tools
+	@mkdir -p $(MAC_BUILD)
+	@for mhz in 32 16; do \
+	  PYTHONPATH=verification/mac $(PYTHON) verification/mac/run_mac.py $(CURDIR)/$(MAC_BUILD)/sim $$mhz >$(MAC_BUILD)/mac$$mhz.log 2>&1 \
+	    || { grep -E 'FAIL|Error|failed' $(MAC_BUILD)/mac$$mhz.log | tail -20; echo "ERROR: mac benches failed at $$mhz MHz; see $(MAC_BUILD)/mac$$mhz.log"; exit 1; }; \
+	  grep -E '^(cocotb mac @|MEASURED)' $(MAC_BUILD)/mac$$mhz.log; \
+	done
+
+# Same benches with wrong cycle-budget expectations (MAC_NEGATIVE=1); must fail.
+mac-test-negative: check-tools
+	@mkdir -p $(MAC_BUILD)
+	@if MAC_NEGATIVE=1 PYTHONPATH=verification/mac $(PYTHON) verification/mac/run_mac.py $(CURDIR)/$(MAC_BUILD)/sim_neg 32 >$(MAC_BUILD)/negative.log 2>&1; then \
+	  echo "ERROR: mac negative control passed; the cycle-budget tests do not detect a wrong expectation"; exit 1; \
+	else grep -q 'expected=' $(MAC_BUILD)/negative.log || { echo "ERROR: mac negative control failed for the wrong reason; see $(MAC_BUILD)/negative.log"; exit 1; }; \
+	  echo "mac negative control OK (wrong cycle budgets were rejected)"; fi
+
+mac-lint: check-tools
+	@for m in $(MAC_MODULES); do verilator --lint-only -Wall --top-module $$m rtl/mac/*.v || exit 1; done; echo "mac lint OK"
