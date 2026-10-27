@@ -63,17 +63,6 @@ module oqpsk_tx (
         end
     endfunction
 
-    // reflected CRC-16, bits LSB first, polynomial 0x8408 (init 0)
-    function [15:0] crc_octet(input [15:0] c, input [7:0] b);
-        integer k;
-        reg [15:0] r;
-        begin
-            r = c ^ {8'h00, b};
-            for (k = 0; k < 8; k = k + 1) r = (r >> 1) ^ (r[0] ? 16'h8408 : 16'h0000);
-            crc_octet = r;
-        end
-    endfunction
-
     reg [1:0]  state;
     reg [6:0]  plen;        // payload octets
     reg [7:0]  oct_n;       // index of the octet being sent (0..6+plen+1)
@@ -86,6 +75,15 @@ module oqpsk_tx (
     reg        first;       // interval 0: no phase change
     reg        final_iv;    // interval after the last chip: no phase change
     reg [15:0] crc;
+
+    // reflected CRC-16, bits LSB first, polynomial 0x8408 (init 0): the CRC
+    // after folding in the payload octet on psdu_data
+    integer    k;
+    reg [15:0] crc_nx;
+    always @* begin
+        crc_nx = crc ^ {8'h00, psdu_data};
+        for (k = 0; k < 8; k = k + 1) crc_nx = (crc_nx >> 1) ^ (crc_nx[0] ? 16'h8408 : 16'h0000);
+    end
 
     wire [7:0] nx      = oct_n + 8'd1;                      // octet that follows
     wire [7:0] n_total = {1'b0, plen} + 8'd8;               // 4 + SFD + PHR + payload + 2 FCS
@@ -170,7 +168,7 @@ module oqpsk_tx (
                                         oct_n <= nx;
                                         oct_hi <= next_oct[7:4];
                                         sym   <= next_oct[3:0];
-                                        if (nx_pay) crc <= crc_octet(crc, psdu_data);
+                                        if (nx_pay) crc <= crc_nx;
                                         if (nx == n_total) final_iv <= 1'b1;
                                     end
                                 end
