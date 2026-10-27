@@ -5,6 +5,12 @@ triage role. Newest first.
 
 ### 2026-10-27
 
+- **PR #68**: ci: run LE 1M TX replay and negative control in flow.yml
+- **Issue #67** (closed): ci: run test-le1m-tx and its negative control in flow.yml
+- **PR #66**: feat: 802.15.4 O-QPSK TX and RX RTL with bit-exact trace replay
+- **Issue #54** (closed): T1 item 1c: 802.15.4 O-QPSK TX/RX RTL (spread, shape, despread, SFD, FCS) bit-exact with the model
+- **PR #63**: feat(rtl): add APB host interface with FIFOs, interrupts and timestamps
+- **Issue #50** (closed): T1 item 1d: host interface RTL (APB4 register map, TX/RX FIFOs, descriptor FIFO, interrupts, timestamp)
 - **PR #64**: feat(rtl): bit-exact LE 1M TX path with cocotb trace replay
 - **Issue #48** (closed): T1 item 1a: LE 1M TX RTL (whitening, CRC-24, framing, Gaussian shaping to tx_dev) bit-exact with le1m_tx.py
 - **PR #62**: docs: refresh README status, add reproduce section, attest repo hygiene
