@@ -19,7 +19,6 @@ _None._
 
 `loom:important`; taken before unlabelled work.
 
-- **#48**: T1 item 1a: LE 1M TX RTL (whitening, CRC-24, framing, Gaussian shaping to tx_dev) bit-exact with le1m_tx.py
 - **#50**: T1 item 1d: host interface RTL (APB4 register map, TX/RX FIFOs, descriptor FIFO, interrupts, timestamp)
 
 ## Ready
@@ -32,14 +31,16 @@ _None._
 
 Issues currently being built (`loom:building`).
 
-- **#48**: T1 item 1a: LE 1M TX RTL (whitening, CRC-24, framing, Gaussian shaping to tx_dev) bit-exact with le1m_tx.py
 - **#50**: T1 item 1d: host interface RTL (APB4 register map, TX/RX FIFOs, descriptor FIFO, interrupts, timestamp)
+- **#54**: T1 item 1c: 802.15.4 O-QPSK TX/RX RTL (spread, shape, despread, SFD, FCS) bit-exact with the model
+- **#67**: ci: run test-le1m-tx and its negative control in flow.yml
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-_None._
+- **#63**: feat(rtl): add APB host interface with FIFOs, interrupts and timestamps
+- **#68**: ci: run test-le1m-tx and its negative control in flow.yml
 
 ## Approved (Awaiting Merge)
 
@@ -52,9 +53,11 @@ _None._
 Issues carrying `loom:curated`.
 
 - **#5**: Track the gap to T1 (klayout-tools design-evidence-tiers.md) *(curated)*
-- **#48**: T1 item 1a: LE 1M TX RTL (whitening, CRC-24, framing, Gaussian shaping to tx_dev) bit-exact with le1m_tx.py *(curated)*
 - **#50**: T1 item 1d: host interface RTL (APB4 register map, TX/RX FIFOs, descriptor FIFO, interrupts, timestamp) *(curated)*
+- **#54**: T1 item 1c: 802.15.4 O-QPSK TX/RX RTL (spread, shape, despread, SFD, FCS) bit-exact with the model *(curated)*
 - **#55**: T1 item 6a: committed full LE 1M BER sweeps (all rows, CM-A) with negative control *(curated)*
+- **#56**: T1 item 6b: 802.15.4 CM-A source and seeded PER sweep with negative control *(curated)*
+- **#67**: ci: run test-le1m-tx and its negative control in flow.yml *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -70,12 +73,12 @@ _None._
 |------|-------|
 | Operator merge-risk holds | 0 |
 | Very important | 0 |
-| Important | 2 |
+| Important | 1 |
 | Ready (`loom:issue`) | 0 |
-| In Progress (`loom:building`) | 2 |
-| PRs awaiting review | 0 |
+| In Progress (`loom:building`) | 3 |
+| PRs awaiting review | 2 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 4 |
+| Curated | 6 |
 | Architect / Hermit proposals | 0 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->

@@ -5,6 +5,8 @@ triage role. Newest first.
 
 ### 2026-10-27
 
+- **PR #64**: feat(rtl): bit-exact LE 1M TX path with cocotb trace replay
+- **Issue #48** (closed): T1 item 1a: LE 1M TX RTL (whitening, CRC-24, framing, Gaussian shaping to tx_dev) bit-exact with le1m_tx.py
 - **PR #62**: docs: refresh README status, add reproduce section, attest repo hygiene
 - **Issue #46** (closed): T1 item 10 (repo hygiene): README status, reproduction steps for every result, hygiene inventory attested with klt signoff --attest 10
 - **PR #61**: feat(rtl): LE 1M RX path bit-exact with the integer reference receiver
