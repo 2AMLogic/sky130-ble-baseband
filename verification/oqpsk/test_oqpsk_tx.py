@@ -113,29 +113,7 @@ class Bench:
 
 
 def compare(name, rtl_records, model_records, negative):
-    """Exact comparison by (sample index, field)."""
-    want = list(model_records)
-    if negative and want:
-        k = next((i for i, r in enumerate(want) if r[1] == "txdev"), 0)
-        idx, field, val = want[k]
-        want[k] = (idx, field, val ^ 0x40)
-
-    def group(records):
-        g = {}
-        for idx, field, val in records:
-            g.setdefault((idx, field), []).append(val)
-        return g
-
-    gr, gw = group(rtl_records), group(want)
-    keys = sorted(set(gr) | set(gw))
-    for n, key in enumerate(keys):
-        if gr.get(key) != gw.get(key):
-            raise AssertionError(
-                f"{name}: first mismatch at record group {n} (sample {key[0]}, field {key[1]}): "
-                f"rtl={[f'{v:x}' for v in gr.get(key, [])]} "
-                f"expected={[f'{v:x}' for v in gw.get(key, [])]} "
-                f"(rtl {len(rtl_records)} records, model {len(want)})")
-    assert len(rtl_records) == len(want), f"{name}: record count rtl={len(rtl_records)} expected={len(want)}"
+    traces.compare_by_index(name, rtl_records, model_records, flip=('txdev', 0x40) if negative else None)
 
 
 def rtl_records(b, nwords):

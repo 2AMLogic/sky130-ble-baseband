@@ -77,3 +77,45 @@ def to_signed(value, bits):
     if not 0 <= value < (1 << bits):
         raise ValueError(f"{value} does not fit in {bits} bits")
     return value - (1 << bits) if value >> (bits - 1) else value
+
+
+def compare_by_index(name, rtl_records, model_records, *, ignore=(), flip=None):
+    """Exact comparison by (sample index, field); order within a pair is kept.
+
+    ``ignore`` names fields dropped from the model side. ``flip=(field, mask)``
+    is the negative control: the first model record of that field (else the
+    first record) has its value XORed with ``mask``, so the compare must fail.
+    """
+    want = [r for r in model_records if r[1] not in ignore]
+    if flip is not None and want:
+        field_, mask = flip
+        k = next((i for i, r in enumerate(want) if r[1] == field_), 0)
+        idx, field, val = want[k]
+        want[k] = (idx, field, val ^ mask)
+
+    def group(records):
+        g = {}
+        for idx, field, val in records:
+            g.setdefault((idx, field), []).append(val)
+        return g
+
+    gr, gw = group(rtl_records), group(want)
+    keys = sorted(set(gr) | set(gw))
+    for n, key in enumerate(keys):
+        if gr.get(key) != gw.get(key):
+            raise AssertionError(
+                f"{name}: first mismatch at record group {n} (sample {key[0]}, field {key[1]}): "
+                f"rtl={[f'{v:x}' for v in gr.get(key, [])]} "
+                f"expected={[f'{v:x}' for v in gw.get(key, [])]} "
+                f"(rtl {len(rtl_records)} records, model {len(want)})")
+    assert len(rtl_records) == len(want), f"{name}: record count rtl={len(rtl_records)} expected={len(want)}"
+
+
+def load_rx_case(vec, name):
+    """(iq, flags, model trace) of an RX case; needs sim/channel on sys.path."""
+    from pathlib import Path
+
+    import cm_a
+
+    iq, flags, _gain = cm_a.unpack_rx_records((Path(vec) / f"{name}.rx.bin").read_bytes())
+    return iq, flags, read_trace(Path(vec) / f"{name}.model.trace")
