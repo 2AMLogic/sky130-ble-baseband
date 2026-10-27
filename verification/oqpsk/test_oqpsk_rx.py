@@ -24,7 +24,6 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path[:0] = [str(ROOT / "sim" / "model"), str(ROOT / "sim" / "channel"), str(HERE)]
 import cases  # noqa: E402
-import cm_a  # noqa: E402
 import traces  # noqa: E402
 
 KIND = {2: "sync", 3: "tbound", 5: "crc", 6: "rssi", 7: "octet"}
@@ -100,35 +99,10 @@ class Harness:
 
 
 def compare(name, rtl_records, model_records, negative):
-    """Exact comparison by (sample index, field); order within a pair is kept."""
-    want = [r for r in model_records if r[1] not in NOT_COMPARED]
-    if negative and want:
-        k = next((i for i, r in enumerate(want) if r[1] == "octet"), 0)
-        idx, field, val = want[k]
-        want[k] = (idx, field, val ^ 1)
-
-    def group(records):
-        g = {}
-        for idx, field, val in records:
-            g.setdefault((idx, field), []).append(val)
-        return g
-
-    gr, gw = group(rtl_records), group(want)
-    keys = sorted(set(gr) | set(gw))
-    for n, key in enumerate(keys):
-        if gr.get(key) != gw.get(key):
-            raise AssertionError(
-                f"{name}: first mismatch at record group {n} (sample {key[0]}, field {key[1]}): "
-                f"rtl={[f'{v:x}' for v in gr.get(key, [])]} "
-                f"expected={[f'{v:x}' for v in gw.get(key, [])]} "
-                f"(rtl {len(rtl_records)} records, model {len(want)})")
-    assert len(rtl_records) == len(want), f"{name}: record count rtl={len(rtl_records)} expected={len(want)}"
+    traces.compare_by_index(name, rtl_records, model_records, ignore=NOT_COMPARED, flip=('octet', 1) if negative else None)
 
 
-def load_case(vec, name):
-    iq, flags, _gain = cm_a.unpack_rx_records((Path(vec) / f"{name}.rx.bin").read_bytes())
-    model = traces.read_trace(Path(vec) / f"{name}.model.trace")
-    return iq, flags, model
+load_case = traces.load_rx_case
 
 
 async def run_case(dut, vec, name, jitter_seed, gap=GAP):
