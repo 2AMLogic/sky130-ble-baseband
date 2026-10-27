@@ -17,7 +17,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-from cocotb_tools.runner import get_results, get_runner
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from cocotb_run import run_cocotb, verdict  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 MODEL = ROOT / "sim" / "model" / "le1m_tx.py"
@@ -66,23 +67,9 @@ def main(build_dir: str) -> int:
     os.environ["LE1M_TX_CASES"] = str(cases_json)
     os.environ["LE1M_TX_OUT"] = str(build / "rtl_traces")
 
-    runner = get_runner("icarus")
-    runner.build(
-        sources=SOURCES,
-        hdl_toplevel="le1m_tx",
-        build_dir=build / "sim_build",
-        always=True,
-        timescale=("1ns", "1ps"),
-    )
-    results = runner.test(
-        hdl_toplevel="le1m_tx",
-        test_module="test_le1m_tx",
-        test_dir=Path(__file__).resolve().parent,
-        build_dir=build / "sim_build",
-    )
-    total, failed = get_results(results)
-    print(f"cocotb le1m_tx: {total} tests, {failed} failed")
-    return 1 if failed or total == 0 else 0
+    total, failed = run_cocotb("le1m_tx", "test_le1m_tx", Path(__file__).resolve().parent,
+                               build / "sim_build", SOURCES)
+    return verdict(total, failed)
 
 
 if __name__ == "__main__":

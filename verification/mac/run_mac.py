@@ -10,7 +10,8 @@ Exits non-zero if any cocotb test fails.
 import sys
 from pathlib import Path
 
-from cocotb_tools.runner import get_results, get_runner
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from cocotb_run import run_cocotb, verdict  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
@@ -44,17 +45,13 @@ def main(build_dir: str, mhz: int) -> int:
     total_all = failed_all = 0
     for top, module, params in benches(mhz):
         bdir = Path(build_dir) / f"{top}_{mhz}mhz"
-        runner = get_runner("icarus")
-        runner.build(sources=sources, hdl_toplevel=top, build_dir=bdir, always=True,
-                     timescale=("1ns", "1ps"), parameters=params)
-        results = runner.test(hdl_toplevel=top, test_module=module, test_dir=HERE,
-                              build_dir=bdir, extra_env={"MAC_CLK_MHZ": str(mhz)})
-        total, failed = get_results(results)
-        print(f"cocotb mac {top} @ {mhz} MHz: {total} tests, {failed} failed")
+        total, failed = run_cocotb(top, module, HERE, bdir, sources,
+                                   label=f"mac {top} @ {mhz} MHz", parameters=params,
+                                   extra_env={"MAC_CLK_MHZ": str(mhz)})
         total_all += total
         failed_all += failed
     print(f"cocotb mac @ {mhz} MHz: {total_all} tests, {failed_all} failed")
-    return 1 if failed_all or total_all == 0 else 0
+    return verdict(total_all, failed_all)
 
 
 if __name__ == "__main__":

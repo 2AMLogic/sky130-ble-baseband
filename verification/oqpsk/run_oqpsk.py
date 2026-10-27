@@ -17,12 +17,13 @@ import os
 import sys
 from pathlib import Path
 
-from cocotb_tools.runner import get_results, get_runner
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(HERE.parent))
 import cases  # noqa: E402
+from cocotb_run import run_cocotb, verdict  # noqa: E402
 
 TOPS = {
     "tx": ("oqpsk_tx", "test_oqpsk_tx", [ROOT / "rtl/oqpsk/oqpsk_tx.v"]),
@@ -41,13 +42,7 @@ def run_one(kind, build_dir, names) -> int:
     manifest = cases.write_vectors(vec, kind, names or None)
     os.environ["OQPSK_VECTORS"] = str(vec)
     os.environ["OQPSK_CASES"] = ",".join(manifest)
-    runner = get_runner("icarus")
-    runner.build(sources=sources, hdl_toplevel=top, build_dir=build, always=True,
-                 timescale=("1ns", "1ps"))
-    results = runner.test(hdl_toplevel=top, test_module=module, test_dir=HERE, build_dir=build)
-    total, failed = get_results(results)
-    print(f"cocotb {top}: {total} tests, {failed} failed")
-    return 1 if failed or total == 0 else 0
+    return verdict(*run_cocotb(top, module, HERE, build, sources))
 
 
 def main(build_dir: str, args) -> int:

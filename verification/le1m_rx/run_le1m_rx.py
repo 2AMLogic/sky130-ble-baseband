@@ -13,12 +13,13 @@ import os
 import sys
 from pathlib import Path
 
-from cocotb_tools.runner import get_results, get_runner
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(HERE.parent))
 import cases  # noqa: E402
+from cocotb_run import run_cocotb, verdict  # noqa: E402
 
 SOURCES = [ROOT / "rtl/le1m_rx" / f for f in (
     "le1m_rx_fir.v", "le1m_rx_disc.v", "le1m_rx_cordic.v", "le1m_rx_integ.v",
@@ -31,23 +32,8 @@ def main(build_dir: str, names) -> int:
     manifest = cases.write_vectors(vec, names or None)
     os.environ["LE1M_RX_VECTORS"] = str(vec)
     os.environ["LE1M_RX_CASES"] = ",".join(manifest)
-    runner = get_runner("icarus")
-    runner.build(
-        sources=SOURCES,
-        hdl_toplevel="le1m_rx",
-        build_dir=build,
-        always=True,
-        timescale=("1ns", "1ps"),
-    )
-    results = runner.test(
-        hdl_toplevel="le1m_rx",
-        test_module="test_le1m_rx",
-        test_dir=HERE,
-        build_dir=build,
-    )
-    total, failed = get_results(results)
-    print(f"cocotb le1m_rx: {total} tests, {failed} failed")
-    return 1 if failed or total == 0 else 0
+    total, failed = run_cocotb("le1m_rx", "test_le1m_rx", HERE, build, SOURCES)
+    return verdict(total, failed)
 
 
 if __name__ == "__main__":
