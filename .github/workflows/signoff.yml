@@ -27,7 +27,14 @@ jobs:
           python-version: "3.10"
 
       - name: Install pinned klt
-        run: pip install klayout-tools==0.7.0
+        run: pip install klayout-tools==0.8.0
+
+      - name: Re-check the item-10 hygiene attestation
+        # Hygiene artifacts must exist; checks marked local_only in the
+        # inventory need the full toolchain and are carried, not re-run, here.
+        run: |
+          klt signoff --attest 10 --inventory manifests/hygiene-inventory.json \
+              --check manifests/item10-attestation.json
 
       - name: Re-run klt signoff and compare against the committed record
         run: |
