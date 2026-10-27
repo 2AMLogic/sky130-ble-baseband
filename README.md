@@ -9,7 +9,7 @@ designed by AI agents driving
 open-source digital flow: cocotb + Icarus for verification, Yosys for
 synthesis, OpenROAD for place-and-route.
 
-**Status: specification ratified (revision 1); nothing is designed yet.**
+**Status: specification ratified (revision 1); LE 1M reference models (receiver, transmitter) and a seeded BER sweep harness exist in `sim/`; no RTL beyond a smoke block yet.**
 
 **Built agent-native.** Every specification, decision record, testbench, and
 line of documentation here is produced by AI agents working from a ratified
@@ -68,7 +68,7 @@ simulated.
 Maturity ladder: spec ratified → reference receiver meets error-rate targets
 in link-level simulation → RTL bit-exact against the reference → turnaround
 timing verified → layout DRC/LVS-clean → timing closed across corners →
-shuttle seat → measured silicon. **Current position: spec ratified (revision 1); no reference receiver or RTL yet.**
+shuttle seat → measured silicon. **Current position: spec ratified (revision 1); reference receiver and transmitter models and the sweep harness have landed, and the full error-rate sweep has not been run, so the receiver is not yet shown to meet the error-rate targets. No block RTL yet.**
 
 ## Repo layout
 
@@ -79,7 +79,27 @@ verification/  cocotb testbenches; RTL vs. reference bit-exactness
 sim/           link-level reference model, channel model, BER/PER sweeps
 layout/        GDS + DRC/LVS reports (klayout-tools driven)
 measurements/  silicon characterization (empty until tape-out)
+flow/          synthesis scripts and tool/PDK version pins
+manifests/     block manifest, tier-verdict record, hygiene attestation
 ```
+
+## Reproduce every result
+
+Cold start: `make venv` (Python dependencies), plus Icarus, Verilator and
+Yosys on `PATH`; details and pinned versions in
+[verification/README.md](verification/README.md).
+
+| Result | Command | Detail |
+|---|---|---|
+| Whole flow (smoke testbench, negative control, lint, synthesis, model tests) | `make` | [verification/README.md](verification/README.md) |
+| Smoke testbench and its negative control | `make test test-negative` | [verification/README.md](verification/README.md) |
+| Reference-model tests (channel, LE 1M RX, LE 1M TX) | `make sim-test` | [sim/README.md](sim/README.md) |
+| TX model tests with CRC negative control | `make model-test` | [sim/README.md](sim/README.md) |
+| BER sweep harness, quick mode (simulated; proves the harness, not the spec row) | `make sim-quick` | [sim/README.md](sim/README.md) |
+| Tier verdict and hygiene attestation | see [manifests/README.md](manifests/README.md) | [manifests/README.md](manifests/README.md) |
+
+No full error-rate sweep result is recorded yet; there is nothing further
+to reproduce until one lands.
 
 ## License
 

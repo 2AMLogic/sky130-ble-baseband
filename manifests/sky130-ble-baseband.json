@@ -1,5 +1,7 @@
 {
   "block": "sky130-ble-baseband",
   "kind": "digital",
-  "evidence": {}
+  "evidence": {
+    "10": "manifests/item10-attestation.json"
+  }
 }

@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "kind": "generic",
+  "status": "pass",
+  "t1_item": 10,
+  "summary": "T1 item 10 (Repo hygiene): 10/10 attestation checks passed (klt signoff --attest)",
+  "source": "manifests/hygiene-inventory.json",
+  "attestation": {
+    "producer": "klt signoff --attest",
+    "inventory_schema_version": 1,
+    "hash_algorithm": "sha256-raw-bytes",
+    "check_count": 10,
+    "passed_count": 10,
+    "checks": [
+      {
+        "check": "present",
+        "role": "hygiene",
+        "path": ".github/workflows/flow.yml",
+        "passed": true,
+        "content_hash": "sha256:a696eefd4acf9f786b81d1e7b4df8c439a9f0f2788af813b9ebe68e604c81277"
+      },
+      {
+        "check": "present",
+        "role": "hygiene",
+        "path": ".github/workflows/signoff.yml",
+        "passed": true,
+        "content_hash": "sha256:11814c55d7164a75392e0adc7d0230f40900cbfcf67fcc28a2a6ca40b81e4049"
+      },
+      {
+        "check": "present",
+        "role": "hygiene",
+        "path": ".github/workflows/sim.yml",
+        "passed": true,
+        "content_hash": "sha256:36f6151a0adc8ee1fc962faa187d698534a22926831644c9975ac047c203edf4"
+      },
+      {
+        "check": "present",
+        "role": "hygiene",
+        "path": "LICENSE",
+        "passed": true,
+        "content_hash": "sha256:cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      },
+      {
+        "check": "present",
+        "role": "hygiene",
+        "path": "README.md",
+        "passed": true,
+        "content_hash": "sha256:006de25878da6e8a496cae691806c3d465bb9e421c1684f5ebe4412f61943037"
+      },
+      {
+        "check": "present",
+        "role": "hygiene",
+        "path": "manifests/README.md",
+        "passed": true,
+        "content_hash": "sha256:78ecde003d71e97abe5a0307b8c1ff3b5b41dbb79f221041c62c2d10b83a3ef1"
+      },
+      {
+        "check": "present",
+        "role": "hygiene",
+        "path": "sim/README.md",
+        "passed": true,
+        "content_hash": "sha256:8c427fad177822b17866151473d9a092844fd41dcd44558ba792bf229acb5d27"
+      },
+      {
+        "check": "present",
+        "role": "hygiene",
+        "path": "verification/README.md",
+        "passed": true,
+        "content_hash": "sha256:e4cc4e7ec7fadadb13ff82245a4a1e986d008ad417d5bb3f81d170dc2ad3b389"
+      },
+      {
+        "check": "command",
+        "role": "audit",
+        "name": "lint smoke RTL (make lint)",
+        "argv": [
+          "make",
+          "lint",
+          "ALLOW_TOOL_DRIFT=1"
+        ],
+        "cwd": ".",
+        "exit_status": 0,
+        "passed": true,
+        "local_only": true
+      },
+      {
+        "check": "command",
+        "role": "audit",
+        "name": "reference-model tests (make sim-test)",
+        "argv": [
+          "make",
+          "sim-test"
+        ],
+        "cwd": ".",
+        "exit_status": 0,
+        "passed": true,
+        "local_only": true
+      }
+    ]
+  },
+  "provenance": {
+    "klt_version": "0.8.0",
+    "klayout_version": null,
+    "pdk": null,
+    "deck": null,
+    "input": {
+      "path": {
+        "path": "manifests/hygiene-inventory.json",
+        "scope": "repo"
+      },
+      "content_hash": "sha256:651e34557f25a0dea41a782d29827a068d60119709cd65377b9d0c5184624d1d"
+    }
+  }
+}
