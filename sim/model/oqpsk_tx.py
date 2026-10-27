@@ -15,6 +15,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import traces  # noqa: E402
 
+AMPLITUDE = 100               # int8 I/Q amplitude of the ideal-modulator stimulus
 SPS_CHIP = 4                  # samples per chip: 8 Msps / 2 Mchip/s
 CHIPS_PER_SYMBOL = 32
 DEV_PEAK = 64                 # +/-64 LSB = +/-500 kHz at 7.8125 kHz/LSB (decision 0005)
@@ -96,6 +97,23 @@ def tx_dev_words(psdu, sfd=DEFAULT_SFD):
     """tx_dev words (signed int8 range) for one PPDU."""
     signs = chip_dev_signs(spread(symbols_of(ppdu_octets(psdu, sfd))))
     return [DEV_PEAK * s for s in signs for _ in range(SPS_CHIP)]
+
+
+def modulate(words, lead=37, tail=300, amplitude=AMPLITUDE):
+    """Ideal frequency modulator standing in for the front end: phase += 64 *
+    tx_dev per sample, turns/2**16; int8 I/Q at 8 Msps with a quiet lead-in and
+    tail. The one stimulus definition shared by the model tests and the RTL
+    replay (decision 0007)."""
+    import numpy as np  # local: the rest of this model is integer-only, numpy-free
+
+    dev = np.concatenate([np.zeros(lead, dtype=np.int64), np.array(words, dtype=np.int64),
+                          np.zeros(tail, dtype=np.int64)])
+    phase = np.cumsum(64 * dev)
+    ang = 2.0 * np.pi * (phase % (1 << 16)) / (1 << 16)
+    iq = np.stack([np.rint(amplitude * np.cos(ang)), np.rint(amplitude * np.sin(ang))], axis=1)
+    iq = iq.astype(np.int8)
+    iq[:lead] = 0
+    return iq
 
 
 def trace_records(words):
