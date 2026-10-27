@@ -70,9 +70,9 @@ module host_regs (
     output wire        desc_pop,
 
     // 0x140 timestamp
-    input  wire [31:0] ts_tick,
-    input  wire [4:0]  ts_sub_latched,
-    output wire        ts_rd_tick,
+    input  wire [4:0]  ts_sub,
+    input  wire [31:0] ts_tick_latched,
+    output wire        ts_rd_sub,
     input  wire [36:0] cap_tx_start,
     input  wire [36:0] cap_tx_end,
     input  wire [36:0] cap_trigger,
@@ -137,8 +137,8 @@ module host_regs (
                     rdata = {19'd0, desc_ts_end[4:0], 3'd0, desc_ts_start[4:0]}; end
                 12'h12C: begin mapped = 1'b1; writable = 1'b1; end
 
-                12'h140: begin mapped = 1'b1; rdata = ts_tick; end
-                12'h144: begin mapped = 1'b1; rdata = {27'd0, ts_sub_latched}; end
+                12'h140: begin mapped = 1'b1; rdata = ts_tick_latched; end
+                12'h144: begin mapped = 1'b1; rdata = {27'd0, ts_sub}; end
                 12'h148: begin mapped = 1'b1; rdata = cap_tx_start[36:5]; end
                 12'h14C: begin mapped = 1'b1; rdata = {27'd0, cap_tx_start[4:0]}; end
                 12'h150: begin mapped = 1'b1; rdata = cap_tx_end[36:5]; end
@@ -176,7 +176,7 @@ module host_regs (
     assign tx_wdata   = pwdata[7:0];
     assign rx_pop     = rok && (paddr == 12'h10C);
     assign desc_pop   = wok && (paddr == 12'h12C) && pstrb[0];
-    assign ts_rd_tick = rok && (paddr == 12'h140);
+    assign ts_rd_sub  = rok && (paddr == 12'h144);
 
     // ---- configuration registers --------------------------------------------------------
     always @(posedge clk or negedge rst_n) begin

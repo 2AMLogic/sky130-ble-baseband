@@ -100,13 +100,13 @@ module host_top #(
     wire [1:0]  irq_err_clr;
     wire        irq_en_we;
     wire [31:0] wd, wmask;
-    wire        tx_push, rx_pop, desc_pop, ts_rd_tick;
+    wire        tx_push, rx_pop, desc_pop, ts_rd_sub;
     wire [7:0]  tx_wdata, rx_rdata;
     wire [8:0]  rx_level;
     wire [2:0]  desc_count;
     wire [95:0] desc_head;
-    wire [31:0] ts_tick;
-    wire [4:0]  ts_sub, ts_sub_latched;
+    wire [31:0] ts_tick, ts_tick_latched;
+    wire [4:0]  ts_sub;
     wire [36:0] cap_rx_start, cap_rx_end, cap_tx_start, cap_tx_end, cap_trigger;
 
     host_regs u_regs (
@@ -130,7 +130,7 @@ module host_top #(
         .desc_count(desc_count), .desc_len(desc_head[8:0]), .desc_flags(desc_head[13:9]),
         .desc_rssi(desc_head[21:14]), .desc_ts_start(desc_head[58:22]),
         .desc_ts_end(desc_head[95:59]), .desc_pop(desc_pop),
-        .ts_tick(ts_tick), .ts_sub_latched(ts_sub_latched), .ts_rd_tick(ts_rd_tick),
+        .ts_sub(ts_sub), .ts_tick_latched(ts_tick_latched), .ts_rd_sub(ts_rd_sub),
         .cap_tx_start(cap_tx_start), .cap_tx_end(cap_tx_end), .cap_trigger(cap_trigger),
         .fe_rssi(fe_rssi), .fe_agc_settled(fe_agc_settled)
     );
@@ -181,14 +181,14 @@ module host_top #(
 
     // ---- timestamps ----------------------------------------------------------------------
     host_timestamp #(.CLK_PER_US(CLK_PER_US)) u_ts (
-        .clk(clk), .rst_n(rst_n), .rd_tick(ts_rd_tick),
-        .tick(ts_tick), .sub(ts_sub), .sub_latched(ts_sub_latched),
+        .clk(clk), .rst_n(rst_n), .rd_sub(ts_rd_sub),
+        .tick(ts_tick), .sub(ts_sub), .tick_latched(ts_tick_latched),
         .ev_rx_sync(rx_sync), .ev_rx_end(rx_end), .ev_tx_start(tx_start),
         .ev_tx_end(tx_done), .ev_trigger(trigger),
         .cap_rx_start(cap_rx_start), .cap_rx_end(cap_rx_end),
         .cap_tx_start(cap_tx_start), .cap_tx_end(cap_tx_end), .cap_trigger(cap_trigger)
     );
 
-    wire _unused = &{1'b0, ts_sub, tx_underflow_unused, tx_full_unused, rx_full_unused_empty,
+    wire _unused = &{1'b0, ts_tick, tx_underflow_unused, tx_full_unused, rx_full_unused_empty,
                      desc_empty_unused};
 endmodule

@@ -90,8 +90,8 @@ parameter (default 288, at most 511); the descriptor FIFO is 4 deep.
 
 | Offset | Name | Type | Notes |
 |---|---|---|---|
-| 0x140 | `TS_TICK` | RO | free-running 1 us tick; the read latches the sub-tick |
-| 0x144 | `TS_SUB` | RO [4:0] | sub-tick as latched by the last `TS_TICK` read |
+| 0x140 | `TS_TICK` | RO | 1 us tick as latched by the last `TS_SUB` read (0 before the first) |
+| 0x144 | `TS_SUB` | RO [4:0] | live sub-tick; the read latches the 32-bit tick into `TS_TICK` |
 | 0x148 / 0x14C | `TX_START_TICK` / `_SUB` | RO | last `tx_start` |
 | 0x150 / 0x154 | `TX_END_TICK` / `_SUB` | RO | last `tx_done` |
 | 0x158 / 0x15C | `TRIG_TICK` / `_SUB` | RO | last `trigger` |
@@ -128,8 +128,10 @@ fix. None changes a ratified value or meaning, so none is an amendment.
 4. Descriptor RSSI and timestamps are taken inside the block (`fe_rssi` at push,
    timestamp captures of `rx_sync` and `rx_end`), not supplied by the MAC. The MAC
    must push a descriptor at least one cycle after `rx_end`.
-5. Timestamp pair coherence (§4 "reading the low word latches the high field"):
-   the 32-bit tick is the word read first, and it latches the 5-bit sub-tick.
+5. Timestamp pair coherence follows §4 ("reading the low word latches the high
+   field"): the low word is `TS_SUB`; reading it returns the live sub-tick and
+   latches the 32-bit tick into a shadow register that `TS_TICK` returns. The
+   shadow costs 32 flops.
 6. A read of a write-only register returns 0 without `PSLVERR`; a misaligned
    address is treated as unmapped.
 7. The 0x080 Timing block is a reserved, ignored window (see above), because its

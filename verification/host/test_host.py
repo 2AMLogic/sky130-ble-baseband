@@ -390,23 +390,23 @@ async def timestamps(dut):
                 check("tick hold", cur[0], prev[0])
         prev = cur
     assert wraps >= 3
-    # coherent read: TS_SUB returns the sub-tick of the cycle in which TS_TICK was read
+    # coherent read: reading TS_SUB (low word) latches the tick of that same cycle for TS_TICK
     for gap in (0, 1, 3, 7):
         await ClockCycles(dut.clk, gap)
-        dut.paddr.value = TS_TICK
+        dut.paddr.value = TS_SUB
         dut.pwrite.value = 0
         dut.psel.value = 1
         dut.penable.value = 0
         await RisingEdge(dut.clk)
         dut.penable.value = 1
         await FallingEdge(dut.clk)
-        t, s = int(dut.prdata.value), int(dut.u_ts.sub.value)
-        check("tick read matches counter", t, int(dut.u_ts.tick.value))
+        s, t = int(dut.prdata.value), int(dut.u_ts.tick.value)
+        check("sub read matches counter", s, int(dut.u_ts.sub.value))
         await RisingEdge(dut.clk)
         dut.psel.value = 0
         dut.penable.value = 0
         await ClockCycles(dut.clk, 5)                      # counter has moved on
-        check("sub latched", await rd(dut, TS_SUB), s)
+        check("tick latched", await rd(dut, TS_TICK), t)
     # event capture registers
     for name, rt, rs in (("tx_start", TX_START_T, TX_START_S), ("tx_done", TX_END_T, TX_END_S),
                          ("trigger", TRIG_T, TRIG_S)):

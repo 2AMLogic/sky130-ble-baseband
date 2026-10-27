@@ -1,16 +1,17 @@
 // Timestamp counter and event capture (spec/host-interface.md sec. 4).
 // 32-bit tick (1 us) plus 5-bit sub-tick counting core cycles inside the tick.
 // CLK_PER_US is 32 at 32 MHz, 16 at the 16 MHz fallback (1..32).
+// Reading TS_SUB (the low word) latches the tick into tick_latched for TS_TICK.
 // Captures hold {tick, sub} as of the cycle in which the event strobe is high.
 module host_timestamp #(
     parameter CLK_PER_US = 32
 ) (
     input  wire        clk,
     input  wire        rst_n,
-    input  wire        rd_tick,        // TS_TICK is being read: latch sub-tick
+    input  wire        rd_sub,         // TS_SUB (low word) is being read: latch tick
     output reg  [31:0] tick,
     output reg  [4:0]  sub,
-    output reg  [4:0]  sub_latched,
+    output reg  [31:0] tick_latched,
     input  wire        ev_rx_sync,
     input  wire        ev_rx_end,
     input  wire        ev_tx_start,
@@ -31,7 +32,7 @@ module host_timestamp #(
         if (!rst_n) begin
             tick         <= 32'd0;
             sub          <= 5'd0;
-            sub_latched  <= 5'd0;
+            tick_latched <= 32'd0;
             cap_rx_start <= 37'd0;
             cap_rx_end   <= 37'd0;
             cap_tx_start <= 37'd0;
@@ -44,7 +45,7 @@ module host_timestamp #(
             end else begin
                 sub <= sub + 5'd1;
             end
-            if (rd_tick)     sub_latched  <= sub;
+            if (rd_sub)      tick_latched <= tick;
             if (ev_rx_sync)  cap_rx_start <= now;
             if (ev_rx_end)   cap_rx_end   <= now;
             if (ev_tx_start) cap_tx_start <= now;
