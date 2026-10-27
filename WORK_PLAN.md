@@ -19,7 +19,9 @@ _None._
 
 `loom:important`; taken before unlabelled work.
 
-- **#50**: T1 item 1d: host interface RTL (APB4 register map, TX/RX FIFOs, descriptor FIFO, interrupts, timestamp)
+- **#52**: T1 item 1f: baseband top, real synthesis script, committed sky130_fd_sc_hd netlist, item-1 attestation
+- **#55**: T1 item 6a: committed full LE 1M BER sweeps (all rows, CM-A) with negative control
+- **#56**: T1 item 6b: 802.15.4 CM-A source and seeded PER sweep with negative control
 
 ## Ready
 
@@ -31,16 +33,13 @@ _None._
 
 Issues currently being built (`loom:building`).
 
-- **#50**: T1 item 1d: host interface RTL (APB4 register map, TX/RX FIFOs, descriptor FIFO, interrupts, timestamp)
-- **#54**: T1 item 1c: 802.15.4 O-QPSK TX/RX RTL (spread, shape, despread, SFD, FCS) bit-exact with the model
-- **#67**: ci: run test-le1m-tx and its negative control in flow.yml
+- **#72**: baseband_top flat synthesis does not complete in 45 min (blocks item 1 netlist)
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-- **#63**: feat(rtl): add APB host interface with FIFOs, interrupts and timestamps
-- **#68**: ci: run test-le1m-tx and its negative control in flow.yml
+_None._
 
 ## Approved (Awaiting Merge)
 
@@ -53,11 +52,10 @@ _None._
 Issues carrying `loom:curated`.
 
 - **#5**: Track the gap to T1 (klayout-tools design-evidence-tiers.md) *(curated)*
-- **#50**: T1 item 1d: host interface RTL (APB4 register map, TX/RX FIFOs, descriptor FIFO, interrupts, timestamp) *(curated)*
-- **#54**: T1 item 1c: 802.15.4 O-QPSK TX/RX RTL (spread, shape, despread, SFD, FCS) bit-exact with the model *(curated)*
+- **#52**: T1 item 1f: baseband top, real synthesis script, committed sky130_fd_sc_hd netlist, item-1 attestation *(curated)*
 - **#55**: T1 item 6a: committed full LE 1M BER sweeps (all rows, CM-A) with negative control *(curated)*
 - **#56**: T1 item 6b: 802.15.4 CM-A source and seeded PER sweep with negative control *(curated)*
-- **#67**: ci: run test-le1m-tx and its negative control in flow.yml *(curated)*
+- **#72**: baseband_top flat synthesis does not complete in 45 min (blocks item 1 netlist) *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -73,12 +71,12 @@ _None._
 |------|-------|
 | Operator merge-risk holds | 0 |
 | Very important | 0 |
-| Important | 1 |
+| Important | 3 |
 | Ready (`loom:issue`) | 0 |
-| In Progress (`loom:building`) | 3 |
-| PRs awaiting review | 2 |
+| In Progress (`loom:building`) | 1 |
+| PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 6 |
+| Curated | 5 |
 | Architect / Hermit proposals | 0 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
