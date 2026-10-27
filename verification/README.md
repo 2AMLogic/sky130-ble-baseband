@@ -57,7 +57,7 @@ is absent rather than using any other. Fetch it with
 
 ## CI
 
-`.github/workflows/flow.yml` runs `make test test-negative lint ALLOW_TOOL_DRIFT=1` (apt tool versions differ
+`.github/workflows/flow.yml` runs `make test test-negative test-le1m-rx test-le1m-rx-negative lint ALLOW_TOOL_DRIFT=1` (apt tool versions differ
 from the pins, so mismatches are warnings there; local runs must match). Synthesis is
 not run in CI: it needs the full PDK fetch, which this workflow does not
 perform. Run `make synth` locally.
