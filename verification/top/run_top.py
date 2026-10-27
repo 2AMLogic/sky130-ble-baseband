@@ -10,7 +10,8 @@ the exit status). Exits non-zero if any cocotb test fails.
 import sys
 from pathlib import Path
 
-from cocotb_tools.runner import get_results, get_runner
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from cocotb_run import run_cocotb, verdict  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
@@ -21,15 +22,8 @@ RTL = [ln.strip() for ln in (ROOT / "rtl" / "baseband.f").read_text().splitlines
 
 
 def main(build_dir: str, names) -> int:
-    runner = get_runner("icarus")
-    build = Path(build_dir)
-    runner.build(sources=[ROOT / f for f in RTL], hdl_toplevel="baseband_top", build_dir=build,
-                 always=True, timescale=("1ns", "1ps"))
-    results = runner.test(hdl_toplevel="baseband_top", test_module="test_top", test_dir=HERE,
-                          build_dir=build, testcase=names or None)
-    total, failed = get_results(results)
-    print(f"cocotb baseband_top: {total} tests, {failed} failed")
-    return 1 if failed or total == 0 else 0
+    return verdict(*run_cocotb("baseband_top", "test_top", HERE, build_dir,
+                               [ROOT / f for f in RTL], testcase=names or None))
 
 
 if __name__ == "__main__":
