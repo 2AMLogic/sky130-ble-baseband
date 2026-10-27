@@ -9,7 +9,7 @@ designed by AI agents driving
 open-source digital flow: cocotb + Icarus for verification, Yosys for
 synthesis, OpenROAD for place-and-route.
 
-**Status: specification ratified (revision 1); LE 1M reference models (receiver, transmitter) and a seeded BER sweep harness exist in `sim/`; no RTL beyond a smoke block yet.**
+**Status: specification ratified (revision 1); LE 1M reference models (receiver, transmitter) and a seeded BER sweep harness exist in `sim/`; RTL exists for every sub-block and is integrated in `rtl/top/baseband_top.v` (simulated; the synthesis script exists but a full flat run has not completed, see `flow/synth/README.md`; no place-and-route, timing closure or error-rate claim yet).**
 
 **Built agent-native.** Every specification, decision record, testbench, and
 line of documentation here is produced by AI agents working from a ratified
@@ -91,8 +91,9 @@ Yosys on `PATH`; details and pinned versions in
 
 | Result | Command | Detail |
 |---|---|---|
-| Whole flow (smoke testbench, negative control, lint, synthesis, model tests) | `make` | [verification/README.md](verification/README.md) |
-| Smoke testbench and its negative control | `make test test-negative` | [verification/README.md](verification/README.md) |
+| Whole flow (block and top benches, negative controls, lint, synthesis, model tests) | `make` | [verification/README.md](verification/README.md) |
+| Top-level integration bench and its negative control | `make test-top test-top-negative` | [verification/README.md](verification/README.md) |
+| Synthesis and netlist freshness check (netlist not yet committed) | `make synth`, `make synth-check` | [flow/synth/README.md](flow/synth/README.md) |
 | Reference-model tests (channel, LE 1M RX, LE 1M TX) | `make sim-test` | [sim/README.md](sim/README.md) |
 | TX model tests with CRC negative control | `make model-test` | [sim/README.md](sim/README.md) |
 | BER sweep harness, quick mode (simulated; proves the harness, not the spec row) | `make sim-quick` | [sim/README.md](sim/README.md) |

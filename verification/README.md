@@ -1,8 +1,6 @@
 # verification
 
 cocotb testbenches, and the flow that runs them with lint and synthesis.
-`verification/smoke/` tests the **placeholder** LFSR in `rtl/smoke/`; it proves
-the flow works and verifies nothing about the baseband.
 
 ## Cold start
 
@@ -10,12 +8,12 @@ From a fresh clone, with the pinned tools on `PATH` (below):
 
 ```
 make venv   # once: .venv with the pinned cocotb
-make        # check-tools, test, test-negative, lint, synth; exit 0 = all pass
+make        # every bench, negative control, lint, synth; exit 0 = all pass
 ```
 
 Individual steps: `make test`, `make test-negative`, `make test-le1m-rx`,
 `make test-le1m-rx-negative`, `make test-oqpsk`, `make test-oqpsk-negative`,
-`make lint`, `make synth`.
+`make test-top`, `make test-top-negative`, `make lint`, `make synth`, `make synth-check`.
 
 - `test-le1m-rx` replays the shared RX stimulus of `verification/le1m_rx/cases.py`
   (CM-A noiseless and noisy, offset/drift/clock corners, bad CRC, missed detect,
@@ -39,17 +37,29 @@ Individual steps: `make test`, `make test-negative`, `make test-le1m-rx`,
 - `test-oqpsk-negative` flips one expected record in each half and fails unless
   each replay rejects it with a `first mismatch ... expected=` report.
 
-- `test-negative` runs the same test with one expected value deliberately
-  wrong (`LFSR_NEGATIVE=1`) and fails if the test does *not* fail, so a broken
-  expectation can never pass silently.
-- `lint` is Verilator `--lint-only -Wall` over `rtl/smoke/`; any warning fails.
-- `synth` maps the placeholder to `sky130_fd_sc_hd` with Yosys at the
-  `tt_025C_1v80` Liberty corner. It sets no clock or area target.
+- `test-top` drives `baseband_top` (every sub-block, `rtl/baseband.f`) through its
+  pins only: APB for registers and FIFOs, `rx_i`/`rx_q`/`rx_valid` for samples,
+  `tx_dev`/`tx_valid` for the modulator words, and a front-end model for
+  `fe_ready`. Six tests: LE 1M TX and RX, 15.4 TX and RX, the 15.4 automatic ACK
+  and the LE timed response. Every stimulus and expected value comes from the
+  models (`sim/model/le1m_tx.py`, `oqpsk_tx.py`, the CM-A channel model, the
+  15.4 loopback), none is hand-written. It prints `MEASURED` lines with the
+  end-of-packet to rx_end / first-TX-word latencies that set `L_DIG_CYCLES`
+  (rtl/top/README.md). It makes no error-rate claim: the stimulus is noiseless
+  and one packet per test. `test-top-negative` perturbs one expected value in
+  each test and fails unless every test is rejected with an `expected=` report.
+- `test-negative` runs the host and lower-MAC negative controls.
+- `lint` is Verilator `--lint-only -Wall`: each block, then `baseband_top` over
+  `rtl/baseband.f`; any warning fails.
+- `synth` maps `baseband_top` (flattened) to `sky130_fd_sc_hd` with Yosys at the
+  `tt_025C_1v80` Liberty corner into `flow/synth/baseband_top_netlist.v` and
+  `flow/synth/liberty_record.txt`; `synth-check` regenerates both and fails on any
+  byte of difference. The full run has not completed yet (`flow/synth/README.md`,
+  "Status"), so no netlist is committed. Neither sets a clock or area target.
 
-Run outputs land under `flow/build/smoke/` (gitignored, never committed):
-`sim/` and `sim_neg/` (simulator build and `results.xml`), `negative.log`,
-`lfsr8_netlist.v` (gate-level netlist), `cell_count.rpt`, `yosys.log`, and
-`liberty_record.txt` (PDK revision and the exact Liberty file used).
+Run outputs land under `flow/build/<block>/` (gitignored, never committed):
+`sim/` and `sim_neg/` (simulator build and `results.xml`), `negative.log`;
+synthesis reports (`cell_count.rpt`, `yosys.log`) under `flow/build/synth/`.
 
 ## Pins
 
@@ -70,10 +80,10 @@ is absent rather than using any other. Fetch it with
 
 ## CI
 
-`.github/workflows/flow.yml` runs `make test test-negative test-le1m-rx test-le1m-rx-negative test-oqpsk test-oqpsk-negative lint ALLOW_TOOL_DRIFT=1` (apt tool versions differ
+`.github/workflows/flow.yml` runs `make test test-negative test-le1m-rx test-le1m-rx-negative test-le1m-tx test-le1m-tx-negative test-oqpsk test-oqpsk-negative test-top test-top-negative lint ALLOW_TOOL_DRIFT=1` (apt tool versions differ
 from the pins, so mismatches are warnings there; local runs must match). Synthesis is
 not run in CI: it needs the full PDK fetch, which this workflow does not
-perform. Run `make synth` locally.
+perform. Run `make synth-check` locally.
 
 ## LE 1M TX replay
 
