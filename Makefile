@@ -1,5 +1,6 @@
 # Single entry point for the verification / lint / synthesis flow.
-#   make            -> all: check-tools, test, test-negative, test-le1m-rx, test-le1m-rx-negative, lint, synth, model-test
+#   make            -> all: check-tools, test, test-negative, test-le1m-rx, test-le1m-rx-negative,
+#                      test-oqpsk, test-oqpsk-negative, lint, synth, model-test
 #                      (test/test-negative/lint include the rtl/mac/ lower-MAC benches)
 # Cold start: see verification/README.md. ALLOW_TOOL_DRIFT=1 downgrades tool
 # version mismatches to warnings (CI only; local runs must match the pins).
@@ -8,15 +9,16 @@ include flow/versions.mk
 
 BUILD    := flow/build/smoke
 LE1M_RX  := flow/build/le1m_rx
+OQPSK    := flow/build/oqpsk
 VENV     := .venv
 PYTHON   ?= $(VENV)/bin/python
 CIEL_HOME?= $(HOME)/.ciel
 PDK_ROOT ?= $(CIEL_HOME)/ciel/$(PDK_FAMILY)/versions/$(PDK_REV)
 LIB_FILE := $(PDK_ROOT)/$(PDK_VARIANT)/libs.ref/$(STD_CELL_LIB)/lib/$(STD_CELL_LIB)__$(LIB_CORNER).lib
 
-.PHONY: all venv check-tools check-pdk test test-negative lint synth clean model-test test-le1m-rx test-le1m-rx-negative mac-test mac-test-negative mac-lint
+.PHONY: all venv check-tools check-pdk test test-negative lint synth clean model-test test-le1m-rx test-le1m-rx-negative test-oqpsk test-oqpsk-negative mac-test mac-test-negative mac-lint
 
-all: check-tools test test-negative test-le1m-rx test-le1m-rx-negative lint synth model-test
+all: check-tools test test-negative test-le1m-rx test-le1m-rx-negative test-oqpsk test-oqpsk-negative lint synth model-test
 
 venv:
 	python3 -m venv $(VENV)
@@ -71,9 +73,32 @@ test-le1m-rx-negative: check-tools
 	else grep -q 'first mismatch.*expected=' $(LE1M_RX)/negative.log || { echo "ERROR: le1m_rx negative control failed for the wrong reason; see $(LE1M_RX)/negative.log"; exit 1; }; \
 	  echo "le1m_rx negative control OK (perturbed expectation was rejected)"; fi
 
+# 802.15.4 O-QPSK RTL (rtl/oqpsk): TX words and RX trace taps replayed through
+# cocotb + Icarus against sim/model/oqpsk_{tx,rx}.py by sample index (decision
+# 0007), including the committed golden traces. The RX top reuses two LE 1M
+# stages unchanged, so the file lists below name them explicitly.
+test-oqpsk: check-tools
+	$(PYTHON) verification/oqpsk/run_oqpsk.py $(CURDIR)/$(OQPSK)/sim
+
+# A perturbed expectation must be rejected by each half, and for the right
+# reason: the mismatch report carries `expected=`.
+test-oqpsk-negative: check-tools
+	@mkdir -p $(OQPSK)
+	@for half in "tx payload3" "rx psdu1_no_fcs"; do set -- $$half; \
+	  if OQPSK_NEGATIVE=1 $(PYTHON) verification/oqpsk/run_oqpsk.py $(CURDIR)/$(OQPSK)/sim_neg_$$1 $$1 $$2 >$(OQPSK)/negative_$$1.log 2>&1; then \
+	    echo "ERROR: oqpsk $$1 negative control passed; the replay does not detect a broken expectation"; exit 1; \
+	  else grep -q 'first mismatch.*expected=' $(OQPSK)/negative_$$1.log || { echo "ERROR: oqpsk $$1 negative control failed for the wrong reason; see $(OQPSK)/negative_$$1.log"; exit 1; }; \
+	    echo "oqpsk $$1 negative control OK (perturbed expectation was rejected)"; fi; \
+	done
+
+OQPSK_RX_SRC := rtl/oqpsk/oqpsk_rx_fir.v rtl/le1m_rx/le1m_rx_disc.v rtl/le1m_rx/le1m_rx_cordic.v rtl/oqpsk/oqpsk_rx_integ.v \
+                rtl/oqpsk/oqpsk_rx_corr.v rtl/oqpsk/oqpsk_rx_sync.v rtl/oqpsk/oqpsk_rx_pkt.v rtl/oqpsk/oqpsk_rx.v
+
 lint: check-tools
 	verilator --lint-only -Wall --top-module lfsr8 rtl/smoke/lfsr8.v
 	verilator --lint-only -Wall --top-module le1m_rx rtl/le1m_rx/*.v
+	verilator --lint-only -Wall --top-module oqpsk_tx rtl/oqpsk/oqpsk_tx.v
+	verilator --lint-only -Wall --top-module oqpsk_rx $(OQPSK_RX_SRC)
 	$(MAKE) mac-lint
 
 synth: check-tools check-pdk
