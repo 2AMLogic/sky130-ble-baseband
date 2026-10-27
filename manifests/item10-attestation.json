@@ -17,7 +17,7 @@
         "role": "hygiene",
         "path": ".github/workflows/flow.yml",
         "passed": true,
-        "content_hash": "sha256:5d2f68a31a15b400c9d3e82e8fbf7af8cb47b4435da89c61deeb11b159ef4784"
+        "content_hash": "sha256:c378cd690abca40c0cd2b9688cc3b36d1b24272b2b617c856810d2e4b5713cc3"
       },
       {
         "check": "present",
@@ -66,7 +66,7 @@
         "role": "hygiene",
         "path": "verification/README.md",
         "passed": true,
-        "content_hash": "sha256:f176a87620210d9080996bb72b5eb6350e7887b4235b9ad479b8b6992559e234"
+        "content_hash": "sha256:00b69893f1536c326fdb0d97c75f88a5a12a860ad2aff10631c78228125da353"
       },
       {
         "check": "command",

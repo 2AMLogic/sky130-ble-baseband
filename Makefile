@@ -1,6 +1,6 @@
 # Single entry point for the verification / lint / synthesis flow.
-#   make            -> all: check-tools, test, test-negative, test-le1m-rx, test-le1m-rx-negative,
-#                      test-oqpsk, test-oqpsk-negative, lint, synth, model-test
+#   make            -> all: check-tools, test, test-negative, test-le1m-rx, test-le1m-rx-negative, lint, synth,
+#                      model-test, test-le1m-tx, test-le1m-tx-negative, test-oqpsk, test-oqpsk-negative
 #                      (test/test-negative/lint include the rtl/mac/ lower-MAC benches)
 # Cold start: see verification/README.md. ALLOW_TOOL_DRIFT=1 downgrades tool
 # version mismatches to warnings (CI only; local runs must match the pins).
@@ -8,6 +8,8 @@
 include flow/versions.mk
 
 BUILD    := flow/build/smoke
+LE1M_TX_BUILD := flow/build/le1m_tx
+LE1M_TX_RTL := $(addprefix rtl/le1m_tx/,le1m_whiten.v le1m_crc24.v le1m_frame.v le1m_gauss.v le1m_tx.v)
 LE1M_RX  := flow/build/le1m_rx
 OQPSK    := flow/build/oqpsk
 VENV     := .venv
@@ -16,9 +18,9 @@ CIEL_HOME?= $(HOME)/.ciel
 PDK_ROOT ?= $(CIEL_HOME)/ciel/$(PDK_FAMILY)/versions/$(PDK_REV)
 LIB_FILE := $(PDK_ROOT)/$(PDK_VARIANT)/libs.ref/$(STD_CELL_LIB)/lib/$(STD_CELL_LIB)__$(LIB_CORNER).lib
 
-.PHONY: all venv check-tools check-pdk test test-negative lint synth clean model-test test-le1m-rx test-le1m-rx-negative test-oqpsk test-oqpsk-negative mac-test mac-test-negative mac-lint
+.PHONY: all venv check-tools check-pdk test test-negative lint synth clean model-test host-test host-test-negative host-lint test-le1m-rx test-le1m-rx-negative test-le1m-tx test-le1m-tx-negative test-oqpsk test-oqpsk-negative mac-test mac-test-negative mac-lint
 
-all: check-tools test test-negative test-le1m-rx test-le1m-rx-negative test-oqpsk test-oqpsk-negative lint synth model-test
+all: check-tools test test-negative test-le1m-rx test-le1m-rx-negative lint synth model-test test-le1m-tx test-le1m-tx-negative test-oqpsk test-oqpsk-negative
 
 venv:
 	python3 -m venv $(VENV)
@@ -45,12 +47,12 @@ check-pdk:
 	@test -f "$(LIB_FILE)" || { echo "ERROR: pinned PDK $(PDK_REV) liberty not found: $(LIB_FILE)"; \
 	  echo "Fetch it: pip install ciel && ciel enable --pdk-family $(PDK_FAMILY) $(PDK_REV)"; exit 1; }
 
-test: check-tools
+test: check-tools host-test
 	$(PYTHON) verification/smoke/run_smoke.py $(CURDIR)/$(BUILD)/sim
 	$(MAKE) mac-test
 
 # The test must FAIL when an expectation is wrong; invert the exit status.
-test-negative: check-tools
+test-negative: check-tools host-test-negative
 	@mkdir -p $(BUILD)
 	@if LFSR_NEGATIVE=1 $(PYTHON) verification/smoke/run_smoke.py $(CURDIR)/$(BUILD)/sim_neg >$(BUILD)/negative.log 2>&1; then \
 	  echo "ERROR: negative control passed; the test does not detect a broken expectation"; exit 1; \
@@ -94,8 +96,9 @@ test-oqpsk-negative: check-tools
 OQPSK_RX_SRC := rtl/oqpsk/oqpsk_rx_fir.v rtl/le1m_rx/le1m_rx_disc.v rtl/le1m_rx/le1m_rx_cordic.v rtl/oqpsk/oqpsk_rx_integ.v \
                 rtl/oqpsk/oqpsk_rx_corr.v rtl/oqpsk/oqpsk_rx_sync.v rtl/oqpsk/oqpsk_rx_pkt.v rtl/oqpsk/oqpsk_rx.v
 
-lint: check-tools
+lint: check-tools host-lint
 	verilator --lint-only -Wall --top-module lfsr8 rtl/smoke/lfsr8.v
+	verilator --lint-only -Wall --top-module le1m_tx $(LE1M_TX_RTL)
 	verilator --lint-only -Wall --top-module le1m_rx rtl/le1m_rx/*.v
 	verilator --lint-only -Wall --top-module oqpsk_tx rtl/oqpsk/oqpsk_tx.v
 	verilator --lint-only -Wall --top-module oqpsk_rx $(OQPSK_RX_SRC)
@@ -108,6 +111,24 @@ synth: check-tools check-pdk
 	   echo "yosys: $$(yosys -V)"; } > $(BUILD)/liberty_record.txt
 	@grep -q sky130_fd_sc_hd $(BUILD)/lfsr8_netlist.v || { echo "ERROR: netlist has no sky130_fd_sc_hd cells"; exit 1; }
 	@echo "synth OK: $(BUILD)/lfsr8_netlist.v, cell_count.rpt, liberty_record.txt"
+
+# Host interface (rtl/host/): APB registers, FIFOs, interrupts, timestamps.
+HOST_BUILD := flow/build/host
+HOST_RTL   := $(addprefix rtl/host/,host_fifo.v host_desc_fifo.v host_irq.v host_timestamp.v host_regs.v host_top.v)
+
+host-test: check-tools
+	$(PYTHON) verification/host/run_host.py $(CURDIR)/$(HOST_BUILD)/sim
+
+# A broken expectation (W1C on a disabled INT_STATUS bit) must FAIL the bench.
+host-test-negative: check-tools
+	@mkdir -p $(HOST_BUILD)
+	@if HOST_NEGATIVE=1 $(PYTHON) verification/host/run_host.py $(CURDIR)/$(HOST_BUILD)/sim_neg >$(HOST_BUILD)/negative.log 2>&1; then \
+	  echo "ERROR: host negative control passed; the test does not detect a broken expectation"; exit 1; \
+	else grep -q 'expected=' $(HOST_BUILD)/negative.log || { echo "ERROR: host negative control failed for the wrong reason; see $(HOST_BUILD)/negative.log"; exit 1; }; \
+	  echo "host negative control OK (broken expectation was rejected)"; fi
+
+host-lint: check-tools
+	verilator --lint-only -Wall --top-module host_top $(HOST_RTL)
 
 clean:
 	rm -rf flow/build
@@ -130,6 +151,19 @@ sim-test:
 
 sim-quick:
 	$(PYTHON) sim/sweep/ber_sweep.py --quick --out $(CURDIR)/flow/build/sim/ber.json
+
+# LE 1M TX RTL: cocotb replay of the model's traces (golden + generated packets),
+# bit-exact per decision 0007. The negative control corrupts one expected txdev
+# record, so the replay must FAIL with the 'tx trace mismatch' message.
+test-le1m-tx: check-tools
+	$(PYTHON) verification/le1m_tx/run_le1m_tx.py $(CURDIR)/$(LE1M_TX_BUILD)/sim
+
+test-le1m-tx-negative: check-tools
+	@mkdir -p $(LE1M_TX_BUILD)
+	@if LE1M_TX_NEGATIVE=1 $(PYTHON) verification/le1m_tx/run_le1m_tx.py $(CURDIR)/$(LE1M_TX_BUILD)/sim_neg >$(LE1M_TX_BUILD)/negative.log 2>&1; then \
+	  echo "ERROR: LE 1M TX negative control passed; the replay does not detect a wrong expected word"; exit 1; \
+	else grep -q 'tx trace mismatch: .*field txdev' $(LE1M_TX_BUILD)/negative.log || { echo "ERROR: LE 1M TX negative control failed for the wrong reason; see $(LE1M_TX_BUILD)/negative.log"; exit 1; }; \
+	  echo "le1m_tx negative control OK (corrupted txdev record was rejected)"; fi
 
 # rtl/mac/: lower-MAC timers, trigger, auto-ACK, address filters (issue #51).
 # Cycle-count benches at the 32 MHz target counts and the 16 MHz fallback counts.
