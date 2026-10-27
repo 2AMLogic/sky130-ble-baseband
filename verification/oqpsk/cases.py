@@ -10,19 +10,16 @@ simulator. There is no hand-written vector: every expected record comes from
 the model.
 """
 
-import hashlib
-import json
 import sys
 from pathlib import Path
 
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path[:0] = [str(ROOT / "sim" / "channel"), str(ROOT / "sim" / "model")]
-import cm_a  # noqa: E402
+sys.path[:0] = [str(ROOT / "sim" / "channel"), str(ROOT / "sim" / "model"), str(ROOT / "verification")]
 import oqpsk_rx  # noqa: E402
 import oqpsk_tx  # noqa: E402
-import traces  # noqa: E402
+import vector_common  # noqa: E402
 
 GOLDEN_TX = ROOT / "sim" / "model" / "golden" / "tx_154_psdu20.trace"
 GOLDEN_RX = ROOT / "sim" / "model" / "golden" / "rx_154_loopback_psdu20.trace"
@@ -104,9 +101,7 @@ def _truncated(seed, n, cut):
 
 
 def _noise_only(seed, n=4000, sigma=20.0):
-    rng = np.random.Generator(np.random.PCG64(seed))
-    iq = np.clip(np.rint(rng.standard_normal((n, 2)) * sigma), -128, 127).astype(np.int8)
-    return _stim(iq)
+    return _stim(vector_common.noise_only_iq(seed, n, sigma))
 
 
 # name -> (builder, description)
@@ -139,44 +134,30 @@ RX_CASES = {
 }
 
 
-def build(kind, name):
-    return RX_CASES[name][0]() if kind == "rx" else None
-
-
 def rx_model_trace(iq, flags, gain):
     res = oqpsk_rx.demodulate(iq, flags, gain)
-    return sorted(res["trace"], key=lambda r: r[0]), res
+    return vector_common.sorted_trace(res), res
 
 
 def write_vectors(outdir, kind, names=None):
     """kind 'tx' or 'rx'. Returns the manifest dict."""
-    outdir = Path(outdir)
-    outdir.mkdir(parents=True, exist_ok=True)
     manifest = {}
     table = TX_CASES if kind == "tx" else RX_CASES
     for name in (names or table):
+        common = {"kind": kind, "phy": "802.15.4", "rate_msps": 8}
         if kind == "tx":
             payload, desc = TX_CASES[name]
-            stim = outdir / f"{name}.psdu"
-            stim.write_bytes(payload)
-            records = tx_model_trace(payload)
+            stim_name, stim_bytes, records = f"{name}.psdu", payload, tx_model_trace(payload)
             extra = {"payload_octets": len(payload)}
         else:
-            iq, flags, gain = build("rx", name)
-            stim = outdir / f"{name}.rx.bin"
-            stim.write_bytes(cm_a.pack_rx_records(type("O", (), {"iq": iq, "flags": flags, "gain": gain})()))
-            records, res = rx_model_trace(iq, flags, gain)
+            iq, flags, gain = RX_CASES[name][0]()
             desc = RX_CASES[name][1]
+            stim_name, stim_bytes = f"{name}.rx.bin", vector_common.pack_rx(iq, flags, gain)
+            records, res = rx_model_trace(iq, flags, gain)
             extra = {"samples": int(len(iq)), "synced": bool(res["synced"]), "crc_ok": bool(res["crc_ok"]),
                      "timing_steps": int(res["timing_steps"]), "length": res["length"]}
-        tr = outdir / f"{name}.model.trace"
-        traces.write_trace(tr, records)
-        info = {"format": 1, "kind": kind, "phy": "802.15.4", "rate_msps": 8, "description": desc,
-                "sha256": {stim.name: hashlib.sha256(stim.read_bytes()).hexdigest(),
-                           tr.name: hashlib.sha256(tr.read_bytes()).hexdigest()}}
-        info.update(extra)
-        (outdir / f"{name}.json").write_text(json.dumps(info, indent=1, sort_keys=True) + "\n")
-        manifest[name] = info
+        manifest[name] = vector_common.write_case(outdir, name, stim_name, stim_bytes, records,
+                                                  dict(common, description=desc, **extra))
     return manifest
 
 

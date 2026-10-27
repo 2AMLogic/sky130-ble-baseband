@@ -8,20 +8,17 @@ from the CM-A channel model in ``sim/channel/`` and the integer receiver in
 replay reads. Nothing here runs inside the simulator.
 """
 
-import hashlib
-import json
-import os
 import sys
 from pathlib import Path
 
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path[:0] = [str(ROOT / "sim" / "channel"), str(ROOT / "sim" / "model")]
+sys.path[:0] = [str(ROOT / "sim" / "channel"), str(ROOT / "sim" / "model"), str(ROOT / "verification")]
 import cm_a  # noqa: E402
 import le1m_rx  # noqa: E402
 import packet  # noqa: E402
-import traces  # noqa: E402
+import vector_common  # noqa: E402
 
 AA = packet.DEFAULT_ACCESS_ADDRESS
 CRC_INIT = packet.DEFAULT_CRC_INIT
@@ -46,8 +43,7 @@ def _channel(seed, payload_octets, params, tx_aa=AA, flip_bit=None):
 
 
 def _noise_only(seed, n=3000, sigma=20.0):
-    rng = np.random.Generator(np.random.PCG64(seed))
-    iq = np.clip(np.rint(rng.standard_normal((n, 2)) * sigma), -128, 127).astype(np.int8)
+    iq = vector_common.noise_only_iq(seed, n, sigma)
     flags = np.zeros(n, dtype=np.uint8)
     flags[0] = 2
     return iq, flags, np.full(n, 32, dtype=np.uint8)
@@ -120,29 +116,19 @@ def build(name):
 
 def model_trace(iq, flags, gain):
     res = le1m_rx.demodulate(iq, flags, gain)
-    return sorted(res["trace"], key=lambda r: r[0]), res
+    return vector_common.sorted_trace(res), res
 
 
 def write_vectors(outdir, names=None):
-    outdir = Path(outdir)
-    outdir.mkdir(parents=True, exist_ok=True)
     manifest = {}
     for name in (names or CASES):
         iq, flags, gain = build(name)
-        rx = outdir / f"{name}.rx.bin"
-        rx.write_bytes(cm_a.pack_rx_records(type("O", (), {"iq": iq, "flags": flags, "gain": gain})()))
         records, res = model_trace(iq, flags, gain)
-        tr = outdir / f"{name}.model.trace"
-        traces.write_trace(tr, records)
-        info = {
-            "format": 1, "kind": "rx", "phy": "le1m", "rate_msps": 8, "channel_model": "CM-A",
-            "description": CASES[name][1], "samples": int(len(iq)),
-            "synced": bool(res["synced"]), "crc_ok": bool(res["crc_ok"]),
-            "sha256": {rx.name: hashlib.sha256(rx.read_bytes()).hexdigest(),
-                       tr.name: hashlib.sha256(tr.read_bytes()).hexdigest()},
-        }
-        (outdir / f"{name}.json").write_text(json.dumps(info, indent=1, sort_keys=True) + "\n")
-        manifest[name] = info
+        manifest[name] = vector_common.write_case(
+            outdir, name, f"{name}.rx.bin", vector_common.pack_rx(iq, flags, gain), records,
+            {"kind": "rx", "phy": "le1m", "rate_msps": 8, "channel_model": "CM-A",
+             "description": CASES[name][1], "samples": int(len(iq)),
+             "synced": bool(res["synced"]), "crc_ok": bool(res["crc_ok"])})
     return manifest
 
 
