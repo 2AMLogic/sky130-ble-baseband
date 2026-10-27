@@ -19,25 +19,29 @@ _None._
 
 `loom:important`; taken before unlabelled work.
 
-_None._
+- **#48**: T1 item 1a: LE 1M TX RTL (whitening, CRC-24, framing, Gaussian shaping to tx_dev) bit-exact with le1m_tx.py
+- **#50**: T1 item 1d: host interface RTL (APB4 register map, TX/RX FIFOs, descriptor FIFO, interrupts, timestamp)
 
 ## Ready
 
 Human-approved issues ready for implementation (`loom:issue`).
 
-_None._
+- **#46**: T1 item 10 (repo hygiene): README status, reproduction steps for every result, hygiene inventory attested with klt signoff --attest 10
 
 ## In Progress
 
 Issues currently being built (`loom:building`).
 
-_None._
+- **#49**: sim: fixed-point 802.15.4 O-QPSK TX/RX reference model, golden traces and loopback tests
+- **#51**: T1 item 1e: hardware timers (T_IFS, 15.4 turnaround/ACK-wait), timed trigger, auto-ACK and address filtering RTL
+- **#53**: T1 item 1b: LE 1M RX RTL (non-coherent demod, AA correlation, de-whitening, CRC-24 check) bit-exact with le1m_rx.py
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-_None._
+- **#58**: feat(mac): add lower-MAC timers, trigger, auto-ACK and address filters
+- **#59**: feat(sim): integer 802.15.4 O-QPSK TX/RX reference models and golden traces
 
 ## Approved (Awaiting Merge)
 
@@ -50,6 +54,12 @@ _None._
 Issues carrying `loom:curated`.
 
 - **#5**: Track the gap to T1 (klayout-tools design-evidence-tiers.md) *(curated)*
+- **#46**: T1 item 10 (repo hygiene): README status, reproduction steps for every result, hygiene inventory attested with klt signoff --attest 10 *(curated)*
+- **#48**: T1 item 1a: LE 1M TX RTL (whitening, CRC-24, framing, Gaussian shaping to tx_dev) bit-exact with le1m_tx.py *(curated)*
+- **#49**: sim: fixed-point 802.15.4 O-QPSK TX/RX reference model, golden traces and loopback tests *(curated)*
+- **#50**: T1 item 1d: host interface RTL (APB4 register map, TX/RX FIFOs, descriptor FIFO, interrupts, timestamp) *(curated)*
+- **#51**: T1 item 1e: hardware timers (T_IFS, 15.4 turnaround/ACK-wait), timed trigger, auto-ACK and address filtering RTL *(curated)*
+- **#53**: T1 item 1b: LE 1M RX RTL (non-coherent demod, AA correlation, de-whitening, CRC-24 check) bit-exact with le1m_rx.py *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -65,12 +75,12 @@ _None._
 |------|-------|
 | Operator merge-risk holds | 0 |
 | Very important | 0 |
-| Important | 0 |
-| Ready (`loom:issue`) | 0 |
-| In Progress (`loom:building`) | 0 |
-| PRs awaiting review | 0 |
+| Important | 2 |
+| Ready (`loom:issue`) | 1 |
+| In Progress (`loom:building`) | 3 |
+| PRs awaiting review | 2 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 1 |
+| Curated | 7 |
 | Architect / Hermit proposals | 0 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
