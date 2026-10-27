@@ -1,5 +1,6 @@
 # Single entry point for the verification / lint / synthesis flow.
-#   make            -> all: check-tools, test, test-negative, test-le1m-rx, test-le1m-rx-negative, lint, synth, model-test
+#   make            -> all: check-tools, test, test-negative, test-le1m-rx, test-le1m-rx-negative, lint, synth,
+#                      model-test, test-le1m-tx, test-le1m-tx-negative
 #                      (test/test-negative/lint include the rtl/mac/ lower-MAC benches)
 # Cold start: see verification/README.md. ALLOW_TOOL_DRIFT=1 downgrades tool
 # version mismatches to warnings (CI only; local runs must match the pins).
@@ -7,6 +8,8 @@
 include flow/versions.mk
 
 BUILD    := flow/build/smoke
+LE1M_TX_BUILD := flow/build/le1m_tx
+LE1M_TX_RTL := $(addprefix rtl/le1m_tx/,le1m_whiten.v le1m_crc24.v le1m_frame.v le1m_gauss.v le1m_tx.v)
 LE1M_RX  := flow/build/le1m_rx
 VENV     := .venv
 PYTHON   ?= $(VENV)/bin/python
@@ -14,9 +17,9 @@ CIEL_HOME?= $(HOME)/.ciel
 PDK_ROOT ?= $(CIEL_HOME)/ciel/$(PDK_FAMILY)/versions/$(PDK_REV)
 LIB_FILE := $(PDK_ROOT)/$(PDK_VARIANT)/libs.ref/$(STD_CELL_LIB)/lib/$(STD_CELL_LIB)__$(LIB_CORNER).lib
 
-.PHONY: all venv check-tools check-pdk test test-negative lint synth clean model-test test-le1m-rx test-le1m-rx-negative mac-test mac-test-negative mac-lint
+.PHONY: all venv check-tools check-pdk test test-negative lint synth clean model-test test-le1m-rx test-le1m-rx-negative test-le1m-tx test-le1m-tx-negative mac-test mac-test-negative mac-lint
 
-all: check-tools test test-negative test-le1m-rx test-le1m-rx-negative lint synth model-test
+all: check-tools test test-negative test-le1m-rx test-le1m-rx-negative lint synth model-test test-le1m-tx test-le1m-tx-negative
 
 venv:
 	python3 -m venv $(VENV)
@@ -73,6 +76,7 @@ test-le1m-rx-negative: check-tools
 
 lint: check-tools
 	verilator --lint-only -Wall --top-module lfsr8 rtl/smoke/lfsr8.v
+	verilator --lint-only -Wall --top-module le1m_tx $(LE1M_TX_RTL)
 	verilator --lint-only -Wall --top-module le1m_rx rtl/le1m_rx/*.v
 	$(MAKE) mac-lint
 
@@ -105,6 +109,19 @@ sim-test:
 
 sim-quick:
 	$(PYTHON) sim/sweep/ber_sweep.py --quick --out $(CURDIR)/flow/build/sim/ber.json
+
+# LE 1M TX RTL: cocotb replay of the model's traces (golden + generated packets),
+# bit-exact per decision 0007. The negative control corrupts one expected txdev
+# record, so the replay must FAIL with the 'tx trace mismatch' message.
+test-le1m-tx: check-tools
+	$(PYTHON) verification/le1m_tx/run_le1m_tx.py $(CURDIR)/$(LE1M_TX_BUILD)/sim
+
+test-le1m-tx-negative: check-tools
+	@mkdir -p $(LE1M_TX_BUILD)
+	@if LE1M_TX_NEGATIVE=1 $(PYTHON) verification/le1m_tx/run_le1m_tx.py $(CURDIR)/$(LE1M_TX_BUILD)/sim_neg >$(LE1M_TX_BUILD)/negative.log 2>&1; then \
+	  echo "ERROR: LE 1M TX negative control passed; the replay does not detect a wrong expected word"; exit 1; \
+	else grep -q 'tx trace mismatch: .*field txdev' $(LE1M_TX_BUILD)/negative.log || { echo "ERROR: LE 1M TX negative control failed for the wrong reason; see $(LE1M_TX_BUILD)/negative.log"; exit 1; }; \
+	  echo "le1m_tx negative control OK (corrupted txdev record was rejected)"; fi
 
 # rtl/mac/: lower-MAC timers, trigger, auto-ACK, address filters (issue #51).
 # Cycle-count benches at the 32 MHz target counts and the 16 MHz fallback counts.
