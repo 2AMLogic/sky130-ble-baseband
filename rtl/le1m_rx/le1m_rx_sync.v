@@ -46,21 +46,15 @@ module le1m_rx_sync #(
     wire [39:0] pat = {access_address, access_address[0] ? 8'h55 : 8'hAA};
 
     // --- history and RSSI window -----------------------------------------
-    reg signed [18:0] h [0:DEPTH-1];
+    reg [DEPTH*19-1:0] hv;                     // hv[j*19 +: 19] = s[n_cnt-1-j]
     reg [8:0]  magmem [0:RW-1];
     reg [8:0]  wp;
     reg [19:0] wsum;
-    integer    k;
 
     wire [8:0]  mag_old = (n_cnt >= RW) ? magmem[wp] : 9'd0;
     wire [19:0] wsum_next = wsum + {11'd0, in_mag} - {11'd0, mag_old};
 
-    genvar g;
-    generate
-        for (g = 0; g < HIST_W; g = g + 1) begin : g_hist
-            assign hist[g*19 +: 19] = h[g];
-        end
-    endgenerate
+    assign hist = hv[HIST_W*19-1:0];
 
     always @(posedge clk) begin
         if (!rst_n) begin
@@ -69,8 +63,7 @@ module le1m_rx_sync #(
             wsum  <= 20'd0;
         end else if (in_valid) begin
             n_cnt <= n_cnt + 32'd1;
-            h[0]  <= in_s;
-            for (k = 1; k < DEPTH; k = k + 1) h[k] <= h[k-1];
+            hv    <= {hv[(DEPTH-1)*19-1:0], in_s};
             magmem[wp] <= in_mag;
             wp    <= (wp == RW - 1) ? 9'd0 : wp + 9'd1;
             wsum  <= wsum_next;
@@ -87,28 +80,27 @@ module le1m_rx_sync #(
     reg        [31:0] m_t;
     reg               m_ok;
 
-    /* verilator lint_off UNUSEDSIGNAL */
-    function signed [31:0] hx(input integer idx);   // sign-extended history word, idx < DEPTH
-        hx = {{13{h[idx][18]}}, h[idx]};
+    // sign-extended history word idx of a packed history vector
+    function signed [31:0] hx(input [DEPTH*19-1:0] v, input integer idx);
+        hx = {{13{v[idx*19+18]}}, v[idx*19 +: 19]};
     endfunction
-    /* verilator lint_on UNUSEDSIGNAL */
 
     // {sumv, mag, corr} of the 40 taps ending at the newest sample
-    function [95:0] metrics(input integer unused);
+    function [95:0] metrics(input [DEPTH*19-1:0] v);
         integer           jj;
         reg signed [31:0] sum8, sumv, d, w, corr, mag;
         begin
             sum8 = 0;
             sumv = 0;
             for (jj = 0; jj < 40; jj = jj + 1) begin
-                sumv = sumv + hx(SPAN - 8*jj);
-                if (jj < 8) sum8 = sum8 + hx(SPAN - 8*jj);
+                sumv = sumv + hx(v, SPAN - 8*jj);
+                if (jj < 8) sum8 = sum8 + hx(v, SPAN - 8*jj);
             end
             d    = sum8 >>> 3;
             corr = 0;
             mag  = 0;
             for (jj = 0; jj < 40; jj = jj + 1) begin
-                w    = hx(SPAN - 8*jj) - d;
+                w    = hx(v, SPAN - 8*jj) - d;
                 corr = pat[jj] ? corr + w : corr - w;
                 mag  = mag + ((w < 0) ? -w : w);
             end
@@ -116,22 +108,17 @@ module le1m_rx_sync #(
         end
     endfunction
 
-    // The function reads the history array, so it is evaluated inside the
-    // clocked block (a continuous assignment would not re-run when only `h`
-    // changes). The temporaries are block-local and never read elsewhere.
-    reg [95:0]         met;
-    reg signed [31:0]  met_corr, met_mag, met_sumv;
+    // Combinational view of the shifted history; only the registered results
+    // below are used sequentially, so the clocked block has no blocking writes.
+    wire [95:0]        met = metrics(hv);
+    wire signed [31:0] met_corr = met[31:0];
+    wire signed [31:0] met_mag  = met[63:32];
+    wire signed [31:0] met_sumv = met[95:64];
 
     always @(posedge clk) begin
         strobe_d <= rst_n & in_valid;
         m_valid  <= 1'b0;
         if (rst_n && strobe_d) begin
-            /* verilator lint_off BLKSEQ */
-            met      = metrics(0);
-            met_corr = met[31:0];
-            met_mag  = met[63:32];
-            met_sumv = met[95:64];
-            /* verilator lint_on BLKSEQ */
             m_valid <= 1'b1;
             m_corr  <= met_corr;
             m_sumv  <= met_sumv;
