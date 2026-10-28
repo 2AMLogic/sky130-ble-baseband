@@ -5,6 +5,8 @@ triage role. Newest first.
 
 ### 2026-10-28
 
+- **PR #93**: feat(sim): shard the LE 1M BER sweep by row and add a validating merge
+- **Issue #92** (closed): BER sweep: shard-ready harness and merge step for Spot runs (#55)
 - **PR #90**: feat(host): drop address-filter-rejected RX packets via FIFO rollback
 - **Issue #73** (closed): Spec decision: RX packets rejected by the address filter cannot be dropped from the FIFO
 
