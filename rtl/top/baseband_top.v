@@ -86,7 +86,7 @@ module baseband_top #(
     wire [8:0]  tx_length, tx_level;
     wire        tx_pop, tx_empty;
     wire [7:0]  tx_rdata;
-    wire        rx_push, rx_full, desc_push, desc_full;
+    wire        rx_push, rx_full, rx_commit, rx_rollback, desc_push, desc_full;
     wire [7:0]  rx_wdata;
     wire [8:0]  desc_len;
     wire [4:0]  desc_flags;
@@ -186,6 +186,7 @@ module baseband_top #(
         .ev_value(phy ? oq_ev_val : le_ev_val),
         .pkt_done(phy ? oq_done : le_done), .pkt_crc_ok(phy ? oq_crc_ok : le_crc_ok),
         .rx_full(rx_full), .desc_full(desc_full), .rx_push(rx_push), .rx_wdata(rx_wdata),
+        .rx_commit(rx_commit), .rx_rollback(rx_rollback),
         .desc_push(desc_push), .desc_len(desc_len), .desc_flags(desc_flags),
         .ev_sync(ev_sync), .ev_end(ev_end), .ev_done_ok(ev_done_ok), .ev_done_bad(ev_done_bad),
         .ev_overflow(ev_overflow), .ack_pending(ack_pending),
@@ -274,7 +275,8 @@ module baseband_top #(
         .cfg_frame_pending(cfg_frame_pending), .cfg_promiscuous(cfg_promiscuous),
         .tx_length(tx_length), .tx_level(tx_level), .tx_pop(tx_pop), .tx_rdata(tx_rdata),
         .tx_empty(tx_empty),
-        .rx_push(rx_push), .rx_wdata(rx_wdata), .rx_full(rx_full),
+        .rx_push(rx_push), .rx_wdata(rx_wdata), .rx_commit(rx_commit),
+        .rx_rollback(rx_rollback), .rx_full(rx_full),
         .desc_push(desc_push), .desc_len_in(desc_len), .desc_flags_in(desc_flags),
         .desc_full(desc_full),
         .rx_sync(ev_sync), .rx_end(ev_end), .rx_done_ok(ev_done_ok), .rx_done_bad(ev_done_bad),

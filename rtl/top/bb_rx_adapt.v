@@ -13,9 +13,11 @@
 // Descriptor length is the number of octets that went into the FIFO.
 //
 // Not decided by the spec, chosen here (rtl/top/README.md, "Choices"):
-//   - a packet cannot be taken back out of the FIFO, so a CRC-good packet that
-//     the address filter rejects is still delivered, flagged ADDR_MATCH = 0, and
-//     raises RX_DONE_BAD rather than being dropped;
+//   - the RX FIFO holds a packet's octets as provisional until the final accept
+//     decision (host_fifo HOLD = 1): a CRC-good packet the address filter rejects
+//     is rolled back out of the FIFO, gets no descriptor, and raises RX_DONE_BAD
+//     (spec/host-interface.md section 3, operator ruling on #73); every other
+//     packet, CRC-bad ones included, is committed and delivered as before;
 //   - the received access address is not observable, so the LE AA compare is
 //     fed the configured one (the receiver only syncs on it).
 module bb_rx_adapt (
@@ -34,6 +36,8 @@ module bb_rx_adapt (
     input  wire        desc_full,
     output reg         rx_push,
     output reg  [7:0]  rx_wdata,
+    output wire        rx_commit,        // with ev_end: publish this packet's octets
+    output wire        rx_rollback,      // with ev_end: discard them (filter reject)
     output reg         desc_push,
     output wire [8:0]  desc_len,
     output wire [4:0]  desc_flags,
@@ -95,6 +99,11 @@ module bb_rx_adapt (
     wire       want     = !ign && oct_v && (phy ? oq_keep : le_keep);
     wire [7:0] wd       = phy ? d2 : oct;
 
+    // a CRC-good packet the filter rejects is dropped; both strobes are valid with ev_end
+    wire rejected = fcs_ok && !accept;
+    assign rx_rollback = ev_end && rejected;
+    assign rx_commit   = ev_end && !rejected;
+
     always @(posedge clk) begin
         rx_push     <= 1'b0;
         desc_push   <= 1'b0;
@@ -154,7 +163,7 @@ module bb_rx_adapt (
             // end of packet: ev_end now, descriptor and done events one cycle later
             if (pkt_done) ev_end <= 1'b1;
             if (ev_end && !ign) begin
-                desc_push   <= 1'b1;
+                desc_push   <= !rejected;
                 ev_done_ok  <= fcs_ok && accept;
                 ev_done_bad <= !(fcs_ok && accept);
             end

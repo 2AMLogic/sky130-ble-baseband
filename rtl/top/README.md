@@ -24,10 +24,14 @@ None of these changes a ratified value; they are the integration decisions.
    FIFO gets the whole LE PDU (2 header octets plus payload, CRC dropped, same
    convention as `TX_LENGTH`) and the 15.4 PSDU without its FCS (two-octet delay
    line). The descriptor length is the number of octets pushed.
-2. **Filter reject is not dropped.** A packet cannot be taken back out of the FIFO
-   once pushed. A CRC-good packet the address filter rejects is delivered with
-   `ADDR_MATCH` = 0 and raises `RX_DONE_BAD`, where the outline reads "dropped
-   unless promiscuous". It earns no ACK and no response. Follow-up filed, see #73.
+2. **Filter reject is dropped (operator ruling on #73).** The RX FIFO holds a
+   packet's octets as provisional (`host_fifo` `HOLD`): they take space but are
+   invisible to `RX_LEVEL`/`RX_DATA` until the packet ends. At `rx_end` the adapter
+   commits them, or, for a CRC-good packet the address filter rejects, rolls the
+   write pointer back to the packet start. A rejected packet leaves no octets and
+   no descriptor, raises `RX_DONE_BAD`, and earns no ACK and no response. CRC-bad
+   packets are still delivered with `CRC_OK` = 0. Consequence: `RX_LEVEL` grows
+   when a packet ends, not while it arrives.
 3. **LE access-address compare** is fed the configured address: the received one
    is not observable (the receiver syncs on the configured one).
 4. **De-whitening** is on in the LE receiver (`cfg_whiten_ch`), as on air.
