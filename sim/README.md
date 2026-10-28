@@ -35,7 +35,33 @@ and 0 at the 2120 µs maximum packet), `le1m_uniform` (offset and clock drawn
 per packet), each at Eb/N0 12, 14, 16, 18 dB. Defaults: 20000 packets per point
 (3000 for max-length points), stop at 100 errors. That is hours of CPU single
 threaded and is meant for a dedicated machine, not a shared dispatch worker;
-split it with `--only`.
+split it into shards (next section).
+
+**Shards and merge.** One shard is one row: `--only ROW` with exactly one row and
+no `--out` writes `sim/results/<date>-<sha>/shards/ROW.json`, in the `ber.json`
+format (it carries `base_seed`, point `run_index`, `sim_git_sha`, `mode`, and the
+`stop_rule` packet caps). Shard row ids: `le1m_cfo`, `le1m_drift`, `le1m_clock`,
+`le1m_uniform`, `negative_control` (the out-of-spec control, flagged and excluded
+from `rows`). Smoke check one shard with tiny caps:
+
+```
+python3 sim/sweep/ber_sweep.py --only le1m_clock --packet-cap 2 --max-length-packet-cap 2
+```
+
+After all five shards exist in one `shards/` directory, assemble the full file:
+
+```
+python3 sim/sweep/ber_sweep.py --merge sim/results/<date>-<sha>/shards   # writes ../ber.json
+```
+
+`--merge` recomputes `rows` with the same `row_summary` and orders points by grid
+index, so a merge equals a non-sharded run at the same caps. It exits non-zero,
+naming the row or file, on a missing, duplicate or partial row; on shards that
+disagree on seed, run index, mode, stop rule or SHA; and on a `-dirty` SHA or a
+`--quick` shard, so run shards from a committed tree. Use the same `--seed`,
+`--run-index` and caps for every shard (the defaults are unchanged). The shards
+are submitted as Spot batch jobs of the job kind in 2AMLogic/2am#6381; see that
+reference for submission, not this repo.
 
 **Reading `ber.json`.** Each point carries seed, errors, bits, 95 % Clopper-Pearson
 bounds, clip count, `stopped_by` and `bound_only`, and the label "simulated,
