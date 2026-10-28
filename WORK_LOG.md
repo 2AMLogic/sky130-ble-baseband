@@ -3,6 +3,11 @@
 Chronological record of merged PRs and closed issues, maintained by the Guide
 triage role. Newest first.
 
+### 2026-10-28
+
+- **PR #90**: feat(host): drop address-filter-rejected RX packets via FIFO rollback
+- **Issue #73** (closed): Spec decision: RX packets rejected by the address filter cannot be dropped from the FIFO
+
 ### 2026-10-27
 
 - **PR #88**: refactor: share vector materialisation and noise-only stimulus across the RX case modules
