@@ -56,6 +56,8 @@ module host_top #(
     // RX FIFO, producer side (demodulator/MAC)
     input  wire        rx_push,
     input  wire [7:0]  rx_wdata,
+    input  wire        rx_commit,
+    input  wire        rx_rollback,
     output wire        rx_full,
 
     // RX descriptor push (length, flags: [0] crc_ok [1] truncated [2] addr_match [3] ack_sent [4] phy)
@@ -141,16 +143,18 @@ module host_top #(
     wire [8:0] tx_level_w;
     assign tx_level = tx_level_w;
 
-    host_fifo #(.DEPTH(FIFO_DEPTH)) u_tx_fifo (
+    host_fifo #(.DEPTH(FIFO_DEPTH), .HOLD(0)) u_tx_fifo (
         .clk(clk), .rst_n(rst_n), .flush(cmd_tx_flush),
-        .push(tx_push), .wdata(tx_wdata), .pop(tx_pop), .rdata(tx_rdata),
+        .push(tx_push), .wdata(tx_wdata), .pop(tx_pop), .commit(1'b0), .rollback(1'b0),
+        .rdata(tx_rdata),
         .level(tx_level_w), .full(tx_full_unused), .empty(tx_empty),
         .overflow(tx_overflow), .underflow(tx_underflow_unused)
     );
 
-    host_fifo #(.DEPTH(FIFO_DEPTH)) u_rx_fifo (
+    host_fifo #(.DEPTH(FIFO_DEPTH), .HOLD(1)) u_rx_fifo (
         .clk(clk), .rst_n(rst_n), .flush(cmd_rx_flush),
-        .push(rx_push), .wdata(rx_wdata), .pop(rx_pop), .rdata(rx_rdata),
+        .push(rx_push), .wdata(rx_wdata), .pop(rx_pop), .commit(rx_commit),
+        .rollback(rx_rollback), .rdata(rx_rdata),
         .level(rx_level), .full(rx_full), .empty(rx_full_unused_empty),
         .overflow(rx_fifo_overflow), .underflow(rx_underflow)
     );

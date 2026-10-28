@@ -305,6 +305,52 @@ async def top_oqpsk_auto_ack(dut):
 
 
 @cocotb.test()
+async def top_oqpsk_filter_reject_dropped(dut):
+    """A CRC-good frame the address filter rejects raises RX_DONE_BAD but leaves no octets
+    and no descriptor; the accepted frame after it is the only thing the host sees."""
+    env = Env(dut)
+    await env.start()
+    pan, me = 0x1234, 0x0042
+    await configure(env, 1, 11)
+    await env.wr(0x0D4, pan)
+    await env.wr(0x0D8, me)
+    await env.wr(INT_ENABLE, RX_SYNC | RX_OK | RX_BAD)
+
+    async def receive(mpdu, seed):
+        words = oqpsk_tx.tx_dev_words(oqpsk_tx.with_fcs(mpdu))
+        iq = oq_cases.modulate(words, lead=37, tail=200)
+        await env.wr(INT_RAW, RX_SYNC | RX_OK | RX_BAD)
+        await env.wr(CMD, CMD_RX)
+        for _ in range(100):
+            if await env.rd(STATE) == 1:
+                break
+            await ClockCycles(dut.clk, 5)
+        await env.drive(iq, np.zeros(len(iq), dtype=np.uint8), seed=seed)
+        await env.wait_int(RX_OK | RX_BAD, 400)
+        return await env.rd(INT_RAW)
+
+    rejected = frame_154(0x11, pan, me + 1, 0x0001, b"not for me")
+    raw = await receive(rejected, 1)
+    expect("reject: INT_RAW", raw & (RX_OK | RX_BAD), RX_BAD)
+    expect("reject: descriptors", await env.rd(DESC_COUNT), 0)
+    expect("reject: RX_LEVEL", await env.rd(RX_LEVEL), 0)
+
+    accepted = frame_154(0x22, pan, me, 0x0001, b"for me")
+    raw = await receive(accepted, 2)
+    expect("accept: INT_RAW", raw & (RX_OK | RX_BAD), RX_OK)
+    expect("accept: descriptors", await env.rd(DESC_COUNT), 1)
+    info = await env.rd(DESC_INFO)
+    expect("accept: length", info & 0x1FF, len(accepted))
+    expect("accept: addr_match", (info >> 18) & 1, 1)
+    expect("accept: RX_LEVEL", await env.rd(RX_LEVEL), len(accepted))
+    got = bytes([await env.rd(RX_DATA) for _ in range(len(accepted))])
+    exp = bytearray(accepted)
+    if NEGATIVE:
+        exp[0] ^= 0x01
+    expect("accept: RX_DATA octets", got.hex(), bytes(exp).hex())
+
+
+@cocotb.test()
 async def top_le1m_response(dut):
     """An accepted LE packet is answered from the TX FIFO at T_IFS (4800 clk at
     32 MHz) after its last bit; the response words are the model's."""

@@ -139,7 +139,7 @@ test-top-negative: check-tools
 	@mkdir -p $(TOP)
 	@if TOP_NEGATIVE=1 $(PYTHON) verification/top/run_top.py $(CURDIR)/$(TOP)/sim_neg >$(TOP)/negative.log 2>&1; then \
 	  echo "ERROR: top negative control passed; the bench does not detect a broken expectation"; exit 1; \
-	else n=$$(grep -c 'expected=' $(TOP)/negative.log); [ "$$n" -ge 6 ] || { echo "ERROR: top negative control failed for the wrong reason ($$n expected= reports of 6); see $(TOP)/negative.log"; exit 1; }; \
+	else n=$$(grep -c 'expected=' $(TOP)/negative.log); [ "$$n" -ge 7 ] || { echo "ERROR: top negative control failed for the wrong reason ($$n expected= reports of 7); see $(TOP)/negative.log"; exit 1; }; \
 	  echo "top negative control OK (every perturbed expectation was rejected)"; fi
 
 # Host interface (rtl/host/): APB registers, FIFOs, interrupts, timestamps.

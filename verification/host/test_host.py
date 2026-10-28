@@ -30,7 +30,7 @@ EV_NAMES = ["rx_sync", "rx_done_ok", "rx_done_bad", "rx_overflow", "tx_done", "t
             "ack_sent", "ack_timeout", "response_sent", "trigger"]
 
 INPUTS = ["psel", "penable", "pwrite", "paddr", "pwdata", "pstrb", "state_i", "tx_pop",
-          "rx_push", "rx_wdata", "desc_push", "desc_len_in", "desc_flags_in", "rx_sync",
+          "rx_push", "rx_wdata", "rx_commit", "rx_rollback", "desc_push", "desc_len_in", "desc_flags_in", "rx_sync",
           "rx_end", "rx_done_ok", "rx_done_bad", "rx_overflow", "tx_start", "tx_done",
           "tx_error", "ack_sent", "ack_timeout", "response_sent", "trigger", "fe_rssi",
           "fe_agc_settled"]
@@ -91,9 +91,12 @@ async def strobe(dut, name, cycles=1):
     await Timer(1, "ns")
 
 
-async def rx_push(dut, byte):
+async def rx_push(dut, byte, commit=True):
+    """Push one octet; by default publish it at once (a one-octet packet)."""
     dut.rx_wdata.value = byte
     await strobe(dut, "rx_push")
+    if commit:
+        await strobe(dut, "rx_commit")
 
 
 @cocotb.test()
@@ -258,12 +261,78 @@ async def rx_fifo_and_overflow(dut):
     dut.rx_push.value = 1
     v, _ = await xfer(dut, RX_DATA, False)
     dut.rx_push.value = 0
+    await strobe(dut, "rx_commit")
     check("simul pop", v, 0x11)
     check("simul remaining", await rd(dut, RX_DATA), 0x22)
     await rx_push(dut, 0x77)
     await wr(dut, CMD, 1 << 4)
     await ClockCycles(dut.clk, 2)
     check("RX flush", await rd(dut, RX_LEVEL), 0)
+
+
+async def rx_packet(dut, octets, end):
+    """Push a packet's octets provisionally, then end it with 'commit' or 'rollback'."""
+    for b in octets:
+        await rx_push(dut, b, commit=False)
+    await strobe(dut, end)
+
+
+@cocotb.test()
+async def rx_fifo_rollback(dut):
+    """A rejected packet leaves no octets; the accepted one after it reads back intact."""
+    await setup(dut)
+    a, b, c = [0xA0, 0xA1, 0xA2], [0xB0, 0xB1, 0xB2, 0xB3], [0xC0, 0xC1]
+    await rx_packet(dut, a, "rx_commit")
+    # provisional octets take space but are invisible to the host
+    for x in b:
+        await rx_push(dut, x, commit=False)
+    check("level hides provisional", await rd(dut, RX_LEVEL), len(a))
+    await strobe(dut, "rx_rollback")
+    check("level after rollback", await rd(dut, RX_LEVEL), len(a))
+    await rx_packet(dut, c, "rx_commit")
+    check("level a+c", await rd(dut, RX_LEVEL), len(a) + len(c))
+    for x in a + c:
+        check("only accepted octets", await rd(dut, RX_DATA), x)
+    check("empty", await rd(dut, RX_LEVEL), 0)
+    check("no error", await rd(dut, ERR_STATUS), 0)
+    # rollback of a packet that wraps the write pointer
+    for i in range(DEPTH - 1):
+        await rx_push(dut, i & 0xFF)
+        await rd(dut, RX_DATA)
+    await rx_packet(dut, [0x51], "rx_commit")
+    await rx_packet(dut, [0x61, 0x62, 0x63], "rx_rollback")
+    await rx_packet(dut, [0x71, 0x72], "rx_commit")
+    for x in (0x51, 0x71, 0x72):
+        check("wrap rollback", await rd(dut, RX_DATA), x)
+    check("empty after wrap", await rd(dut, RX_LEVEL), 0)
+
+
+@cocotb.test()
+async def rx_fifo_rollback_near_full(dut):
+    """A reject while the FIFO is nearly full (overflowing) frees exactly its own space."""
+    await setup(dut)
+    a = [(0x40 + i) & 0xFF for i in range(DEPTH - 2)]
+    await rx_packet(dut, a, "rx_commit")
+    # five octets offered, two fit, three are refused and raise RX_OVERFLOW
+    await rx_packet(dut, [0xE0 + i for i in range(5)], "rx_rollback")
+    check("RX_OVERFLOW from refused octets", await rd(dut, INT_RAW) & RX_OVF, RX_OVF)
+    check("level back to a", await rd(dut, RX_LEVEL), len(a))
+    assert int(dut.rx_full.value) == 0
+    await rx_packet(dut, [0x01, 0x02], "rx_commit")     # the freed space is usable
+    check("full again", await rd(dut, RX_LEVEL), DEPTH)
+    for x in a + [0x01, 0x02]:
+        check("data intact", await rd(dut, RX_DATA), x)
+    check("empty", await rd(dut, RX_LEVEL), 0)
+    # a pop in the cycle of the rollback does not corrupt the count
+    await rx_packet(dut, [0x10, 0x11], "rx_commit")
+    for x in (0x90, 0x91):
+        await rx_push(dut, x, commit=False)
+    dut.rx_rollback.value = 1
+    v, _ = await xfer(dut, RX_DATA, False)
+    dut.rx_rollback.value = 0
+    check("pop beside rollback", v, 0x10)
+    check("level after", await rd(dut, RX_LEVEL), 1)
+    check("remaining", await rd(dut, RX_DATA), 0x11)
 
 
 async def push_desc(dut, length, flags, rssi, sync_gap=3):
