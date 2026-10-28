@@ -5,6 +5,14 @@ triage role. Newest first.
 
 ### 2026-10-27
 
+- **PR #88**: refactor: share vector materialisation and noise-only stimulus across the RX case modules
+- **Issue #87** (closed): Dedupe write_vectors and noise-only stimulus across LE 1M and O-QPSK cases.py
+- **PR #86**: refactor: share the cocotb build/run/verdict sequence across verification runners
+- **Issue #85** (closed): Simplify: share cocotb runner boilerplate across verification run_*.py
+- **PR #84**: refactor: share the cocotb RX stimulus driver between LE 1M and O-QPSK benches
+- **Issue #80** (closed): Dedupe the cocotb RX Harness shared by LE 1M and O-QPSK replay testbenches
+- **PR #79**: refactor: share the ideal O-QPSK modulator via sim/model/oqpsk_tx
+- **Issue #77** (closed): Dedupe the ideal-modulator stimulus generator shared by O-QPSK model tests and RTL replay
 - **PR #78**: refactor: share cocotb trace compare and RX load_case in traces.py
 - **Issue #71** (closed): Dedupe cocotb trace compare across replay testbenches
 - **PR #74**: feat(top): baseband_top integration, glue and top-level bench
