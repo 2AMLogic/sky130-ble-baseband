@@ -124,3 +124,113 @@ def test_row_summary_reports_not_asserts():
     r = ber_sweep.row_summary(pts)["r"]
     assert r["points"] == 2 and r["worst_cp_upper"] == 2e-3
     assert r["upper_bound_meets_target"] is False and r["all_points_measured"] is False
+
+
+# ------------------------------------------------------------ shards and merge
+
+TINY = ["--packet-cap", "2", "--max-length-packet-cap", "2"]
+CLEAN_SHA = "0123456789ab"
+
+
+def _rows():
+    return list(dict.fromkeys(g[0] for g in ber_sweep.full_grid()))
+
+
+def _rewrite(path, **changes):
+    rep = json.loads(path.read_text())
+    rep.update(changes)
+    path.write_text(json.dumps(rep, indent=1, sort_keys=True) + "\n")
+
+
+@pytest.fixture(scope="module")
+def tiny(tmp_path_factory):
+    """One non-sharded tiny full run and one tiny shard per row, SHA made clean."""
+    root = tmp_path_factory.mktemp("tiny")
+    whole = root / "whole.json"
+    subprocess.run([sys.executable, SWEEP, "--out", str(whole), *TINY],
+                   check=True, capture_output=True, text=True)
+    shards = root / "shards"
+    for row in _rows():
+        subprocess.run([sys.executable, SWEEP, "--only", row, "--out", str(shards / f"{row}.json"), *TINY],
+                       check=True, capture_output=True, text=True)
+    for f in [whole, *shards.iterdir()]:
+        _rewrite(f, sim_git_sha=CLEAN_SHA)
+    return whole, shards
+
+
+def _copy(shards, tmp_path):
+    dst = tmp_path / "shards"
+    dst.mkdir()
+    for f in shards.iterdir():
+        (dst / f.name).write_bytes(f.read_bytes())
+    return dst
+
+
+def test_full_grid_appends_negative_control_last_without_moving_seeds():
+    grid = ber_sweep.full_grid()
+    assert grid[-1][0] == "negative_control" and sum(g[0] == "negative_control" for g in grid) == 1
+    assert grid[-1][1:] == ber_sweep.quick_grid()[-1][1:]
+    assert grid[-1][3] == {"out_of_spec": True, "negative_control": True}
+    assert [g[0] for g in grid[:-1]].count("le1m_uniform") == 4
+    assert len(grid) == 93      # 92 pre-existing points keep indices 0..91
+
+
+def test_single_row_shard_defaults_to_named_file(tmp_path, monkeypatch):
+    monkeypatch.setattr(ber_sweep, "SIM", str(tmp_path))
+    monkeypatch.setattr(ber_sweep, "git_sha", lambda: CLEAN_SHA)
+    assert ber_sweep.main(["--only", "le1m_uniform", *TINY]) == 0
+    files = list(tmp_path.glob("results/*/shards/*.json"))
+    assert [f.name for f in files] == ["le1m_uniform.json"]
+    assert files[0].parent.parent.name.endswith(f"-{CLEAN_SHA}")
+    rep = json.loads(files[0].read_text())
+    assert rep["mode"] == "full" and rep["base_seed"] == 1 and rep["sim_git_sha"] == CLEAN_SHA
+    assert rep["stop_rule"]["packet_cap"] == 2
+    assert {p["row_id"] for p in rep["points"]} == {"le1m_uniform"}
+    assert all(p["run_index"] == 0 and p["packets"] <= 2 for p in rep["points"])
+
+
+def test_negative_control_is_a_valid_shard(tiny):
+    rep = json.loads((tiny[1] / "negative_control.json").read_text())
+    assert len(rep["points"]) == 1 and rep["points"][0]["negative_control"]
+    assert rep["points"][0]["point_index"] == len(ber_sweep.full_grid()) - 1
+
+
+def test_merge_equals_single_run(tiny, tmp_path):
+    whole, shards = tiny
+    out = tmp_path / "ber.json"
+    assert ber_sweep.main(["--merge", str(shards), "--out", str(out)]) == 0
+    assert json.loads(out.read_text()) == json.loads(whole.read_text())
+    assert out.read_bytes() == whole.read_bytes()
+
+
+def test_merge_refuses_missing_row(tiny, tmp_path, capsys):
+    d = _copy(tiny[1], tmp_path)
+    (d / "negative_control.json").unlink()
+    assert ber_sweep.main(["--merge", str(d), "--out", str(tmp_path / "o.json")]) == 1
+    assert "negative_control" in capsys.readouterr().err and not (tmp_path / "o.json").exists()
+
+
+def test_merge_refuses_duplicate_row(tiny, tmp_path, capsys):
+    d = _copy(tiny[1], tmp_path)
+    (d / "copy.json").write_bytes((d / "le1m_cfo.json").read_bytes())
+    assert ber_sweep.main(["--merge", str(d), "--out", str(tmp_path / "o.json")]) == 1
+    assert "duplicate row le1m_cfo" in capsys.readouterr().err
+
+
+def test_merge_refuses_seed_mismatch(tiny, tmp_path, capsys):
+    d = _copy(tiny[1], tmp_path)
+    _rewrite(d / "le1m_clock.json", base_seed=2)
+    assert ber_sweep.main(["--merge", str(d), "--out", str(tmp_path / "o.json")]) == 1
+    assert "base_seed" in capsys.readouterr().err
+
+
+def test_merge_refuses_dirty_and_quick_shards(tiny, tmp_path, capsys):
+    d = _copy(tiny[1], tmp_path)
+    _rewrite(d / "le1m_drift.json", sim_git_sha=CLEAN_SHA + "-dirty")
+    assert ber_sweep.main(["--merge", str(d), "--out", str(tmp_path / "o.json")]) == 1
+    assert "le1m_drift.json" in capsys.readouterr().err
+    (tmp_path / "x").mkdir()
+    d2 = _copy(tiny[1], tmp_path / "x")
+    _rewrite(d2 / "le1m_drift.json", mode="quick")
+    assert ber_sweep.main(["--merge", str(d2), "--out", str(tmp_path / "o.json")]) == 1
+    assert "mode" in capsys.readouterr().err

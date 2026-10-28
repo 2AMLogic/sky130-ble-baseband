@@ -8,6 +8,8 @@ Clopper-Pearson **upper** bound, and are reported, not asserted.
 
     python3 sim/sweep/ber_sweep.py --quick            # CI mode, ~1 minute
     python3 sim/sweep/ber_sweep.py                    # full sweep, see sim/README.md
+    python3 sim/sweep/ber_sweep.py --only ROW         # one shard: results/<date>-<sha>/shards/ROW.json
+    python3 sim/sweep/ber_sweep.py --merge DIR        # assemble shards into ber.json
 """
 
 import argparse
@@ -160,6 +162,11 @@ def _p(**kw):
     return cm_a.CmAParams(**kw)
 
 
+def _negative_control():
+    return ("negative_control", _p(ebn0_db=16.0, cfo_hz=NEGATIVE_CONTROL_CFO_HZ),
+            PAYLOAD_TYPICAL, {"out_of_spec": True, "negative_control": True})
+
+
 def full_grid():
     """(row_id, params, payload_octets, flags) for the ratified-row sweep."""
     pts = []
@@ -177,6 +184,8 @@ def full_grid():
             pts.append(("le1m_clock", _p(ebn0_db=e, cfo_hz=0.0, clock_ppm=ppm), PAYLOAD_MAX, None))
     for e in EBN0_FULL:
         pts.append(("le1m_uniform", _p(ebn0_db=e, draw_cfo=True, draw_clock=True), PAYLOAD_TYPICAL, None))
+    # Appended last: existing point indices, and so their seeds, must not move.
+    pts.append(_negative_control())
     return pts
 
 
@@ -191,8 +200,7 @@ def quick_grid():
                                  drift_hz=-DRIFT_HZ), PAYLOAD_TYPICAL, None))
     for ppm in (-100.0, 100.0):
         pts.append(("le1m_clock", _p(ebn0_db=16.0, clock_ppm=ppm), PAYLOAD_MAX, None))
-    pts.append(("negative_control", _p(ebn0_db=16.0, cfo_hz=NEGATIVE_CONTROL_CFO_HZ),
-                PAYLOAD_TYPICAL, {"out_of_spec": True, "negative_control": True}))
+    pts.append(_negative_control())
     return pts
 
 
@@ -245,6 +253,76 @@ def default_out(sha):
     return os.path.join(SIM, "results", f"{day}-{sha}", "ber.json")
 
 
+def shard_out(sha, row_id):
+    """Deterministic shard path for one row, beside where ber.json would go."""
+    return os.path.join(os.path.dirname(default_out(sha)), "shards", f"{row_id}.json")
+
+
+class MergeError(Exception):
+    pass
+
+
+def merge_shards(shard_dir):
+    """Assemble the full-grid report from per-row shard files in ``shard_dir``.
+
+    Refuses (MergeError naming the row where there is one) on a missing,
+    duplicate or partial row, on shards that disagree on seed / run index /
+    mode / stop rule / SHA, and on a dirty-SHA or quick-mode shard."""
+    names = sorted(n for n in os.listdir(shard_dir) if n.endswith(".json"))
+    if not names:
+        raise MergeError(f"no shard files in {shard_dir}")
+    shards = []
+    for n in names:
+        with open(os.path.join(shard_dir, n), encoding="utf-8") as f:
+            shards.append((n, json.load(f)))
+    first = shards[0][1]
+    for n, rep in shards:
+        if rep.get("mode") != "full":
+            raise MergeError(f"{n}: mode is {rep.get('mode')!r}, only full-mode shards merge")
+        if str(rep.get("sim_git_sha", "")).endswith("-dirty") or rep.get("sim_git_sha") == "unknown":
+            raise MergeError(f"{n}: sim_git_sha {rep.get('sim_git_sha')!r} is not a clean commit")
+        for key in ("base_seed", "stop_rule", "sim_git_sha", "mode"):
+            if rep.get(key) != first.get(key):
+                raise MergeError(f"{n}: {key} {rep.get(key)!r} disagrees with "
+                                 f"{shards[0][0]} ({first.get(key)!r})")
+    runs = {p["run_index"] for _, rep in shards for p in rep["points"]}
+    if len(runs) != 1:
+        raise MergeError(f"shards disagree on run_index: {sorted(runs)}")
+
+    owner, points = {}, []
+    for n, rep in shards:
+        for row in {p["row_id"] for p in rep["points"]}:
+            if row in owner:
+                raise MergeError(f"duplicate row {row}: in {owner[row]} and {n}")
+            owner[row] = n
+        points.extend(rep["points"])
+    want = {}
+    for idx, (row, *_rest) in enumerate(full_grid()):
+        want.setdefault(row, set()).add(idx)
+    for row in want:
+        have = {p["point_index"] for p in points if p["row_id"] == row}
+        if row not in owner:
+            raise MergeError(f"missing row {row}")
+        if have != want[row]:
+            raise MergeError(f"row {row}: point indices {sorted(have)} != expected {sorted(want[row])}")
+    for row in owner:
+        if row not in want:
+            raise MergeError(f"unexpected row {row}")
+    points.sort(key=lambda p: p["point_index"])
+    sr = first["stop_rule"]
+    args = argparse.Namespace(quick=False, seed=first["base_seed"], min_errors=sr["min_errors"],
+                              packet_cap=sr["packet_cap"],
+                              max_length_packet_cap=sr["max_length_packet_cap"])
+    return build_report(points, args, first["sim_git_sha"])
+
+
+def write_report(report, out):
+    os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
+    with open(out, "w", encoding="utf-8", newline="\n") as f:
+        json.dump(report, f, indent=1, sort_keys=True)
+        f.write("\n")
+
+
 def build_report(points, args, sha):
     return {
         "format": FORMAT,
@@ -281,14 +359,32 @@ def main(argv=None):
     ap.add_argument("--max-length-packet-cap", type=int, default=None,
                     help="packets per max-length (2120 us) point (default: quick 6, full 3000)")
     ap.add_argument("--only", action="append", default=[], help="run only this row id (repeatable)")
-    ap.add_argument("--out", default=None, help="ber.json path (default sim/results/<date>-<sha>/ber.json)")
+    ap.add_argument("--out", default=None,
+                    help="ber.json path (default sim/results/<date>-<sha>/ber.json; a single "
+                         "--only row defaults to .../shards/<row>.json)")
+    ap.add_argument("--merge", metavar="DIR", default=None,
+                    help="merge the shard files in DIR into one full ber.json (writes --out, "
+                         "default DIR/../ber.json); runs no simulation")
     args = ap.parse_args(argv)
+    if args.merge:
+        try:
+            report = merge_shards(args.merge)
+        except MergeError as e:
+            print(f"merge refused: {e}", file=sys.stderr)
+            return 1
+        out = args.out or os.path.join(os.path.dirname(os.path.abspath(args.merge)), "ber.json")
+        write_report(report, out)
+        print(f"merged {len(report['points'])} points into {out}")
+        return 0
     if args.packet_cap is None:
         args.packet_cap = 40 if args.quick else 20000
     if args.max_length_packet_cap is None:
         args.max_length_packet_cap = 6 if args.quick else 3000
 
     grid = quick_grid() if args.quick else full_grid()
+    unknown = sorted(set(args.only) - {g[0] for g in grid})
+    if unknown:
+        ap.error(f"unknown row id(s): {', '.join(unknown)}")
     points = []
     for idx, (row_id, params, payload, flags) in enumerate(grid):
         if args.only and row_id not in args.only:
@@ -304,12 +400,14 @@ def main(argv=None):
               f"{' OUT-OF-SPEC' if pt['out_of_spec'] else ''}", flush=True)
 
     sha = git_sha()
-    out = args.out or default_out(sha)
-    os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
+    if args.out:
+        out = args.out
+    elif len(set(args.only)) == 1:
+        out = shard_out(sha, args.only[0])
+    else:
+        out = default_out(sha)
     report = build_report(points, args, sha)
-    with open(out, "w", encoding="utf-8", newline="\n") as f:
-        json.dump(report, f, indent=1, sort_keys=True)
-        f.write("\n")
+    write_report(report, out)
     for row_id, r in report["rows"].items():
         print(f"row {row_id}: worst cp_upper at {TARGET_EBN0_DB:g} dB = {r['worst_cp_upper']:.3e}; "
               f"upper bound meets {TARGET_BER:g}: {r['upper_bound_meets_target']} "
