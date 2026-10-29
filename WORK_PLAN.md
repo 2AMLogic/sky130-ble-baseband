@@ -22,6 +22,7 @@ _None._
 - **#52**: T1 item 1f: baseband top, real synthesis script, committed sky130_fd_sc_hd netlist, item-1 attestation
 - **#55**: T1 item 6a: committed full LE 1M BER sweeps (all rows, CM-A) with negative control
 - **#56**: T1 item 6b: 802.15.4 CM-A source and seeded PER sweep with negative control
+- **#72**: baseband_top flat synthesis does not complete in 45 min (blocks item 1 netlist)
 
 ## Ready
 
@@ -33,7 +34,7 @@ _None._
 
 Issues currently being built (`loom:building`).
 
-- **#72**: baseband_top flat synthesis does not complete in 45 min (blocks item 1 netlist)
+_None._
 
 ## PRs Awaiting Review
 
@@ -71,9 +72,9 @@ _None._
 |------|-------|
 | Operator merge-risk holds | 0 |
 | Very important | 0 |
-| Important | 3 |
+| Important | 4 |
 | Ready (`loom:issue`) | 0 |
-| In Progress (`loom:building`) | 1 |
+| In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
 | Curated | 5 |
