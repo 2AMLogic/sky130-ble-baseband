@@ -11,6 +11,9 @@ here is **simulated** and says so.
 | `model/traces.py` | Shared 0007 trace reader/writer |
 | `sweep/ber_sweep.py` | Seeded BER sweep, Clopper-Pearson stop rule, writes `results/<date>-<sha>/ber.json` |
 | `model/le1m_tx.py` | Integer LE 1M TX reference model (PDU to whitened, CRC'd, Gaussian-shaped `tx_dev` words); trace format in [model/trace_format.md](model/trace_format.md); `model/golden/tx_adv_ch37.trace` is a generated golden trace |
+| `channel/cm_a_oqpsk.py` | CM-A for 802.15.4: the TX model's O-QPSK waveform through the same offset, chip-clock and timing-phase (one chip), carrier-phase, AGC and 8-bit stages; AWGN set by SNR in a 2 MHz noise bandwidth |
+| `model/oqpsk_tx.py`, `model/oqpsk_rx.py` | Integer 802.15.4 TX and non-coherent RX reference models |
+| `sweep/per_sweep.py` | Seeded PER sweep (statistics and seeding imported from `ber_sweep.py`), writes `results/<date>-<sha>/per.json` |
 | `tests/` | pytest controls |
 
 ## Commands
@@ -69,6 +72,27 @@ CM-A". A `bound_only` point hit its packet cap and is an upper bound, not a
 measurement. `rows` reports, per row at 16 dB, the worst upper bound and whether it
 is ≤ 1e-3; that is a report for the evidence record, not a claim that the row is met.
 `negative_control` and `out_of_spec` points are excluded from `rows`.
+
+## PER sweep (802.15.4)
+
+```
+python3 sim/sweep/per_sweep.py --quick     # CI sweep (make sim-quick runs it after the BER one)
+python3 sim/sweep/per_sweep.py             # full sweep
+python3 sim/sweep/per_sweep.py --only per_cfo --packet-cap 20
+```
+
+Rows: `per_snr` (20-octet PSDU, SNR -1…9 dB, no offsets), `per_cfo` (20 octets,
+offsets -196…+196 kHz in 49 kHz steps, both ±80 ppm extremes pinned, SNR 3/5/7 dB),
+`per_clock` (127 octets, chip clock -80/0/+80 ppm, SNR 3/5/7 dB), and
+`negative_control` (800 kHz offset at 9 dB, flagged out of spec and excluded
+from `rows`). A packet is in error if it is not detected, the FCS fails, or the
+PSDU is not returned exactly. Stop at 100 packet errors or the cap (default 20000
+packets, 3000 at 127 octets; `--quick` 40 and 10); a capped point is `bound_only`.
+`per.json` reports, per row at 5 dB, the worst upper bound and whether it is
+below 1 %, plus a `negative_control` record whose `fails_row` must be true; both
+are reports, not assertions. The full sweep is hours of CPU and is meant for a
+dedicated machine, not a shared dispatch worker. Same determinism contract as
+above. `--quick` proves the harness, not the row.
 
 ## Determinism
 

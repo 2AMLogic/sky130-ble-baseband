@@ -173,7 +173,7 @@ model-test:
 	else grep -q 'crc24 KAT mismatch' $(BUILD)/model_negative.log || { echo "ERROR: model negative control failed for the wrong reason; see $(BUILD)/model_negative.log"; exit 1; }; \
 	  echo "model negative control OK (flipped CRC init was rejected)"; fi
 
-# sim/: CM-A channel, integer LE 1M receiver, BER sweep (needs numpy, pytest from `make venv`)
+# sim/: CM-A channels, integer LE 1M and 802.15.4 receivers, BER and PER sweeps (needs numpy, pytest from `make venv`)
 .PHONY: sim-test sim-quick
 
 sim-test:
@@ -181,6 +181,7 @@ sim-test:
 
 sim-quick:
 	$(PYTHON) sim/sweep/ber_sweep.py --quick --out $(CURDIR)/flow/build/sim/ber.json
+	$(PYTHON) sim/sweep/per_sweep.py --quick --out $(CURDIR)/flow/build/sim/per.json
 
 # LE 1M TX RTL: cocotb replay of the model's traces (golden + generated packets),
 # bit-exact per decision 0007. The negative control corrupts one expected txdev
