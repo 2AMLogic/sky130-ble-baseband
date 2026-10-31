@@ -15,10 +15,12 @@ jobs:
           python-version: "3.12"
       - run: make venv
       - run: make sim-test
-      - name: Quick BER sweep (must finish in under 5 minutes)
+      - name: Quick BER and PER sweeps (must finish in under 5 minutes)
         timeout-minutes: 5
         run: time make sim-quick
       - uses: actions/upload-artifact@v4
         with:
-          name: ber-quick
-          path: flow/build/sim/ber.json
+          name: sweeps-quick
+          path: |
+            flow/build/sim/ber.json
+            flow/build/sim/per.json
