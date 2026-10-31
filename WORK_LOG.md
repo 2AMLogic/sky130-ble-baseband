@@ -3,6 +3,10 @@
 Chronological record of merged PRs and closed issues, maintained by the Guide
 triage role. Newest first.
 
+### 2026-10-31
+
+- **PR #96**: feat(sim): 802.15.4 CM-A source and seeded PER sweep
+
 ### 2026-10-28
 
 - **PR #93**: feat(sim): shard the LE 1M BER sweep by row and add a validating merge
