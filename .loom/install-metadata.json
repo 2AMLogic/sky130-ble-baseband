@@ -1,6 +1,6 @@
 {
-  "loom_version": "0.19.1236",
-  "loom_commit": "290e83f9bf9c8b7ff5c9b33f871bfce5bcd95090",
+  "loom_version": "0.19.1244",
+  "loom_commit": "504bcea1efa478de4388c6bcddf763ee8cffbf4c",
   "requires_daemon": "0.19.1146",
   "install_date": "2026-10-17",
   "loom_source_remote": "git@github.com:rjwalters/loom.git",
@@ -750,7 +750,6 @@
     ".loom/scripts/version-check-gate.sh",
     ".loom/scripts/warn-operator-gated.sh",
     ".loom/scripts/warn-out-of-set-deps.sh",
-    ".loom/scripts/worktree-return.sh",
     ".loom/scripts/worktree.sh",
     ".loom/scripts/tests/test-champion-ci-workflow-blast.sh",
     ".agents/skills/loom-guide/SKILL.md",
@@ -789,7 +788,11 @@
     ".loom/hooks/tests/test-guard-background-subagents.sh",
     ".loom/hooks/guard-destructive-generic.sh",
     ".loom/hooks/guard-worktree-paths.sh",
-    ".loom/hooks/tests/test-guard-worktree-paths.sh"
+    ".loom/hooks/tests/test-guard-worktree-paths.sh",
+    ".loom/scripts/tests/test-champion-merge-risk-self-release.sh",
+    ".loom/scripts/tests/test-guide-park-record-precedence.sh",
+    ".agents/skills/loom-champion/SKILL.md",
+    ".agents/skills/loom-judge-ci-red/SKILL.md"
   ],
-  "last_resync": "2026-10-30"
+  "last_resync": "2026-11-01"
 }
