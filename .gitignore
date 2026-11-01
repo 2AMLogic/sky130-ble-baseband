@@ -107,3 +107,6 @@ results.xml
 
 # Repo Skills machine-local install metadata (absolute source path + timestamp)
 .claude/skills/repo/.install-local.json
+
+# Repo Skills Codex-side machine-local install metadata (never committed)
+.agents/skills/repo/.install-local.json
