@@ -13,7 +13,7 @@ _None._
 
 `loom:very-important` (one counts per workspace); every stage takes these first.
 
-_None._
+- **#72**: baseband_top flat synthesis does not complete in 45 min (blocks item 1 netlist)
 
 ## Important
 
@@ -22,7 +22,6 @@ _None._
 - **#52**: T1 item 1f: baseband top, real synthesis script, committed sky130_fd_sc_hd netlist, item-1 attestation
 - **#55**: T1 item 6a: committed full LE 1M BER sweeps (all rows, CM-A) with negative control
 - **#56**: T1 item 6b: 802.15.4 CM-A source and seeded PER sweep with negative control
-- **#72**: baseband_top flat synthesis does not complete in 45 min (blocks item 1 netlist)
 
 ## Ready
 
@@ -71,8 +70,8 @@ _None._
 | Bucket | Count |
 |------|-------|
 | Operator merge-risk holds | 0 |
-| Very important | 0 |
-| Important | 4 |
+| Very important | 1 |
+| Important | 3 |
 | Ready (`loom:issue`) | 0 |
 | In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
