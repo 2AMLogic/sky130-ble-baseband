@@ -33,7 +33,7 @@ _None._
 
 Issues currently being built (`loom:building`).
 
-- **#101**: Add a hierarchical synthesis mode and record per-module Yosys cost to shrink #72
+_None._
 
 ## PRs Awaiting Review
 
@@ -56,7 +56,6 @@ Issues carrying `loom:curated`.
 - **#55**: T1 item 6a: committed full LE 1M BER sweeps (all rows, CM-A) with negative control *(curated)*
 - **#56**: T1 item 6b: 802.15.4 CM-A source and seeded PER sweep with negative control *(curated)*
 - **#72**: baseband_top flat synthesis does not complete in 45 min (blocks item 1 netlist) *(curated)*
-- **#101**: Add a hierarchical synthesis mode and record per-module Yosys cost to shrink #72 *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -74,10 +73,10 @@ _None._
 | Very important | 1 |
 | Important | 3 |
 | Ready (`loom:issue`) | 0 |
-| In Progress (`loom:building`) | 1 |
+| In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 6 |
+| Curated | 5 |
 | Architect / Hermit proposals | 0 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
