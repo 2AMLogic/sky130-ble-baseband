@@ -26,3 +26,33 @@ in `synth -flatten`, before liberty mapping. The RTL was written for bit-exactne
 not area (`rtl/README.md`), so the item-1 netlist, its inventory and the
 attestation are open; see the issue linked from the PR. The cell counts of any
 finished run are not timing claims; timing belongs to the STA item.
+
+## Profile and hierarchical mode (issue 101)
+
+`profile.sh [-t SECONDS] [-o DIR] [module ...]` runs generic `synth -top <m>` (no
+`-flatten`, no liberty) on each module of `rtl/baseband.f`, one at a time, each under
+a hard `timeout`, and writes `records/<date>/profile.json` (wall time, peak RSS,
+generic cell and flop counts; status `ok`, `timeout` or `error`). Cell counts are
+not timing claims. A parent row includes its children (`synth -top` synthesizes
+them too), so parent and child rows must not be added together.
+
+`SYNTH_MODE=hier` (unset or `flat`: the flat commands are unchanged) runs
+`synth -top` without `-flatten`, then `dfflibmap` and `abc -liberty` per module
+(`SYNTH_ABC_FAST=1` switches to `abc -fast -liberty`).
+
+Recorded 2026-11-05 in `records/2026-11-05/` (120 s timeout per module, Yosys 0.67):
+
+- 32 of 37 rows finish in under 10 s each; `le1m_rx_pkt` takes 103 s (22,307
+  generic cells). Peak RSS is about 175 MB for every small module.
+- 5 rows time out at 120 s: leaves `oqpsk_rx_corr` and `le1m_rx_sync`, and the
+  parents `le1m_rx`, `oqpsk_rx`, `baseband_top` (which contain them). Those two
+  leaves dominate; `oqpsk_rx_corr` alone is 8 min and 57,787 generic cells in the
+  flat run (above), and `le1m_rx_pkt` is the next largest leaf. Everything else is
+  small: `host_top` 19,811, `bb_tx_path` 5,774, `le1m_rx_cordic` 4,701,
+  `oqpsk_rx_pkt` 4,212 generic cells.
+- `SYNTH_MODE=hier` on `baseband_top` (liberty tt_025C_1v80) did **not** finish in
+  300 s (peak RSS 943 MB). It stalled in generic `synth`'s own ABC pass on
+  `oqpsk_rx_corr`, before liberty mapping (`records/2026-11-05/hier_top.txt`).
+  Dropping `-flatten` alone therefore does not remove the cost; the two timing-out
+  leaves do. `hier + abc -fast` was not run, since `-fast` only affects the later
+  liberty ABC pass. No RTL rewrite is made here.

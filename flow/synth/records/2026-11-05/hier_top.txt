@@ -1,0 +1,7 @@
+SYNTH_MODE=hier, SYNTH_TOP=baseband_top, liberty tt_025C_1v80 (flow/versions.mk pin)
+host: loom-worker (shared 8 vCPU, niced), one yosys, hard timeout 300 s
+result: TIMEOUT at 300.08 s wall, peak RSS 943288 kB
+last log line: step 39.22.26, ABC (inside generic 'synth') extracting module
+  $paramod\oqpsk_rx_corr\SIDE_W=9; dfflibmap/abc -liberty never reached.
+no netlist written. SYNTH_ABC_FAST=1 not run: the stall is in generic synth's own
+ABC pass, which -fast on the later 'abc -liberty' does not touch.

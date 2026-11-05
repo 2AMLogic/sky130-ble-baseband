@@ -5,6 +5,9 @@
 #   SYNTH_LIB   liberty file (pinned corner, flow/versions.mk)
 #   SYNTH_OUT   run directory for the reports
 #   SYNTH_NETLIST  path of the netlist to write
+#   SYNTH_MODE  optional: `flat` (default, unset = flat) or `hier` (no -flatten,
+#               per-module ABC; experimental, see flow/synth/README.md)
+#   SYNTH_ABC_FAST  optional, hier only: `1` uses `abc -fast -liberty`
 # Cell counts / area from this step are not timing claims (item 42 owns those).
 set top  $::env(SYNTH_TOP)
 set lib  $::env(SYNTH_LIB)
@@ -19,9 +22,23 @@ foreach line [split [read $fh] "\n"] {
 close $fh
 foreach f $files { yosys read_verilog -sv $f }
 yosys hierarchy -check -top $top
-yosys synth -top $top -flatten
-yosys dfflibmap -liberty $lib
-yosys abc -liberty $lib
+set mode flat
+if {[info exists ::env(SYNTH_MODE)] && $::env(SYNTH_MODE) ne ""} { set mode $::env(SYNTH_MODE) }
+if {$mode eq "flat"} {
+    yosys synth -top $top -flatten
+    yosys dfflibmap -liberty $lib
+    yosys abc -liberty $lib
+} elseif {$mode eq "hier"} {
+    yosys synth -top $top
+    yosys dfflibmap -liberty $lib
+    if {[info exists ::env(SYNTH_ABC_FAST)] && $::env(SYNTH_ABC_FAST) eq "1"} {
+        yosys abc -fast -liberty $lib
+    } else {
+        yosys abc -liberty $lib
+    }
+} else {
+    error "SYNTH_MODE must be flat or hier, got '$mode'"
+}
 yosys opt_clean -purge
 yosys tee -o $out/cell_count.rpt stat -liberty $lib
 yosys write_verilog -noattr $net
