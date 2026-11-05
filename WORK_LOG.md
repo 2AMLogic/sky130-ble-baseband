@@ -3,6 +3,11 @@
 Chronological record of merged PRs and closed issues, maintained by the Guide
 triage role. Newest first.
 
+### 2026-11-05
+
+- **PR #103**: feat(synth): add bounded per-module Yosys profile and SYNTH_MODE=hier
+- **Issue #101** (closed): Add a hierarchical synthesis mode and record per-module Yosys cost to shrink #72
+
 ### 2026-11-01
 
 - **PR #98**: Bump Repo Skills 0.24.7 -> 0.25.1
