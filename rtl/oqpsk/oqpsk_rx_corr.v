@@ -14,7 +14,8 @@
 //   o_rsum  sum of the last 320 sideband magnitudes ending at sample n (the
 //           model's _rssi window, zero before sample 0), exact in 17 bits
 //
-// The 16 x 31 sums are written as one combinational expression per strobe:
+// Correlators 0..7 are 31-term sums; 8..15 are their negations (the chip table
+// makes W[m+8] = -W[m]). Written as one combinational expression per strobe:
 // bit-exactness, not area or Fmax, is the goal here (items 1f/5 own those).
 module oqpsk_rx_corr #(
     parameter SIDE_W = 9
@@ -85,13 +86,16 @@ module oqpsk_rx_corr #(
             tv   = {{5{tap[a][17]}}, tap[a]};
             msum = msum + (tv[22] ? -tv : tv);
         end
-        for (b = 0; b < 16; b = b + 1) begin
+        // W[m+8][j] = -W[m][j] (sim/tests/test_oqpsk_corr_symmetry.py), so
+        // corr[m+8] = -corr[m]; |corr| <= 31 * 2^17 < 2^22, no overflow in 23 bits.
+        for (b = 0; b < 8; b = b + 1) begin
             acc = 23'sd0;
             for (a = 0; a < NTAPS; a = a + 1) begin
                 tv  = {{5{tap[a][17]}}, tap[a]};
                 acc = WNEG[b*NTAPS + a] ? acc - tv : acc + tv;
             end
-            vec_c[b*23 +: 23] = acc;
+            vec_c[b*23 +: 23]       = acc;
+            vec_c[(b+8)*23 +: 23]   = -acc;
         end
     end
 

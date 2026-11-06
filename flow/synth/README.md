@@ -56,3 +56,19 @@ Recorded 2026-11-05 in `records/2026-11-05/` (120 s timeout per module, Yosys 0.
   Dropping `-flatten` alone therefore does not remove the cost; the two timing-out
   leaves do. `hier + abc -fast` was not run, since `-fast` only affects the later
   liberty ABC pass. No RTL rewrite is made here.
+
+### `oqpsk_rx_corr` with 8 correlators plus negation (issue 106)
+
+`oqpsk_rx_corr` now sums correlators 0..7 and sets `corr[m+8] = -corr[m]` (the chip
+table gives `W[m+8] = -W[m]`, checked by `sim/tests/test_oqpsk_corr_symmetry.py`;
+outputs bit-identical, oqpsk and top benches and negative controls pass). Before /
+after, generic `synth -top oqpsk_rx_corr`, Yosys 0.67:
+
+| | status | wall | generic cells |
+|---|---|---|---|
+| before (2026-11-05, 120 s) | timeout | 120 s | not finished (57,787 in the flat run) |
+| after (`records/2026-11-06/`, 120 s) | timeout | 120 s | not finished |
+| after (`records/2026-11-06-t300/`, 300 s) | timeout | 300 s | not finished |
+
+Halving the adders did **not** bring the leaf under 300 s, so this change alone does
+not unblock #72. The reduction in cell count is unmeasured because no run finished.
