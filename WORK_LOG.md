@@ -3,6 +3,11 @@
 Chronological record of merged PRs and closed issues, maintained by the Guide
 triage role. Newest first.
 
+### 2026-11-06
+
+- **PR #107**: perf(oqpsk): compute 8 correlators and negate for m+8 in oqpsk_rx_corr
+- **Issue #106** (closed): oqpsk_rx_corr: compute 8 correlators and negate for m+8, bit-exact, and re-profile
+
 ### 2026-11-05
 
 - **PR #103**: feat(synth): add bounded per-module Yosys profile and SYNTH_MODE=hier
