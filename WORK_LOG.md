@@ -3,6 +3,10 @@
 Chronological record of merged PRs and closed issues, maintained by the Guide
 triage role. Newest first.
 
+### 2026-11-07
+
+- **PR #109**: Bump Repo Skills 0.25.1 -> 0.25.10
+
 ### 2026-11-06
 
 - **PR #107**: perf(oqpsk): compute 8 correlators and negate for m+8 in oqpsk_rx_corr
