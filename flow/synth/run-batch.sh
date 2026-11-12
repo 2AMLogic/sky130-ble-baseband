@@ -27,9 +27,20 @@ if ! make check-pdk >> "$ENVREC" 2>&1; then
   python3 -m pip install --quiet ciel >> "$ENVREC" 2>&1 \
     && ciel enable --pdk-family sky130 "$(sed -n 's/^PDK_REV *:= *//p' flow/versions.mk)" >> "$ENVREC" 2>&1
 fi
-make check-tools check-pdk >> "$ENVREC" 2>&1 || { echo "tool/PDK check failed" >> "$ENVREC"; cat "$ENVREC"; exit 1; }
+# The batch image carries yosys + the PDK but not the simulation tools
+# (iverilog, verilator, cocotb) that `check-tools` also demands, and its yosys
+# need not equal the YOSYS_VERSION pin. Synthesis needs only yosys, so skip the
+# check-tools prerequisite (`-o`) and RECORD the version comparison instead; a
+# mismatch means `make synth-check` on the pinned host may not reproduce this
+# netlist byte-for-byte, and the PR must say so.
+make -o check-tools check-pdk >> "$ENVREC" 2>&1 || { echo "PDK check failed" >> "$ENVREC"; cat "$ENVREC"; exit 1; }
+WANT_Y="$(sed -n 's/^YOSYS_VERSION *:= *//p' flow/versions.mk)"
+case "$(yosys -V 2>&1)" in
+  "Yosys $WANT_Y"*) echo "yosys matches pin $WANT_Y" >> "$ENVREC" ;;
+  *) echo "YOSYS VERSION MISMATCH: pin $WANT_Y, image $(yosys -V 2>&1)" >> "$ENVREC" ;;
+esac
 
-/usr/bin/time -v make synth > flow/build/synth/make.out 2> flow/build/synth/time.txt
+/usr/bin/time -v make -o check-tools synth > flow/build/synth/make.out 2> flow/build/synth/time.txt
 RC=$?
 { echo "make synth rc: $RC"; grep -E 'Elapsed|Maximum resident' flow/build/synth/time.txt; echo "end: $(date -u +%Y-%m-%dT%H:%M:%SZ)"; } >> "$ENVREC"
 exit "$RC"
