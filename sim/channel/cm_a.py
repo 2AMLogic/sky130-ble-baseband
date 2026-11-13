@@ -156,6 +156,50 @@ def agc_gain_index(rms):
     return int(min(63, max(0, idx)))
 
 
+def receive_chain(x, theta, lead, nsig, clock, timing, var, rng, cfo, phase0,
+                  keep_float=False):
+    """CM-A stages 4, 6 and 7: the part of the channel both modems share.
+
+    Takes the padded transmit waveform ``x`` and its unwrapped phase track
+    ``theta`` (both on the 8 Msps transmit grid, ``len(x)`` samples), and
+    applies, in spec order: 4. sample-clock offset ``clock`` (ppm) and initial
+    timing phase ``timing`` (samples) by 4-point Lagrange resampling of signal
+    and phase; 6. AWGN of complex variance ``var``; 7. the fixed AGC rule and
+    8-bit quantization, clipping counted.
+
+    ``lead``/``nsig`` (samples) locate the packet for the reported
+    ``packet_start``/``packet_stop``; ``cfo``/``phase0`` are recorded as drawn.
+    Exactly one draw is taken from ``rng``, ``standard_normal((m, 2))``, and only
+    when ``var > 0``, so a caller's draw order fixes the whole output.
+
+    Callers keep what is modem-specific: the params dataclass, the source
+    waveform, the drift/CFO phase track and the noise-variance definition.
+    """
+    step = 1.0 + clock * 1e-6
+    m = int((len(x) - 4 - timing - 1) / step)
+    tau = 1.0 + timing + step * np.arange(m)
+    xr = _lagrange4(x, tau) * np.exp(1j * _lagrange4(theta, tau))
+
+    if var > 0.0:
+        nz = rng.standard_normal((m, 2)) * math.sqrt(var / 2.0)
+        xr = xr + nz[:, 0] + 1j * nz[:, 1]
+
+    rms = math.sqrt(float(np.mean(np.abs(xr) ** 2)))
+    gidx = agc_gain_index(rms)
+    g = gain_from_index(gidx)
+    qi, qq = np.rint(g * xr.real), np.rint(g * xr.imag)
+    sat = (qi < -128) | (qi > 127) | (qq < -128) | (qq > 127)
+    iq = np.stack([np.clip(qi, -128, 127), np.clip(qq, -128, 127)], axis=1).astype(np.int8)
+    flags = sat.astype(np.uint8)
+    flags[0] |= 2                                  # gain_reply strobe before sample 0
+    gain = np.full(m, gidx, dtype=np.uint8)
+    start = int(round((lead - 1 - timing) / step)) if lead else 0
+    stop = int(round((lead + nsig - 1 - timing) / step))
+    return ChannelOutput(iq, flags, gain, int(sat.sum()), float(cfo), float(clock),
+                         float(timing), float(phase0), var, gidx, max(start, 0), min(stop, m),
+                         xr if keep_float else None)
+
+
 def generate_packet(bits, params, rng, keep_float=False):
     """Pass one packet (``bits``, on-air order) through CM-A. ``rng`` is a
     ``numpy.random.Generator`` (PCG64); draw order is fixed, so the output is a
@@ -179,30 +223,9 @@ def generate_packet(bits, params, rng, keep_float=False):
     freq[lead + len(sig):] += drift[-1]
     theta = phase0 + 2.0 * np.pi * np.cumsum(freq) / FS
 
-    step = 1.0 + clock * 1e-6
-    m = int((total - 4 - timing - 1) / step)
-    tau = 1.0 + timing + step * np.arange(m)
-    xr = _lagrange4(x, tau) * np.exp(1j * _lagrange4(theta, tau))
-
     var = noise_variance(params.ebn0_db)
-    if var > 0.0:
-        nz = rng.standard_normal((m, 2)) * math.sqrt(var / 2.0)
-        xr = xr + nz[:, 0] + 1j * nz[:, 1]
-
-    rms = math.sqrt(float(np.mean(np.abs(xr) ** 2)))
-    gidx = agc_gain_index(rms)
-    g = gain_from_index(gidx)
-    qi, qq = np.rint(g * xr.real), np.rint(g * xr.imag)
-    sat = (qi < -128) | (qi > 127) | (qq < -128) | (qq > 127)
-    iq = np.stack([np.clip(qi, -128, 127), np.clip(qq, -128, 127)], axis=1).astype(np.int8)
-    flags = sat.astype(np.uint8)
-    flags[0] |= 2                                  # gain_reply strobe before sample 0
-    gain = np.full(m, gidx, dtype=np.uint8)
-    start = int(round((lead - 1 - timing) / step)) if lead else 0
-    stop = int(round((lead + len(sig) - 1 - timing) / step))
-    return ChannelOutput(iq, flags, gain, int(sat.sum()), float(cfo), float(clock), float(timing),
-                         float(phase0), var, gidx, max(start, 0), min(stop, m),
-                         xr if keep_float else None)
+    return receive_chain(x, theta, lead, len(sig), clock, timing, var, rng, cfo, phase0,
+                         keep_float=keep_float)
 
 
 def pack_rx_records(out):
