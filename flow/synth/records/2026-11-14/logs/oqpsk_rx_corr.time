@@ -1,0 +1,24 @@
+Command exited with non-zero status 124
+	Command being timed: "timeout -k 5 120 yosys -q -t -d -l flow/synth/records/2026-11-14/logs/oqpsk_rx_corr.log -p read_verilog -sv rtl/host/host_fifo.v; read_verilog -sv rtl/host/host_desc_fifo.v; read_verilog -sv rtl/host/host_irq.v; read_verilog -sv rtl/host/host_timestamp.v; read_verilog -sv rtl/host/host_regs.v; read_verilog -sv rtl/host/host_top.v; read_verilog -sv rtl/le1m_tx/le1m_whiten.v; read_verilog -sv rtl/le1m_tx/le1m_crc24.v; read_verilog -sv rtl/le1m_tx/le1m_frame.v; read_verilog -sv rtl/le1m_tx/le1m_gauss.v; read_verilog -sv rtl/le1m_tx/le1m_tx.v; read_verilog -sv rtl/le1m_rx/le1m_rx_fir.v; read_verilog -sv rtl/le1m_rx/le1m_rx_disc.v; read_verilog -sv rtl/le1m_rx/le1m_rx_cordic.v; read_verilog -sv rtl/le1m_rx/le1m_rx_integ.v; read_verilog -sv rtl/le1m_rx/le1m_rx_sync.v; read_verilog -sv rtl/le1m_rx/le1m_rx_pkt.v; read_verilog -sv rtl/le1m_rx/le1m_rx.v; read_verilog -sv rtl/oqpsk/oqpsk_tx.v; read_verilog -sv rtl/oqpsk/oqpsk_rx_fir.v; read_verilog -sv rtl/oqpsk/oqpsk_rx_integ.v; read_verilog -sv rtl/oqpsk/oqpsk_rx_corr.v; read_verilog -sv rtl/oqpsk/oqpsk_rx_sync.v; read_verilog -sv rtl/oqpsk/oqpsk_rx_pkt.v; read_verilog -sv rtl/oqpsk/oqpsk_rx.v; read_verilog -sv rtl/mac/mac_timer.v; read_verilog -sv rtl/mac/mac_trigger.v; read_verilog -sv rtl/mac/mac_ack_ctrl.v; read_verilog -sv rtl/mac/mac_ackwait.v; read_verilog -sv rtl/mac/mac_le_resp.v; read_verilog -sv rtl/mac/mac_addr_filter_154.v; read_verilog -sv rtl/mac/mac_le_filter.v; read_verilog -sv rtl/top/bb_timing_regs.v; read_verilog -sv rtl/top/bb_rx_adapt.v; read_verilog -sv rtl/top/bb_tx_path.v; read_verilog -sv rtl/top/bb_ctrl.v; read_verilog -sv rtl/top/baseband_top.v; hierarchy -check -top oqpsk_rx_corr; synth -top oqpsk_rx_corr; tee -o flow/synth/records/2026-11-14/logs/oqpsk_rx_corr.stat stat"
+	User time (seconds): 6.13
+	System time (seconds): 0.17
+	Percent of CPU this job got: 5%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 2:00.01
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 181304
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 3
+	Minor (reclaiming a frame) page faults: 68443
+	Voluntary context switches: 1496
+	Involuntary context switches: 1024
+	Swaps: 0
+	File system inputs: 296
+	File system outputs: 8496
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 124
