@@ -1,0 +1,72 @@
+{
+ "base_seed": 1,
+ "channel": {
+  "agc": "settled gain from whole-record rms of the noisy signal, target 32.0 LSB rms, 1.5 dB steps",
+  "noise": "complex white, full 8 MHz band, variance from Eb/N0",
+  "rx_bits": 8,
+  "rx_rate_msps": 8
+ },
+ "channel_model": "CM-A",
+ "format": 1,
+ "label": "simulated, CM-A",
+ "mode": "full",
+ "points": [
+  {
+   "ber": 1.0,
+   "bits": 336,
+   "bound_only": false,
+   "channel_model": "CM-A",
+   "clipped_samples": 0,
+   "cp_lower": 0.9890812393,
+   "cp_upper": 1.0,
+   "crc_failures": 0,
+   "ebn0_db": 16.0,
+   "errors": 336,
+   "impairments": {
+    "cfo_hz": 800000.0,
+    "cfo_range_hz": 150000.0,
+    "clock_ppm": 0.0,
+    "clock_range_ppm": 100.0,
+    "drift_hz": 0.0,
+    "drift_profile": "none",
+    "ebn0_db": 16.0,
+    "lead_symbols": 64,
+    "payload_octets": 37,
+    "tail_symbols": 64
+   },
+   "label": "simulated, CM-A",
+   "negative_control": true,
+   "out_of_spec": true,
+   "packets": 1,
+   "point_index": 92,
+   "row_id": "negative_control",
+   "run_index": 0,
+   "samples": 4058,
+   "seed": 11360072705755515219,
+   "stopped_by": "errors",
+   "sync_misses": 1,
+   "timing_steps": 0
+  }
+ ],
+ "prng": {
+  "family": "PCG64",
+  "numpy_version": "1.26.4"
+ },
+ "receiver": {
+  "arithmetic": "integer",
+  "missed_packet_counts_as": "every PDU+CRC bit in error",
+  "model": "sim/model/le1m_rx.py",
+  "sync_threshold": "7/8"
+ },
+ "rows": {},
+ "sim_git_sha": "88245d69b74d",
+ "sim_git_sha_source": "asserted",
+ "stop_rule": {
+  "capped_point": "upper bound, not a measurement",
+  "confidence": 0.95,
+  "interval": "Clopper-Pearson, two-sided",
+  "max_length_packet_cap": 3000,
+  "min_errors": 100,
+  "packet_cap": 20000
+ }
+}

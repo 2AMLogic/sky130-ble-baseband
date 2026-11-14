@@ -302,7 +302,8 @@ def merge_shards(shard_dir):
             raise MergeError(f"{n}: mode is {rep.get('mode')!r}, only full-mode shards merge")
         if str(rep.get("sim_git_sha", "")).endswith("-dirty") or rep.get("sim_git_sha") == "unknown":
             raise MergeError(f"{n}: sim_git_sha {rep.get('sim_git_sha')!r} is not a clean commit")
-        for key in ("base_seed", "stop_rule", "sim_git_sha", "mode", "sim_git_sha_source"):
+        for key in ("base_seed", "stop_rule", "sim_git_sha", "mode", "sim_git_sha_source",
+                    "prng"):
             if rep.get(key, SHA_DERIVED) != first.get(key, SHA_DERIVED):
                 raise MergeError(f"{n}: {key} {rep.get(key)!r} disagrees with "
                                  f"{shards[0][0]} ({first.get(key)!r})")
@@ -334,8 +335,11 @@ def merge_shards(shard_dir):
     args = argparse.Namespace(quick=False, seed=first["base_seed"], min_errors=sr["min_errors"],
                               packet_cap=sr["packet_cap"],
                               max_length_packet_cap=sr["max_length_packet_cap"])
+    # The PRNG record belongs to the hosts that ran the shards, not to this one:
+    # a merge runs no simulation, so reporting the merging host's NumPy would
+    # misattribute every number in the file.
     return build_report(points, args, first["sim_git_sha"],
-                        first.get("sim_git_sha_source", SHA_DERIVED))
+                        first.get("sim_git_sha_source", SHA_DERIVED), first["prng"])
 
 
 def write_report(report, out):
@@ -345,7 +349,7 @@ def write_report(report, out):
         f.write("\n")
 
 
-def build_report(points, args, sha, sha_source=SHA_DERIVED):
+def build_report(points, args, sha, sha_source=SHA_DERIVED, prng=None):
     return {
         "format": FORMAT,
         "label": LABEL,
@@ -353,7 +357,7 @@ def build_report(points, args, sha, sha_source=SHA_DERIVED):
         "mode": "quick" if args.quick else "full",
         "sim_git_sha": sha,
         "sim_git_sha_source": sha_source,
-        "prng": {"family": "PCG64", "numpy_version": np.__version__},
+        "prng": prng or {"family": "PCG64", "numpy_version": np.__version__},
         "base_seed": args.seed,
         "stop_rule": {"min_errors": args.min_errors, "packet_cap": args.packet_cap,
                       "max_length_packet_cap": args.max_length_packet_cap,

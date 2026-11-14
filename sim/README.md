@@ -85,6 +85,87 @@ measurement. `rows` reports, per row at 16 dB, the worst upper bound and whether
 is ≤ 1e-3; that is a report for the evidence record, not a claim that the row is met.
 `negative_control` and `out_of_spec` points are excluded from `rows`.
 
+## The committed LE 1M sweep (`sim/results/2026-11-14-88245d69b74d/`)
+
+**Simulated, CM-A.** One full (non-`--quick`) run of all four ratified LE 1M rows
+plus the negative control, at Eb/N0 12 / 14 / 16 / 18 dB, default packet caps,
+`--seed 1`, `--run-index 0`, NumPy 1.26.4 (this repo's `requirements.txt` pin).
+93 points. It is an error-rate record, not a claim that a row is met.
+
+**Where it ran.** Not on a loom-worker and not on an operator machine: five
+per-row shards as `repo-script` Spot batch jobs (2AMLogic/2am#6381, operator
+ruling 2026-10-28 / fleet:decide q82), heavy image `ami-08688417b66e0c74d`, one
+`m7i.4xlarge` each. The tree shipped as a `git archive` tarball of commit
+`88245d69b74db5b9e0c90cc085fe203ef7e413cb`, SHA-256
+`dd9a8743f82113e91d3c883d8078047e7f7aa1ee807bdd5fde63e1d37bc41b36` — that hash,
+not the commit id, is the durable input identity, because this evidence was
+produced from the pull request head for issue #55 and that commit is not
+reachable on `main` after a squash merge. The `sim/` tree it names is the one
+this record was merged in with.
+
+**The commands.** Submitted from the fleet repo's submitter; `<SHA12>` is
+`88245d69b74d`, the 12-character form `sim_git_sha` records:
+
+```
+infra/aws/repo-script-submit.py --source-dir <this checkout> --commit HEAD \
+    --repo 2AMLogic/sky130-ble-baseband --issue 55 \
+    --script sim/sweep/ber_sweep.py --output sim/results \
+    --shard "--only le1m_cfo       --sim-git-sha <SHA12>" \
+    --shard "--only le1m_drift     --sim-git-sha <SHA12>" \
+    --shard "--only le1m_clock     --sim-git-sha <SHA12>" \
+    --shard "--only le1m_uniform   --sim-git-sha <SHA12>" \
+    --shard "--only negative_control --sim-git-sha <SHA12>" \
+    --out <collect dir>
+python3 sim/sweep/ber_sweep.py --merge sim/results/2026-11-14-88245d69b74d/shards
+```
+
+`--sim-git-sha` is required here, for the reason in the previous section. The
+five collected shard files are committed beside `ber.json` under `shards/`, so
+the merge can be re-run from them without re-simulating.
+
+**Wall time.** 438 s (`le1m_cfo`), 541 s (`le1m_drift`), 184 s (`le1m_clock`),
+53 s (`le1m_uniform`), under 1 s (`negative_control`); no shard was reclaimed
+(`retry_count` 0). The three largest ran concurrently, so the sweep took about
+10 minutes of wall clock and about 20 minutes of CPU — the "hours single
+threaded" above is the pre-shard figure and was not re-measured on one core.
+
+Submitting all five at once launched only **three**: the heavy slice
+(`BATCH_HEAVY_MAX_VCPU=64`) had 16 of its 64 vCPU free after three 16-vCPU
+instances, but the launcher also wants three instance types to fit, and only two
+do at 16 vCPU. So the fourth and fifth shards were refused at launch
+(`BATCH_HEAVY_MAX_VCPU`) and resubmitted as a second group, which is the
+documented recovery. Nothing was run locally and no cap was lowered.
+
+**What it reports.** `rows` reports, per row at 16 dB, the worst 95 % CP upper
+bound and whether it is ≤ 1e-3. Every in-spec 16 dB point reached 100 errors, so
+no row verdict here rests on a capped point:
+
+| row | worst CP upper at 16 dB | ≤ 1e-3 | all points measured |
+|---|---|---|---|
+| `le1m_cfo` | 1.053e-02 | **no** | yes |
+| `le1m_drift` | 1.694e-03 | **no** | yes |
+| `le1m_clock` | 3.852e-05 | yes | yes |
+| `le1m_uniform` | 2.478e-04 | yes | yes |
+
+**Two rows miss, and the miss is recorded, not relaxed.** `le1m_cfo` misses on
+its **zero-offset** point (BER 9.3e-03 at 16 dB), which is 160x worse than the
+-50 kHz point (5.7e-05) in the same row and Eb/N0 — the row is *not* worst at
+the offset extremes, and BER is non-monotonic in Eb/N0 at several offsets. That
+pattern points at the receiver model rather than at the stop rule or the caps;
+it is a receiver finding, tracked separately, and nothing here was tuned to make
+a row pass. `le1m_drift` misses by about 1.7x on three points.
+
+**The negative control.** Point 92, 800 kHz offset at 16 dB, flagged
+`out_of_spec` and excluded from `rows`: BER 1.000 (336 of 336 bits, one sync
+miss), CP bounds [9.891e-01, 1.000]. It fails the row by four orders of
+magnitude, which is what a working control looks like.
+
+**Reproducing it.** Re-run the commands above at the same commit (or any tree
+with the same tarball SHA-256) and the same NumPy, and `ber.json` is
+byte-identical except for the `<date>-<sha>` directory name. Verified by
+re-running the `le1m_uniform` shard as a second batch job on the same image: see
+the PR for #55. Cross-machine identity is not claimed (see "Determinism").
+
 ## PER sweep (802.15.4)
 
 ```

@@ -3,6 +3,7 @@
 import json
 import math
 import os
+import pathlib
 import subprocess
 import sys
 import time
@@ -296,3 +297,63 @@ def test_merge_carries_sha_provenance_through(tiny, tmp_path):
     out = tmp_path / "ber.json"
     assert ber_sweep.main(["--merge", str(d), "--out", str(out)]) == 0
     assert json.loads(out.read_text())["sim_git_sha_source"] == ber_sweep.SHA_ASSERTED
+
+
+def test_merge_records_the_shards_numpy_not_the_merging_hosts(tiny, tmp_path):
+    """A merge runs no simulation, so the PRNG record must come from the shards."""
+    d = _copy(tiny[1], tmp_path)
+    for f in d.iterdir():
+        _rewrite(f, prng={"family": "PCG64", "numpy_version": "1.26.4"})
+    out = tmp_path / "ber.json"
+    assert ber_sweep.main(["--merge", str(d), "--out", str(out)]) == 0
+    assert json.loads(out.read_text())["prng"] == {"family": "PCG64",
+                                                  "numpy_version": "1.26.4"}
+    assert ber_sweep.np.__version__ != "1.26.4", "fixture no longer distinguishes the two"
+
+
+def test_merge_refuses_mixed_numpy_versions(tiny, tmp_path, capsys):
+    d = _copy(tiny[1], tmp_path)
+    _rewrite(d / "le1m_clock.json", prng={"family": "PCG64", "numpy_version": "0.0.1"})
+    assert ber_sweep.main(["--merge", str(d), "--out", str(tmp_path / "o.json")]) == 1
+    assert "prng" in capsys.readouterr().err
+    assert not (tmp_path / "o.json").exists()
+
+
+# ------------------------------------------- the committed full-sweep evidence
+
+RESULTS = pathlib.Path(SWEEP).parents[1] / "results"
+
+
+def _committed_reports():
+    return sorted(RESULTS.glob("*/ber.json"))
+
+
+@pytest.mark.skipif(not _committed_reports(), reason="no committed full-sweep result yet")
+@pytest.mark.parametrize("path", _committed_reports(), ids=lambda p: p.parent.name)
+def test_committed_result_parses_and_its_negative_control_fails_the_row(path):
+    """Append-only evidence: every committed result stays readable, and its
+    deterministic negative control stays a visible failure. A capped point is
+    never read as a measurement."""
+    rep = json.loads(path.read_text())
+    assert rep["format"] == ber_sweep.FORMAT
+    assert rep["mode"] == "full" and rep["label"] == ber_sweep.LABEL
+    assert not str(rep["sim_git_sha"]).endswith("-dirty")
+    assert rep["prng"]["numpy_version"] and rep["prng"]["family"] == "PCG64"
+
+    # the full grid, in grid order
+    assert [p["point_index"] for p in rep["points"]] == list(range(len(ber_sweep.full_grid())))
+
+    nc = [p for p in rep["points"] if p["negative_control"]]
+    assert len(nc) == 1, "exactly one deterministic negative control"
+    assert nc[0]["out_of_spec"], "the control is out of spec and excluded from rows"
+    assert nc[0]["cp_upper"] > ber_sweep.TARGET_BER, "the control must visibly fail the row"
+    assert nc[0]["row_id"] not in rep["rows"]
+
+    for row_id, r in rep["rows"].items():
+        assert r["ebn0_db"] == ber_sweep.TARGET_EBN0_DB
+        # a row verdict is only reported as met when no point behind it was capped
+        if r["upper_bound_meets_target"]:
+            assert r["all_points_measured"], f"{row_id}: a capped point cannot meet the target"
+    for p in rep["points"]:
+        assert p["bound_only"] == (p["stopped_by"] == "packet_cap")
+        assert p["cp_lower"] <= p["cp_upper"]
