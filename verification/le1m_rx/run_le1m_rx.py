@@ -22,7 +22,7 @@ import cases  # noqa: E402
 from cocotb_run import run_cocotb, verdict  # noqa: E402
 
 SOURCES = [ROOT / "rtl/le1m_rx" / f for f in (
-    "le1m_rx_fir.v", "le1m_rx_disc.v", "le1m_rx_cordic.v", "le1m_rx_integ.v",
+    "le1m_rx_fir.v", "le1m_rx_disc.v", "le1m_rx_cordic.v", "rx_moving_sum.v",
     "le1m_rx_sync.v", "le1m_rx_pkt.v", "le1m_rx.v")]
 
 

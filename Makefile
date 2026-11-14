@@ -95,7 +95,7 @@ test-oqpsk-negative: check-tools
 	    echo "oqpsk $$1 negative control OK (perturbed expectation was rejected)"; fi; \
 	done
 
-OQPSK_RX_SRC := rtl/oqpsk/oqpsk_rx_fir.v rtl/le1m_rx/le1m_rx_disc.v rtl/le1m_rx/le1m_rx_cordic.v rtl/oqpsk/oqpsk_rx_integ.v \
+OQPSK_RX_SRC := rtl/oqpsk/oqpsk_rx_fir.v rtl/le1m_rx/le1m_rx_disc.v rtl/le1m_rx/le1m_rx_cordic.v rtl/le1m_rx/rx_moving_sum.v \
                 rtl/oqpsk/oqpsk_rx_corr.v rtl/oqpsk/oqpsk_rx_sync.v rtl/oqpsk/oqpsk_rx_pkt.v rtl/oqpsk/oqpsk_rx.v
 
 lint: check-tools host-lint

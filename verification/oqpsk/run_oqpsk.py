@@ -29,7 +29,7 @@ TOPS = {
     "tx": ("oqpsk_tx", "test_oqpsk_tx", [ROOT / "rtl/oqpsk/oqpsk_tx.v"]),
     "rx": ("oqpsk_rx", "test_oqpsk_rx",
            [ROOT / "rtl/oqpsk/oqpsk_rx_fir.v", ROOT / "rtl/le1m_rx/le1m_rx_disc.v",
-            ROOT / "rtl/le1m_rx/le1m_rx_cordic.v", ROOT / "rtl/oqpsk/oqpsk_rx_integ.v",
+            ROOT / "rtl/le1m_rx/le1m_rx_cordic.v", ROOT / "rtl/le1m_rx/rx_moving_sum.v",
             ROOT / "rtl/oqpsk/oqpsk_rx_corr.v", ROOT / "rtl/oqpsk/oqpsk_rx_sync.v",
             ROOT / "rtl/oqpsk/oqpsk_rx_pkt.v", ROOT / "rtl/oqpsk/oqpsk_rx.v"]),
 }

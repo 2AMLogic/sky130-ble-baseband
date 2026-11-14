@@ -14,13 +14,12 @@ rtl/le1m_tx/le1m_tx.v
 rtl/le1m_rx/le1m_rx_fir.v
 rtl/le1m_rx/le1m_rx_disc.v
 rtl/le1m_rx/le1m_rx_cordic.v
-rtl/le1m_rx/le1m_rx_integ.v
+rtl/le1m_rx/rx_moving_sum.v
 rtl/le1m_rx/le1m_rx_sync.v
 rtl/le1m_rx/le1m_rx_pkt.v
 rtl/le1m_rx/le1m_rx.v
 rtl/oqpsk/oqpsk_tx.v
 rtl/oqpsk/oqpsk_rx_fir.v
-rtl/oqpsk/oqpsk_rx_integ.v
 rtl/oqpsk/oqpsk_rx_corr.v
 rtl/oqpsk/oqpsk_rx_sync.v
 rtl/oqpsk/oqpsk_rx_pkt.v
