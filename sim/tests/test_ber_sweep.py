@@ -301,14 +301,15 @@ def test_merge_carries_sha_provenance_through(tiny, tmp_path):
 
 def test_merge_records_the_shards_numpy_not_the_merging_hosts(tiny, tmp_path):
     """A merge runs no simulation, so the PRNG record must come from the shards."""
+    shard_numpy = f"0.0.1+not-{ber_sweep.np.__version__}"  # never the host's version
     d = _copy(tiny[1], tmp_path)
     for f in d.iterdir():
-        _rewrite(f, prng={"family": "PCG64", "numpy_version": "1.26.4"})
+        _rewrite(f, prng={"family": "PCG64", "numpy_version": shard_numpy})
     out = tmp_path / "ber.json"
     assert ber_sweep.main(["--merge", str(d), "--out", str(out)]) == 0
     assert json.loads(out.read_text())["prng"] == {"family": "PCG64",
-                                                  "numpy_version": "1.26.4"}
-    assert ber_sweep.np.__version__ != "1.26.4", "fixture no longer distinguishes the two"
+                                                  "numpy_version": shard_numpy}
+    assert shard_numpy != ber_sweep.np.__version__, "fixture no longer distinguishes the two"
 
 
 def test_merge_refuses_mixed_numpy_versions(tiny, tmp_path, capsys):
