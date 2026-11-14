@@ -27,7 +27,8 @@ _None._
 
 Human-approved issues ready for implementation (`loom:issue`).
 
-_None._
+- **#56**: T1 item 6b: 802.15.4 CM-A source and seeded PER sweep with negative control
+- **#116**: Dedupe the BER/PER sweep drivers: one copy of the CLI, stop rule, row verdict and report envelope
 
 ## In Progress
 
@@ -72,7 +73,7 @@ _None._
 | Operator merge-risk holds | 0 |
 | Very important | 1 |
 | Important | 3 |
-| Ready (`loom:issue`) | 0 |
+| Ready (`loom:issue`) | 2 |
 | In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
