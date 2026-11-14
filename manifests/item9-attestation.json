@@ -1,0 +1,248 @@
+{
+  "schema_version": 1,
+  "kind": "generic",
+  "status": "pass",
+  "t1_item": 9,
+  "summary": "T1 item 9 (Testbenches shipped): 28/28 attestation checks passed (klt signoff --attest)",
+  "source": "manifests/testbench-inventory.json",
+  "attestation": {
+    "producer": "klt signoff --attest",
+    "inventory_schema_version": 1,
+    "hash_algorithm": "sha256-raw-bytes",
+    "check_count": 28,
+    "passed_count": 28,
+    "checks": [
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "verification/cocotb_run.py",
+        "passed": true,
+        "content_hash": "sha256:579367aa17c295170ed891ba664625016cd732be12236fa19ce6d8fd726fad15"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "verification/host/run_host.py",
+        "passed": true,
+        "content_hash": "sha256:e76bb8d8209499f9bbcfc6ed3853fa9acff8d83fe43b935947488a119ff7e0a7"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "verification/host/test_host.py",
+        "passed": true,
+        "content_hash": "sha256:443b893d2e1381217b36942b2bb2d8dcb5df13ddce5e15cee84cabec5bb638d1"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "verification/le1m_rx/cases.py",
+        "passed": true,
+        "content_hash": "sha256:b7555519bfa4c037e752e1d8a14c01bdf465116ab0f991a7be7195e8279e14b4"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "verification/le1m_rx/run_le1m_rx.py",
+        "passed": true,
+        "content_hash": "sha256:a10d170e4ce27997db1a3d315c53e61f7118dc545771de1c723ffcf7fc65749f"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "verification/le1m_rx/test_le1m_rx.py",
+        "passed": true,
+        "content_hash": "sha256:b043e97fa7bde18998f9e2780ba82bc6871e01f185f6adb5462984a6826723d2"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "verification/le1m_tx/run_le1m_tx.py",
+        "passed": true,
+        "content_hash": "sha256:dabc189a1612bbf0055b3d918731e03969ddb28b8743d147820dd94d40e92a14"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "verification/le1m_tx/test_le1m_tx.py",
+        "passed": true,
+        "content_hash": "sha256:817374c229fb5b21ba8583a28a0eac82d9b82537a75edfa6d68d3b62ad129f8f"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "verification/mac/mac_common.py",
+        "passed": true,
+        "content_hash": "sha256:02cc9de74832bd93acfe61227b2c7287303eb943d8a9cf7f9c61646b07e68960"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "verification/mac/run_mac.py",
+        "passed": true,
+        "content_hash": "sha256:d523c52ce9711a1972fc6ed3776499c57e765a744b1dab4d4116df7b7defc4e8"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "verification/mac/test_mac_ack_ctrl.py",
+        "passed": true,
+        "content_hash": "sha256:3d3d1f2eb4db0883a0d7debf7e1b864b7f5c4657448763474790c8eb4955ef86"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "verification/mac/test_mac_ackwait.py",
+        "passed": true,
+        "content_hash": "sha256:37411ec2649cf8de5109934ea7248d14d6338ff0c55f768f0f524184c763adea"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "verification/mac/test_mac_addr_filter_154.py",
+        "passed": true,
+        "content_hash": "sha256:0bce2b64e5a97f377bea147126fe82b1f370f2ca4713d6bccd3e6b1a986abed0"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "verification/mac/test_mac_le_filter.py",
+        "passed": true,
+        "content_hash": "sha256:3ed12895931a9321ecda90870afb72e5f1668d4a3cac2ec8bbdcdc96e19b5b89"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "verification/mac/test_mac_le_resp.py",
+        "passed": true,
+        "content_hash": "sha256:d9df75e160eb1579ba067e9c1cac40fc7f4ad66ecb941bb7fc28e1cbf3c1bc13"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "verification/mac/test_mac_timer.py",
+        "passed": true,
+        "content_hash": "sha256:3d15f5c38c373c8fdecb8d519ca8774a310e65e31105de66d1e7ffc22b698750"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "verification/mac/test_mac_trigger.py",
+        "passed": true,
+        "content_hash": "sha256:a60b577e04229e99caec096b8a90e1a9b3e9a6e541a7e46215bc642a710ecf3f"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "verification/oqpsk/cases.py",
+        "passed": true,
+        "content_hash": "sha256:9758886e18990cc5b2bb9f8c183673360b2f655fdc4c167d4111be73cae1e193"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "verification/oqpsk/run_oqpsk.py",
+        "passed": true,
+        "content_hash": "sha256:8b481eabf4676316b62a10b8fbf276105ed4a67ea959b3802ba6ea46e1babfcd"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "verification/oqpsk/test_oqpsk_rx.py",
+        "passed": true,
+        "content_hash": "sha256:934135de011c3d6928b06047ed7db305cb08b19c0bb0779d70d7c3bc80c28975"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "verification/oqpsk/test_oqpsk_tx.py",
+        "passed": true,
+        "content_hash": "sha256:b757b265787e8607e7e2fd06505af19d5b53c1e1fca9ba4c34272f5743a65295"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "verification/rx_common.py",
+        "passed": true,
+        "content_hash": "sha256:cbf171bc8f7056179b799d51f56c0428959dc184504edef26859cd0df0c2b95d"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "verification/top/run_top.py",
+        "passed": true,
+        "content_hash": "sha256:6143a052da34153af3bf52adc5200929efe722b8e67614f421f60097b737e3ca"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "verification/top/test_top.py",
+        "passed": true,
+        "content_hash": "sha256:60c12a0a867abf12e424591ed7cf8ba756b04d2e2f4cd9032ed0f126fa523eb1"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "verification/vector_common.py",
+        "passed": true,
+        "content_hash": "sha256:0cf95f4cfbe92aee877de04c897e47d4dac0aff644d3fc80b28f6959f22e6942"
+      },
+      {
+        "check": "command",
+        "role": "cold_start",
+        "argv": [
+          "make",
+          "venv",
+          "test",
+          "test-negative",
+          "test-le1m-rx",
+          "test-le1m-rx-negative",
+          "test-le1m-tx",
+          "test-le1m-tx-negative",
+          "test-oqpsk",
+          "test-oqpsk-negative",
+          "test-top",
+          "test-top-negative"
+        ],
+        "cwd": ".",
+        "exit_status": 0,
+        "passed": true,
+        "local_only": true
+      },
+      {
+        "check": "pin",
+        "role": "pdk",
+        "passed": true,
+        "value": {
+          "name": "sky130A",
+          "revision": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+        }
+      },
+      {
+        "check": "pin",
+        "role": "tools",
+        "passed": true,
+        "value": {
+          "cocotb": "2.0.1",
+          "iverilog": "13.0",
+          "numpy": "1.26.4",
+          "verilator": "5.050",
+          "yosys": "0.67"
+        }
+      }
+    ]
+  },
+  "provenance": {
+    "klt_version": "0.8.0",
+    "klayout_version": null,
+    "pdk": null,
+    "deck": null,
+    "input": {
+      "path": {
+        "path": "manifests/testbench-inventory.json",
+        "scope": "repo"
+      },
+      "content_hash": "sha256:2fa06aff5b2fdfb109377632da00c8156ebd49c4860873892a25790b4636bab6"
+    }
+  }
+}
