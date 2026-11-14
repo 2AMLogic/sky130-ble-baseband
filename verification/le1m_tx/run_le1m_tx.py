@@ -19,6 +19,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from cocotb_run import run_cocotb, verdict  # noqa: E402
+from rtl_sources import block_sources  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 MODEL = ROOT / "sim" / "model" / "le1m_tx.py"
@@ -27,8 +28,7 @@ GOLDEN_PDU = "4209010203040506020106"  # sim/model/README.md
 ADV_AA = 0x8E89BED6
 ADV_CRC = 0x555555
 
-SOURCES = [ROOT / "rtl/le1m_tx" / f for f in (
-    "le1m_whiten.v", "le1m_crc24.v", "le1m_frame.v", "le1m_gauss.v", "le1m_tx.v")]
+SOURCES = block_sources("le1m_tx")
 
 
 def cases():

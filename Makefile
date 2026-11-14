@@ -16,8 +16,13 @@ SYNTH_BUILD := flow/build/synth
 NETLIST  := flow/synth/baseband_top_netlist.v
 LIBREC   := flow/synth/liberty_record.txt
 RTL_LIST := rtl/baseband.f
+# Per-block source lists are sections of $(RTL_LIST), read by the one parser the
+# Python benches also use. $(FLISTS)/<block>.f is a generated `verilator -f`
+# file list: never hand-edit one, and never hand-keep a second copy of a block's
+# files here (issue #118).
+RTL_SOURCES := verification/rtl_sources.py
+FLISTS   := flow/build/filelists
 LE1M_TX_BUILD := flow/build/le1m_tx
-LE1M_TX_RTL := $(addprefix rtl/le1m_tx/,le1m_whiten.v le1m_crc24.v le1m_frame.v le1m_gauss.v le1m_tx.v)
 LE1M_RX  := flow/build/le1m_rx
 OQPSK    := flow/build/oqpsk
 VENV     := .venv
@@ -26,7 +31,7 @@ CIEL_HOME?= $(HOME)/.ciel
 PDK_ROOT ?= $(CIEL_HOME)/ciel/$(PDK_FAMILY)/versions/$(PDK_REV)
 LIB_FILE := $(PDK_ROOT)/$(PDK_VARIANT)/libs.ref/$(STD_CELL_LIB)/lib/$(STD_CELL_LIB)__$(LIB_CORNER).lib
 
-.PHONY: all venv check-tools check-pdk test test-negative lint synth clean model-test host-test host-test-negative host-lint test-le1m-rx test-le1m-rx-negative test-le1m-tx test-le1m-tx-negative test-oqpsk test-oqpsk-negative test-top test-top-negative synth-check mac-test mac-test-negative mac-lint
+.PHONY: all venv check-tools check-pdk check-rtl-list test test-negative lint synth clean model-test host-test host-test-negative host-lint test-le1m-rx test-le1m-rx-negative test-le1m-tx test-le1m-tx-negative test-oqpsk test-oqpsk-negative test-top test-top-negative synth-check mac-test mac-test-negative mac-lint
 
 all: check-tools test test-negative test-le1m-rx test-le1m-rx-negative lint synth model-test test-le1m-tx test-le1m-tx-negative test-oqpsk test-oqpsk-negative test-top test-top-negative
 
@@ -80,7 +85,7 @@ test-le1m-rx-negative: check-tools
 # 802.15.4 O-QPSK RTL (rtl/oqpsk): TX words and RX trace taps replayed through
 # cocotb + Icarus against sim/model/oqpsk_{tx,rx}.py by sample index (decision
 # 0007), including the committed golden traces. The RX top reuses two LE 1M
-# stages unchanged, so the file lists below name them explicitly.
+# stages unchanged; the `# block: oqpsk_rx` section of rtl/baseband.f names them.
 test-oqpsk: check-tools
 	$(PYTHON) verification/oqpsk/run_oqpsk.py $(CURDIR)/$(OQPSK)/sim
 
@@ -95,15 +100,22 @@ test-oqpsk-negative: check-tools
 	    echo "oqpsk $$1 negative control OK (perturbed expectation was rejected)"; fi; \
 	done
 
-OQPSK_RX_SRC := rtl/oqpsk/oqpsk_rx_fir.v rtl/le1m_rx/le1m_rx_disc.v rtl/le1m_rx/le1m_rx_cordic.v rtl/oqpsk/oqpsk_rx_integ.v \
-                rtl/oqpsk/oqpsk_rx_corr.v rtl/oqpsk/oqpsk_rx_sync.v rtl/oqpsk/oqpsk_rx_pkt.v rtl/oqpsk/oqpsk_rx.v
+# A .v on disk that $(RTL_LIST) does not declare would be linted by nothing
+# and synthesised into nothing; a declared path that is missing breaks both.
+check-rtl-list:
+	@python3 $(RTL_SOURCES) --check
 
-lint: check-tools host-lint
+$(FLISTS)/%.f: $(RTL_LIST) $(RTL_SOURCES)
+	python3 $(RTL_SOURCES) --out $@ $*
+
+LINT_BLOCKS := le1m_tx le1m_rx oqpsk_tx oqpsk_rx
+
+lint: check-tools check-rtl-list host-lint $(addprefix $(FLISTS)/,$(addsuffix .f,$(LINT_BLOCKS)))
 	verilator --lint-only -Wall --top-module baseband_top -f $(RTL_LIST)
-	verilator --lint-only -Wall --top-module le1m_tx $(LE1M_TX_RTL)
-	verilator --lint-only -Wall --top-module le1m_rx rtl/le1m_rx/*.v
-	verilator --lint-only -Wall --top-module oqpsk_tx rtl/oqpsk/oqpsk_tx.v
-	verilator --lint-only -Wall --top-module oqpsk_rx $(OQPSK_RX_SRC)
+	verilator --lint-only -Wall --top-module le1m_tx -f $(FLISTS)/le1m_tx.f
+	verilator --lint-only -Wall --top-module le1m_rx -f $(FLISTS)/le1m_rx.f
+	verilator --lint-only -Wall --top-module oqpsk_tx -f $(FLISTS)/oqpsk_tx.f
+	verilator --lint-only -Wall --top-module oqpsk_rx -f $(FLISTS)/oqpsk_rx.f
 	$(MAKE) mac-lint
 
 # Synthesis of baseband_top at the pinned liberty corner (flow/versions.mk), flattened
@@ -144,7 +156,6 @@ test-top-negative: check-tools
 
 # Host interface (rtl/host/): APB registers, FIFOs, interrupts, timestamps.
 HOST_BUILD := flow/build/host
-HOST_RTL   := $(addprefix rtl/host/,host_fifo.v host_desc_fifo.v host_irq.v host_timestamp.v host_regs.v host_top.v)
 
 host-test: check-tools
 	$(PYTHON) verification/host/run_host.py $(CURDIR)/$(HOST_BUILD)/sim
@@ -157,8 +168,8 @@ host-test-negative: check-tools
 	else grep -q 'expected=' $(HOST_BUILD)/negative.log || { echo "ERROR: host negative control failed for the wrong reason; see $(HOST_BUILD)/negative.log"; exit 1; }; \
 	  echo "host negative control OK (broken expectation was rejected)"; fi
 
-host-lint: check-tools
-	verilator --lint-only -Wall --top-module host_top $(HOST_RTL)
+host-lint: check-tools $(FLISTS)/host.f
+	verilator --lint-only -Wall --top-module host_top -f $(FLISTS)/host.f
 
 clean:
 	rm -rf flow/build
@@ -199,7 +210,6 @@ test-le1m-tx-negative: check-tools
 # rtl/mac/: lower-MAC timers, trigger, auto-ACK, address filters (issue #51).
 # Cycle-count benches at the 32 MHz target counts and the 16 MHz fallback counts.
 MAC_BUILD := flow/build/mac
-MAC_MODULES := mac_timer mac_trigger mac_ack_ctrl mac_ackwait mac_le_resp mac_addr_filter_154 mac_le_filter
 
 mac-test: check-tools
 	@mkdir -p $(MAC_BUILD)
@@ -217,5 +227,7 @@ mac-test-negative: check-tools
 	else grep -q 'expected=' $(MAC_BUILD)/negative.log || { echo "ERROR: mac negative control failed for the wrong reason; see $(MAC_BUILD)/negative.log"; exit 1; }; \
 	  echo "mac negative control OK (wrong cycle budgets were rejected)"; fi
 
-mac-lint: check-tools
-	@for m in $(MAC_MODULES); do verilator --lint-only -Wall --top-module $$m rtl/mac/*.v || exit 1; done; echo "mac lint OK"
+mac-lint: check-tools $(FLISTS)/mac.f
+	@mods=$$(python3 $(RTL_SOURCES) --modules mac) || exit 1; \
+	 for m in $$mods; do verilator --lint-only -Wall --top-module $$m -f $(FLISTS)/mac.f || exit 1; done; \
+	 echo "mac lint OK"
