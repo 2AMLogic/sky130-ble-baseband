@@ -12,6 +12,7 @@ sim/build/
 # flow/ synthesis: per-record Yosys logs are committed evidence (the same
 # append-only rationale as sim/*/corners above), so they escape *.log too.
 !flow/*/reports/**/*.log
+!flow/*/records/**/*.log
 # sim/harness scratch: generated ngspice decks, disposable (sim/harness/README.md)
 sim/.work/
 # machine-local PDK override (sim/harness/pdk.py); never committed

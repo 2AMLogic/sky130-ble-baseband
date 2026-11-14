@@ -29,12 +29,22 @@ finished run are not timing claims; timing belongs to the STA item.
 
 ## Profile and hierarchical mode (issue 101)
 
-`profile.sh [-t SECONDS] [-o DIR] [module ...]` runs generic `synth -top <m>` (no
-`-flatten`, no liberty) on each module of `rtl/baseband.f`, one at a time, each under
-a hard `timeout`, and writes `records/<date>/profile.json` (wall time, peak RSS,
+`profile.sh [-t SECONDS] [-o DIR] [-n] [module ...]` runs generic `synth -top <m>`
+(no `-flatten`, no liberty) on each module of `rtl/baseband.f`, one at a time, each
+under a hard `timeout`, and writes `records/<date>/profile.json` (wall time, peak RSS,
 generic cell and flop counts; status `ok`, `timeout` or `error`). Cell counts are
 not timing claims. A parent row includes its children (`synth -top` synthesizes
 them too), so parent and child rows must not be added together.
+
+`-n` appends `-noabc` to `synth -top <m>` and writes to `records/<date>-noabc/`, so
+a baseline and a no-ABC record of the same date do not overwrite each other; every
+row records which variant it was (`"noabc"`). Yosys runs with `-t` and `-d`, so the
+per-module logs under `records/<date>/logs/` (committed as evidence) carry a
+timestamp on every line and a run killed by the timeout still shows which pass it
+was in; the `-d` ranked per-pass table is printed at exit only, so a killed run has
+none. Peak RSS is recorded for timed-out rows too, because `/usr/bin/time` wraps
+`timeout` rather than the reverse — the earlier `2026-11-06` records have a 0-byte
+`.time` and `"peak_rss_kb": null` for exactly that reason.
 
 `SYNTH_MODE=hier` (unset or `flat`: the flat commands are unchanged) runs
 `synth -top` without `-flatten`, then `dfflibmap` and `abc -liberty` per module
@@ -72,3 +82,42 @@ after, generic `synth -top oqpsk_rx_corr`, Yosys 0.67:
 
 Halving the adders did **not** bring the leaf under 300 s, so this change alone does
 not unblock #72. The reduction in cell count is unmeasured because no run finished.
+
+### Where the time goes, per leaf (issue 123)
+
+Recorded in `records/2026-11-14/` (baseline, 120 s timeout) and
+`records/2026-11-14-noabc/` (`profile.sh -n`, 300 s timeout), Yosys 0.67+post
+(`b8e7da6`), one `yosys` at a time on loom-worker-4. Generic post-`synth` cell
+counts are **not** timing claims.
+
+**Generic `synth`'s own ABC pass dominates both leaves, and skipping it lets both
+finish.** In the baseline each leaf reaches step `39.22. Executing ABC pass` and is
+still inside it when the timeout fires:
+
+| leaf | reaches ABC (39.22) | killed at | inside ABC | peak RSS |
+|---|---|---|---|---|
+| `oqpsk_rx_corr` | 5.5 s | 120 s | ~114 s (95 % of the budget) | 181,304 kB |
+| `le1m_rx_sync` | 45.2 s | 120 s | ~75 s (62 % of the budget) | 393,656 kB |
+
+The last line of each baseline log is `39.22.1. Extracting gate netlist of module
+... to <abc-temp-dir>/input.blif` — the same pass the hierarchical `baseband_top`
+run stalled in on 2026-11-05 (`records/2026-11-05/hier_top.txt`, step 39.22.26).
+Neither run emits a `-d` table, so those timestamped pass headers are the only
+evidence available for a timeout.
+
+With `synth -top <m> -noabc` both finish well inside a bounded run:
+
+| leaf | status | wall | generic cells | flops | peak RSS | residual dominant pass (`-d`) |
+|---|---|---|---|---|---|---|
+| `oqpsk_rx_corr` | ok | 5.0 s | 42,009 | 5,956 | 185,604 kB | `read_verilog` 43 % (2.5 s) |
+| `le1m_rx_sync` | ok | 41.5 s | 46,726 | 9,256 | 393,784 kB | `opt_clean` 37 % (16.0 s), `opt_expr` 24 % (10.5 s) |
+
+`read_verilog` is the whole `rtl/baseband.f` filelist parse, so every `profile.sh`
+row carries a ~2.5 s floor whatever the module; for `oqpsk_rx_corr` that floor is
+half the no-ABC run, i.e. the leaf itself is cheap once ABC is skipped. Only
+`le1m_rx_sync` has residual cost of its own, in the `opt_*` passes.
+
+`-noabc` is a diagnostic, not a route to item 1: a netlist without ABC is not the
+item-1 artifact, and `synth.tcl` / `make synth` are unchanged here. Whether
+`SYNTH_MODE=hier`, a restructured leaf, or something else closes #72 is that
+issue's call; this record is its input.
