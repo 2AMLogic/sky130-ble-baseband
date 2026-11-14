@@ -1,0 +1,11 @@
+{
+  "tool": "Yosys 0.67+post (git sha1 b8e7da6f40ae8f552c116bf6c359b07c6533e159, Release, GNU /usr/bin/c++ 13.3.0)",
+  "command": "synth -top <module> -noabc (generic, no -flatten, no liberty)",
+  "timeout_s": 300,
+  "noabc": true,
+  "note": "cells/flops are totals over the module and everything it instantiates; parent rows include their children",
+  "rows": [
+    {"module": "oqpsk_rx_corr", "status": "ok", "wall_s": 5.0, "peak_rss_kb": 185604, "cells": 42009, "flops": 5956, "noabc": true, "timeout_s": 300},
+    {"module": "le1m_rx_sync", "status": "ok", "wall_s": 41.5, "peak_rss_kb": 393784, "cells": 46726, "flops": 9256, "noabc": true, "timeout_s": 300}
+  ]
+}
