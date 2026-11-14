@@ -234,3 +234,65 @@ def test_merge_refuses_dirty_and_quick_shards(tiny, tmp_path, capsys):
     _rewrite(d2 / "le1m_drift.json", mode="quick")
     assert ber_sweep.main(["--merge", str(d2), "--out", str(tmp_path / "o.json")]) == 1
     assert "mode" in capsys.readouterr().err
+
+
+# ------------------------------------- an asserted sim_git_sha (batch sharding)
+
+def test_asserted_sha_is_recorded_as_asserted(tmp_path, monkeypatch):
+    """A runner with no repo git root names the commit; the report says so."""
+    monkeypatch.setattr(ber_sweep, "SIM", str(tmp_path))
+    monkeypatch.setattr(ber_sweep, "git_sha",
+                        lambda: pytest.fail("git must not be consulted for an asserted sha"))
+    assert ber_sweep.main(["--only", "le1m_uniform", "--sim-git-sha", CLEAN_SHA, *TINY]) == 0
+    files = list(tmp_path.glob("results/*/shards/*.json"))
+    assert [f.name for f in files] == ["le1m_uniform.json"]
+    assert files[0].parent.parent.name.endswith(f"-{CLEAN_SHA}")
+    rep = json.loads(files[0].read_text())
+    assert rep["sim_git_sha"] == CLEAN_SHA
+    assert rep["sim_git_sha_source"] == ber_sweep.SHA_ASSERTED
+
+
+def test_derived_sha_is_recorded_as_derived(tmp_path, monkeypatch):
+    monkeypatch.setattr(ber_sweep, "SIM", str(tmp_path))
+    monkeypatch.setattr(ber_sweep, "git_sha", lambda: CLEAN_SHA)
+    assert ber_sweep.main(["--only", "le1m_uniform", *TINY]) == 0
+    rep = json.loads(next(tmp_path.glob("results/*/shards/*.json")).read_text())
+    assert rep["sim_git_sha_source"] == ber_sweep.SHA_DERIVED
+
+
+@pytest.mark.parametrize("bad", ["", "0123456789AB", "0123", "0123456789ab-dirty",
+                                 "unknown", "0123456789ab ", "z123456789ab"])
+def test_asserted_sha_must_be_a_bare_hex_commit_id(tmp_path, monkeypatch, bad):
+    monkeypatch.setattr(ber_sweep, "SIM", str(tmp_path))
+    with pytest.raises(SystemExit) as e:
+        ber_sweep.main(["--only", "le1m_uniform", "--sim-git-sha", bad, *TINY])
+    assert e.value.code == 2
+    assert not list(tmp_path.glob("results/**/*.json"))
+
+
+def test_asserted_sha_is_refused_with_merge(tiny, tmp_path):
+    with pytest.raises(SystemExit) as e:
+        ber_sweep.main(["--merge", str(tiny[1]), "--out", str(tmp_path / "o.json"),
+                        "--sim-git-sha", CLEAN_SHA])
+    assert e.value.code == 2
+    assert not (tmp_path / "o.json").exists()
+
+
+def test_merge_refuses_mixed_sha_provenance(tiny, tmp_path, capsys):
+    """A derived shard and an asserted one are not the same evidence."""
+    d = _copy(tiny[1], tmp_path)
+    for f in d.iterdir():
+        _rewrite(f, sim_git_sha_source=ber_sweep.SHA_ASSERTED)
+    _rewrite(d / "le1m_clock.json", sim_git_sha_source=ber_sweep.SHA_DERIVED)
+    assert ber_sweep.main(["--merge", str(d), "--out", str(tmp_path / "o.json")]) == 1
+    assert "sim_git_sha_source" in capsys.readouterr().err
+    assert not (tmp_path / "o.json").exists()
+
+
+def test_merge_carries_sha_provenance_through(tiny, tmp_path):
+    d = _copy(tiny[1], tmp_path)
+    for f in d.iterdir():
+        _rewrite(f, sim_git_sha_source=ber_sweep.SHA_ASSERTED)
+    out = tmp_path / "ber.json"
+    assert ber_sweep.main(["--merge", str(d), "--out", str(out)]) == 0
+    assert json.loads(out.read_text())["sim_git_sha_source"] == ber_sweep.SHA_ASSERTED

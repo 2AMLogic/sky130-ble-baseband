@@ -60,11 +60,23 @@ python3 sim/sweep/ber_sweep.py --merge sim/results/<date>-<sha>/shards   # write
 `--merge` recomputes `rows` with the same `row_summary` and orders points by grid
 index, so a merge equals a non-sharded run at the same caps. It exits non-zero,
 naming the row or file, on a missing, duplicate or partial row; on shards that
-disagree on seed, run index, mode, stop rule or SHA; and on a `-dirty` SHA or a
-`--quick` shard, so run shards from a committed tree. Use the same `--seed`,
-`--run-index` and caps for every shard (the defaults are unchanged). The shards
-are submitted as Spot batch jobs of the job kind in 2AMLogic/2am#6381; see that
-reference for submission, not this repo.
+disagree on seed, run index, mode, stop rule, SHA or SHA provenance; and on a
+`-dirty` SHA or a `--quick` shard, so run shards from a committed tree. Use the
+same `--seed`, `--run-index` and caps for every shard (the defaults are
+unchanged). The shards are submitted as Spot batch jobs of the job kind in
+2AMLogic/2am#6381; see that reference for submission, not this repo.
+
+**`sim_git_sha` on a runner with no repo git root.** That job kind ships the tree
+as a `git archive` tarball and makes a *throwaway* git root on the instance, so
+`git_sha()` there reports a synthetic commit — a different one per shard, which
+`--merge` then refuses. The submitting host knows the real commit, so it asserts
+it: `--sim-git-sha <hex commit id>`. The report records which way the id was
+obtained, in `sim_git_sha_source`: `derived` (read from this checkout's git) or
+`asserted` (named on the command line). `--merge` requires every shard to agree
+on that field too, so a derived shard and an asserted one never merge into one
+record, and an asserted id is never read as a derived one. The flag takes a bare
+lowercase hex id only, and is refused with `--merge` (a merged report takes the
+id from its shards).
 
 **Reading `ber.json`.** Each point carries seed, errors, bits, 95 % Clopper-Pearson
 bounds, clip count, `stopped_by` and `bound_only`, and the label "simulated,
