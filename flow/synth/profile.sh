@@ -1,13 +1,32 @@
 #!/usr/bin/env bash
 # Bounded per-module Yosys cost profile (generic `synth`, no liberty mapping).
 #
-#   flow/synth/profile.sh [-t SECONDS] [-o OUTDIR] [module ...]
+#   flow/synth/profile.sh [-t SECONDS] [-o OUTDIR] [-n] [module ...]
 #
 # Runs `synth -top <m>` (no -flatten) on every module in rtl/baseband.f, one at a
 # time (sequential on purpose: shared worker), each under a hard `timeout`.
-# Writes OUTDIR/profile.json (default flow/synth/records/<date>/). Never runs the
-# flat flow. A row is status ok | timeout | error; cell/flop counts are generic
-# post-`synth` counts and are not timing claims.
+# Writes OUTDIR/profile.json (default flow/synth/records/<date>/, suffixed
+# `-noabc` under -n so the two variants do not overwrite each other). Never runs
+# the flat flow. A row is status ok | timeout | error; cell/flop counts are
+# generic post-`synth` counts and are not timing claims.
+#
+# `-n` appends `-noabc` to `synth -top <m>`, skipping the generic ABC pass; each
+# row records which variant it was under `noabc`. The default (no -n) behaviour,
+# `synth.tcl` and `make synth` are unchanged.
+#
+# Yosys runs with `-t` and `-d`, so the per-module log under OUTDIR/logs/ is
+# usable for locating a stall:
+#   -t  timestamps every log line, so a run killed by `timeout` still shows
+#       which pass it was in (the only evidence available for a timeout).
+#   -d  prints a ranked per-pass timing table -- but at exit only, so a killed
+#       run has none; it serves the runs that finish.
+# `-t` also prefixes the `stat` output, which is stripped before the cell/flop
+# awk below (otherwise every count parses as null).
+#
+# `/usr/bin/time` wraps `timeout`, not the reverse: inside it, `timeout` kills
+# `time` before it writes its summary, so a timed-out run records no peak RSS
+# (the committed 2026-11-06 .time file is 0 bytes). `time` passes the child's
+# exit status through, so the rc 124/137 timeout detection is unaffected.
 #
 # Rows are `own` cost only for leaf modules. For a module with children
 # (`has_children: true`) `synth -top` also synthesizes the children, so its cost
@@ -16,11 +35,14 @@ set -u
 cd "$(dirname "$0")/../.."
 TMO=600
 OUT=
-while getopts "t:o:" o; do
-  case $o in t) TMO=$OPTARG ;; o) OUT=$OPTARG ;; *) exit 2 ;; esac
+NOABC=0
+while getopts "t:o:n" o; do
+  case $o in t) TMO=$OPTARG ;; o) OUT=$OPTARG ;; n) NOABC=1 ;; *) exit 2 ;; esac
 done
 shift $((OPTIND-1))
-[ -n "$OUT" ] || OUT=flow/synth/records/$(date -u +%Y-%m-%d)
+if [ "$NOABC" -eq 1 ]; then SYNTH_OPTS=" -noabc"; NOABC_JSON=true; SUFFIX=-noabc
+else SYNTH_OPTS=""; NOABC_JSON=false; SUFFIX=""; fi
+[ -n "$OUT" ] || OUT=flow/synth/records/$(date -u +%Y-%m-%d)$SUFFIX
 mkdir -p "$OUT/logs"
 LIST=rtl/baseband.f
 TIMEV=/usr/bin/time
@@ -32,9 +54,9 @@ if [ $# -gt 0 ]; then mods="$*"; else mods=$(for f in $files; do basename "$f" .
 rows=()
 for m in $mods; do
   log="$OUT/logs/$m.log"; tl="$OUT/logs/$m.time"
-  cmd="$(for f in $files; do printf 'read_verilog -sv %s; ' "$f"; done)hierarchy -check -top $m; synth -top $m; tee -o $OUT/logs/$m.stat stat"
+  cmd="$(for f in $files; do printf 'read_verilog -sv %s; ' "$f"; done)hierarchy -check -top $m; synth -top $m$SYNTH_OPTS; tee -o $OUT/logs/$m.stat stat"
   start=$(date +%s.%N)
-  timeout -k 5 "$TMO" "$TIMEV" -v -o "$tl" yosys -q -l "$log" -p "$cmd" >/dev/null 2>&1
+  "$TIMEV" -v -o "$tl" timeout -k 5 "$TMO" yosys -q -t -d -l "$log" -p "$cmd" >/dev/null 2>&1
   rc=$?
   wall=$(awk -v a="$start" -v b="$(date +%s.%N)" 'BEGIN{printf "%.1f", b-a}')
   rss=$(awk -F: '/Maximum resident set size/{gsub(/ /,"",$2); print $2}' "$tl" 2>/dev/null)
@@ -47,20 +69,23 @@ for m in $mods; do
     # last `Number of cells` / design-hierarchy total if present, else top block
     # totals: the "design hierarchy" section if the module has children, else the
     # module's own block (both include every instantiated child once per instance)
-    read -r cells flops < <(awk '
+    # The sed strips yosys -t's `[00051.805145] ` prefix, which would otherwise
+    # displace $1 and make every count parse as null.
+    read -r cells flops < <(sed 's/^\[[0-9][0-9]*\.[0-9][0-9]*\] //' "$st" | awk '
       /=== design hierarchy ===/ {c=""; f=0; inh=1}
       /^ +[0-9]+ +cells$/ {c=$1}
       $1 ~ /^[0-9]+$/ && $2 ~ /^\$_.*(DFF|DLATCH)/ {f+=$1}
-      END {print (c==""?"null":c), f+0}' "$st")
+      END {print (c==""?"null":c), f+0}')
   fi
   [ "$status" = error ] && echo "profile: $m: error (see $log)" >&2
-  rows+=("    {\"module\": \"$m\", \"status\": \"$status\", \"wall_s\": $wall, \"peak_rss_kb\": $rss, \"cells\": $cells, \"flops\": $flops, \"timeout_s\": $TMO}")
+  rows+=("    {\"module\": \"$m\", \"status\": \"$status\", \"wall_s\": $wall, \"peak_rss_kb\": $rss, \"cells\": $cells, \"flops\": $flops, \"noabc\": $NOABC_JSON, \"timeout_s\": $TMO}")
 done
 {
   echo "{"
   echo "  \"tool\": \"$(yosys -V)\","
-  echo "  \"command\": \"synth -top <module> (generic, no -flatten, no liberty)\","
+  echo "  \"command\": \"synth -top <module>$SYNTH_OPTS (generic, no -flatten, no liberty)\","
   echo "  \"timeout_s\": $TMO,"
+  echo "  \"noabc\": $NOABC_JSON,"
   echo "  \"note\": \"cells/flops are totals over the module and everything it instantiates; parent rows include their children\","
   echo "  \"rows\": ["
   n=${#rows[@]}; i=0
