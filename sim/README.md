@@ -13,7 +13,8 @@ here is **simulated** and says so.
 | `model/le1m_tx.py` | Integer LE 1M TX reference model (PDU to whitened, CRC'd, Gaussian-shaped `tx_dev` words); trace format in [model/trace_format.md](model/trace_format.md); `model/golden/tx_adv_ch37.trace` is a generated golden trace |
 | `channel/cm_a_oqpsk.py` | CM-A for 802.15.4: the TX model's O-QPSK waveform through the same offset, chip-clock and timing-phase (one chip), carrier-phase, AGC and 8-bit stages; AWGN set by SNR in a 2 MHz noise bandwidth |
 | `model/oqpsk_tx.py`, `model/oqpsk_rx.py` | Integer 802.15.4 TX and non-coherent RX reference models |
-| `sweep/per_sweep.py` | Seeded PER sweep (statistics and seeding imported from `ber_sweep.py`), writes `results/<date>-<sha>/per.json` |
+| `sweep/per_sweep.py` | Seeded PER sweep, writes `results/<date>-<sha>/per.json` |
+| `sweep/sweep_common.py` | One copy of what every sweep shares: the exact binomial interval, the seed derivation, the CLI and its packet-cap defaults, the grid-run loop, the point-record envelope, the per-row verdict, the report preamble and the shard/merge harness. Each driver keeps its own constants, grids, measurement loop and report sections; the two documented divergences (row-verdict inclusivity, which impairments can be out of spec) are parameters here, not branches |
 | `tests/` | pytest controls |
 
 ## Commands
@@ -57,8 +58,9 @@ After all five shards exist in one `shards/` directory, assemble the full file:
 python3 sim/sweep/ber_sweep.py --merge sim/results/<date>-<sha>/shards   # writes ../ber.json
 ```
 
-`--merge` recomputes `rows` with the same `row_summary` and orders points by grid
-index, so a merge equals a non-sharded run at the same caps. It exits non-zero,
+`--merge` recomputes `rows` with the same `row_summary` (the BER driver's verdict rule,
+passed into the shared merge in `sweep_common.py`) and orders points by grid index, so a
+merge equals a non-sharded run at the same caps. It exits non-zero,
 naming the row or file, on a missing, duplicate or partial row; on shards that
 disagree on seed, run index, mode, stop rule or SHA; and on a `-dirty` SHA or a
 `--quick` shard, so run shards from a committed tree. Use the same `--seed`,
