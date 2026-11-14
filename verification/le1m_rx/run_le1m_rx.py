@@ -15,15 +15,13 @@ from pathlib import Path
 
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parents[1]
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent))
 import cases  # noqa: E402
 from cocotb_run import run_cocotb, verdict  # noqa: E402
+from rtl_sources import block_sources  # noqa: E402
 
-SOURCES = [ROOT / "rtl/le1m_rx" / f for f in (
-    "le1m_rx_fir.v", "le1m_rx_disc.v", "le1m_rx_cordic.v", "le1m_rx_integ.v",
-    "le1m_rx_sync.v", "le1m_rx_pkt.v", "le1m_rx.v")]
+SOURCES = block_sources("le1m_rx")
 
 
 def main(build_dir: str, names) -> int:

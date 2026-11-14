@@ -12,10 +12,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from cocotb_run import run_cocotb, verdict  # noqa: E402
+from rtl_sources import block_modules, block_sources  # noqa: E402
 
-ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
-RTL = ROOT / "rtl/mac"
 
 
 def budgets(mhz: int) -> dict:
@@ -24,24 +23,39 @@ def budgets(mhz: int) -> dict:
                 ackwait=27648 // s, clk_per_us=32 // s)
 
 
-def benches(mhz: int):
+def overrides(mhz: int) -> dict:
+    """Parameter overrides per module; {} means the RTL defaults."""
     b = budgets(mhz)
-    # (toplevel, test module, parameters)
-    return [
-        ("mac_timer", "test_mac_timer", dict(CYCLES=7)),
-        ("mac_trigger", "test_mac_trigger", dict(CLK_PER_US=b["clk_per_us"])),
-        ("mac_ack_ctrl", "test_mac_ack_ctrl",
-         dict(TURNAROUND_CYCLES=b["turn"], L_DIG_CYCLES=b["ldig154"])),
-        ("mac_ackwait", "test_mac_ackwait", dict(ACKWAIT_CYCLES=b["ackwait"])),
-        ("mac_le_resp", "test_mac_le_resp",
-         dict(TIFS_CYCLES=b["tifs"], L_DIG_CYCLES=b["ldigle"])),
-        ("mac_addr_filter_154", "test_mac_addr_filter_154", {}),
-        ("mac_le_filter", "test_mac_le_filter", {}),
-    ]
+    return {
+        "mac_timer": dict(CYCLES=7),
+        "mac_trigger": dict(CLK_PER_US=b["clk_per_us"]),
+        "mac_ack_ctrl": dict(TURNAROUND_CYCLES=b["turn"], L_DIG_CYCLES=b["ldig154"]),
+        "mac_ackwait": dict(ACKWAIT_CYCLES=b["ackwait"]),
+        "mac_le_resp": dict(TIFS_CYCLES=b["tifs"], L_DIG_CYCLES=b["ldigle"]),
+        "mac_addr_filter_154": {},
+        "mac_le_filter": {},
+    }
+
+
+def benches(mhz: int):
+    """(toplevel, test module, parameters) for every module of the mac block.
+
+    The module list comes from rtl/baseband.f, so a module added there is
+    benched here without a second list to keep in step -- and fails loudly
+    until its bench exists."""
+    params = overrides(mhz)
+    out = []
+    for mod in block_modules("mac"):
+        if mod not in params:
+            raise SystemExit(
+                f"ERROR: rtl/baseband.f declares mac module {mod!r}, which has no "
+                f"bench parameters in {__file__}; add an entry (use {{}} for none)")
+        out.append((mod, f"test_{mod}", params[mod]))
+    return out
 
 
 def main(build_dir: str, mhz: int) -> int:
-    sources = sorted(RTL.glob("*.v"))
+    sources = block_sources("mac")
     total_all = failed_all = 0
     for top, module, params in benches(mhz):
         bdir = Path(build_dir) / f"{top}_{mhz}mhz"

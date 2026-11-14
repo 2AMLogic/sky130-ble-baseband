@@ -10,7 +10,8 @@ must fail (the Makefile `test-oqpsk-negative` target inverts the exit status).
 Exits non-zero if any cocotb test fails.
 
 The RX top reuses rtl/le1m_rx/le1m_rx_disc.v and le1m_rx_cordic.v unchanged
-(the model shares le1m_rx.discriminate), so those two files are in its list.
+(the model shares le1m_rx.discriminate), so rtl/baseband.f's `# block: oqpsk_rx`
+section reuses those two entries of the le1m_rx block.
 """
 
 import os
@@ -19,19 +20,15 @@ from pathlib import Path
 
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parents[1]
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent))
 import cases  # noqa: E402
 from cocotb_run import run_cocotb, verdict  # noqa: E402
+from rtl_sources import block_sources  # noqa: E402
 
 TOPS = {
-    "tx": ("oqpsk_tx", "test_oqpsk_tx", [ROOT / "rtl/oqpsk/oqpsk_tx.v"]),
-    "rx": ("oqpsk_rx", "test_oqpsk_rx",
-           [ROOT / "rtl/oqpsk/oqpsk_rx_fir.v", ROOT / "rtl/le1m_rx/le1m_rx_disc.v",
-            ROOT / "rtl/le1m_rx/le1m_rx_cordic.v", ROOT / "rtl/oqpsk/oqpsk_rx_integ.v",
-            ROOT / "rtl/oqpsk/oqpsk_rx_corr.v", ROOT / "rtl/oqpsk/oqpsk_rx_sync.v",
-            ROOT / "rtl/oqpsk/oqpsk_rx_pkt.v", ROOT / "rtl/oqpsk/oqpsk_rx.v"]),
+    "tx": ("oqpsk_tx", "test_oqpsk_tx", block_sources("oqpsk_tx")),
+    "rx": ("oqpsk_rx", "test_oqpsk_rx", block_sources("oqpsk_rx")),
 }
 
 

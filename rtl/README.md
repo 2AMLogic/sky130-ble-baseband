@@ -1,8 +1,11 @@
 # rtl
 
-Synthesizable RTL. `rtl/baseband.f` is the one file list of the integrated
-design (lint, synthesis and the integration bench read it); `rtl/top/` is the top
-level that ties the blocks below together, see [`rtl/top/README.md`](top/README.md).
+Synthesizable RTL. `rtl/baseband.f` is the one file list: lint, synthesis and
+every bench read it, the integrated design from the whole file and each block
+from its own `# block:` section (one parser, `verification/rtl_sources.py`), so
+adding or renaming a file is one edit. `make lint` fails if a `.v` under `rtl/`
+is not declared there. `rtl/top/` is the top level that ties the blocks below
+together, see [`rtl/top/README.md`](top/README.md).
 See `verification/README.md` for the flow.
 
 ## host
