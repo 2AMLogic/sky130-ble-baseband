@@ -94,6 +94,51 @@ are reports, not assertions. The full sweep is hours of CPU and is meant for a
 dedicated machine, not a shared dispatch worker. Same determinism contract as
 above. `--quick` proves the harness, not the row.
 
+### Full-sweep run record (2026-11-14)
+
+`results/2026-11-14-1564a0ec0cfb/per.json` is the committed full-caps run. It was
+produced on the Spot batch fleet through the `repo-script` job kind
+(2AMLogic/2am#6381), not on a shared dispatch worker.
+
+| | |
+|---|---|
+| Command | `python3 sim/sweep/per_sweep.py --seed 1 --run-index 0 --out sim/results/spot/per.json` |
+| Source commit | `1564a0ec0cfb`, clean tree (`run.json`: `1564a0ec0cfb21ec354683b43899cc7e10ec0933`) |
+| Seed / run index | `--seed 1` / `--run-index 0` |
+| Packet caps | defaults — 20000 packets per point, 3000 at 127 octets, stop at 100 errors |
+| Spot group / job | `rs-20261114T184505Z-1564a0ec` / `rs-20261114T184505Z-1564a0ec-s00` |
+| Instance | `i-0d91821c074de2710`, `m6i.4xlarge`, `us-east-1c`, spot, AMI `ami-08688417b66e0c74d` |
+| Wall time | 689 s, 0 Spot retries (single threaded: `cpu_busy_fraction` 0.0627 of 16 vCPU) |
+
+689 s is far under the hours-of-CPU estimate above because PER is high at most grid
+points, so the 100-error stop rule ends a point after 100–3000 packets instead of at
+the cap. Only the 9 dB `per_snr` point ran to the 20000-packet cap, and it is the
+run's one `bound_only` point; the other 42 points are measurements.
+
+**Provenance caveat.** The file's own `sim_git_sha` reads `3f7ee0f76614`, which is
+**not** a commit of this repository. The `repo-script` runner `git init`s the
+extracted `git archive` tarball and makes one local commit so work-tree-relative
+tooling resolves, so `git_sha()` records that synthetic commit instead of the
+submitted one. The real source commit is the `1564a0ec0cfb` above, taken from the
+job's `run.json`. The file is committed exactly as produced — results here are
+append-only evidence and are not hand-edited. Tracked upstream as 2AMLogic/2am#7287.
+
+**Row verdicts as found** — reported, not asserted; `rows` summarises each row at
+5 dB against PER < 1 %:
+
+| Row | Worst 95 % CP upper at 5 dB | Below 1 %? |
+|---|---|---|
+| `per_snr` (20 octets, no offsets) | 0.504 | no |
+| `per_cfo` (20 octets, incl. both ±196 kHz ends) | 0.828 | no |
+| `per_clock` (127 octets, ±80 ppm) | 0.849 | no |
+| `negative_control` (800 kHz offset at 9 dB) | 1.000 | `fails_row` true, as designed |
+
+All three ratified rows are **missed** at the spec's 5 dB ceiling. `per_snr` first
+gets under 1 % at 9 dB (5.5e-4, CP upper 9.8e-4), so the reference receiver is about
+4 dB short of the `spec/target-spec.md` row and 2 dB short of its fallback. That is a
+recorded result, not a reason to relax a ratified row; the shortfall is dispositioned
+in #137.
+
 ## Determinism
 
 Seed = SHA-256 of (row id, impairment settings, point index, run index, `--seed`),
