@@ -17,6 +17,10 @@ the source, the swept quantity and the timing-phase range differ:
    sigma^2 = (fs / 2 MHz) / 10^(SNR/10) for unit signal power.
 7. Fixed AGC and 8-bit quantization, clipping counted: ``cm_a``'s rule.
 
+Stages 4, 6 and 7 are not reimplemented here: they are ``cm_a.receive_chain``,
+the one copy of the declared model (decision 0002), called with this modem's
+waveform, phase track and noise variance.
+
 Nothing is clamped to the spec ranges: an offset outside the row's range is
 injected as asked (negative controls rely on that).
 """
@@ -100,27 +104,6 @@ def generate_packet(psdu, params, rng, keep_float=False):
     x[lead:lead + len(sig)] = sig
     theta = phase0 + 2.0 * np.pi * cfo * np.arange(total) / FS
 
-    step = 1.0 + clock * 1e-6
-    m = int((total - 4 - timing - 1) / step)
-    tau = 1.0 + timing + step * np.arange(m)
-    xr = cm_a._lagrange4(x, tau) * np.exp(1j * cm_a._lagrange4(theta, tau))
-
     var = noise_variance(params.snr_db)
-    if var > 0.0:
-        nz = rng.standard_normal((m, 2)) * math.sqrt(var / 2.0)
-        xr = xr + nz[:, 0] + 1j * nz[:, 1]
-
-    rms = math.sqrt(float(np.mean(np.abs(xr) ** 2)))
-    gidx = cm_a.agc_gain_index(rms)
-    g = cm_a.gain_from_index(gidx)
-    qi, qq = np.rint(g * xr.real), np.rint(g * xr.imag)
-    sat = (qi < -128) | (qi > 127) | (qq < -128) | (qq > 127)
-    iq = np.stack([np.clip(qi, -128, 127), np.clip(qq, -128, 127)], axis=1).astype(np.int8)
-    flags = sat.astype(np.uint8)
-    flags[0] |= 2                                  # gain_reply strobe before sample 0
-    gain = np.full(m, gidx, dtype=np.uint8)
-    start = int(round((lead - 1 - timing) / step))
-    stop = int(round((lead + len(sig) - 1 - timing) / step))
-    return cm_a.ChannelOutput(iq, flags, gain, int(sat.sum()), float(cfo), float(clock),
-                              float(timing), float(phase0), var, gidx, max(start, 0), min(stop, m),
-                              xr if keep_float else None)
+    return cm_a.receive_chain(x, theta, lead, len(sig), clock, timing, var, rng, cfo, phase0,
+                              keep_float=keep_float)
