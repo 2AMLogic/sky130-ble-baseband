@@ -30,8 +30,11 @@ _None._
 
 Human-approved issues ready for implementation (`loom:issue`).
 
+- **#55**: T1 item 6a: committed full LE 1M BER sweeps (all rows, CM-A) with negative control
+- **#56**: T1 item 6b: 802.15.4 CM-A source and seeded PER sweep with negative control
 - **#123**: Record per-pass Yosys timing for oqpsk_rx_corr and le1m_rx_sync, with and without the generic ABC pass
 - **#125**: Dedupe the RX moving-sum integrator: le1m_rx_integ and oqpsk_rx_integ are one parameterized module written twice
+- **#128**: Dedupe the seven negative-control recipes in the Makefile into one define
 
 ## In Progress
 
@@ -48,6 +51,7 @@ PRs waiting on Judge (`loom:review-requested`).
 - **#119**: refactor(sim): one copy of the sweep CLI, stop rule, row verdict and report envelope
 - **#127**: build: derive every per-block RTL source list from rtl/baseband.f
 - **#129**: feat(manifests): attest T1 item 9 from the committed testbenches
+- **#130**: docs: Guide document maintenance update
 
 ## Approved (Awaiting Merge)
 
@@ -71,7 +75,6 @@ Issues carrying `loom:curated`.
 ## Proposed (Architect / Hermit)
 
 - **#126**: Drop the vendored design-evidence-tiers.md: it is byte-identical to the pinned klt wheel's own copy *(hermit)*
-- **#128**: Dedupe the seven negative-control recipes in the Makefile into one define *(hermit)*
 
 ## Epics
 
@@ -84,11 +87,11 @@ _None._
 | Operator merge-risk holds | 0 |
 | Very important | 1 |
 | Important | 6 |
-| Ready (`loom:issue`) | 2 |
+| Ready (`loom:issue`) | 5 |
 | In Progress (`loom:building`) | 3 |
-| PRs awaiting review | 3 |
+| PRs awaiting review | 4 |
 | Approved PRs awaiting merge | 1 |
 | Curated | 8 |
-| Architect / Hermit proposals | 2 |
+| Architect / Hermit proposals | 1 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
