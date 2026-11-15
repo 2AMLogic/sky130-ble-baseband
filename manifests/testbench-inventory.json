@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "kind": "t1-attestation-inventory",
+  "t1_item": 9,
+  "description": "Testbenches shipped: the committed cocotb benches under verification/ that back this block's RTL claims - LE 1M TX/RX and 802.15.4 O-QPSK TX/RX trace replay against the sim/ reference models, the host (APB) interface bench, the lower-MAC cycle-count benches at 32 and 16 MHz, the baseband_top integration bench, and a negative control for each. The cold start below runs all of them from a clean checkout. No error-rate (BER/PER) result is claimed here; those sweeps enter this inventory when their results land.",
+  "testbenches": [
+    "verification/cocotb_run.py",
+    "verification/rx_common.py",
+    "verification/vector_common.py",
+    "verification/host/run_host.py",
+    "verification/host/test_host.py",
+    "verification/le1m_rx/cases.py",
+    "verification/le1m_rx/run_le1m_rx.py",
+    "verification/le1m_rx/test_le1m_rx.py",
+    "verification/le1m_tx/run_le1m_tx.py",
+    "verification/le1m_tx/test_le1m_tx.py",
+    "verification/mac/mac_common.py",
+    "verification/mac/run_mac.py",
+    "verification/mac/test_mac_ack_ctrl.py",
+    "verification/mac/test_mac_ackwait.py",
+    "verification/mac/test_mac_addr_filter_154.py",
+    "verification/mac/test_mac_le_filter.py",
+    "verification/mac/test_mac_le_resp.py",
+    "verification/mac/test_mac_timer.py",
+    "verification/mac/test_mac_trigger.py",
+    "verification/oqpsk/cases.py",
+    "verification/oqpsk/run_oqpsk.py",
+    "verification/oqpsk/test_oqpsk_rx.py",
+    "verification/oqpsk/test_oqpsk_tx.py",
+    "verification/top/run_top.py",
+    "verification/top/test_top.py"
+  ],
+  "cold_start": {
+    "argv": [
+      "make",
+      "venv",
+      "test",
+      "test-negative",
+      "test-le1m-rx",
+      "test-le1m-rx-negative",
+      "test-le1m-tx",
+      "test-le1m-tx-negative",
+      "test-oqpsk",
+      "test-oqpsk-negative",
+      "test-top",
+      "test-top-negative"
+    ],
+    "cwd": ".",
+    "local_only": true
+  },
+  "pins": {
+    "pdk": {
+      "name": "sky130A",
+      "revision": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+    },
+    "tools": {
+      "cocotb": "2.0.1",
+      "iverilog": "13.0",
+      "numpy": "1.26.4",
+      "verilator": "5.050",
+      "yosys": "0.67"
+    }
+  }
+}

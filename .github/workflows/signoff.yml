@@ -36,6 +36,15 @@ jobs:
           klt signoff --attest 10 --inventory manifests/hygiene-inventory.json \
               --check manifests/item10-attestation.json
 
+      - name: Re-check the item-9 testbench attestation
+        # Every inventoried bench must still exist and the pins must still
+        # resolve; the cold start is marked local_only in the inventory
+        # (it needs Icarus, Verilator, Yosys and the cocotb venv) and so is
+        # carried from the committed envelope, not re-run here.
+        run: |
+          klt signoff --attest 9 --inventory manifests/testbench-inventory.json \
+              --check manifests/item9-attestation.json
+
       - name: Re-run klt signoff and compare against the committed record
         run: |
           set -uo pipefail
