@@ -49,8 +49,10 @@ Individual steps: `make test`, `make test-negative`, `make test-le1m-rx`,
   and one packet per test. `test-top-negative` perturbs one expected value in
   each test and fails unless every test is rejected with an `expected=` report.
 - `test-negative` runs the host and lower-MAC negative controls.
-- `lint` is Verilator `--lint-only -Wall`: each block, then `baseband_top` over
-  `rtl/baseband.f`; any warning fails.
+- `lint` is Verilator `--lint-only -Wall`: each block, then `baseband_top`; any
+  warning fails. Every list comes from `rtl/baseband.f` (below), and `lint`
+  first runs `check-rtl-list`, which fails if a `.v` under `rtl/` is declared
+  there but missing, or present but undeclared.
 - `synth` maps `baseband_top` (flattened) to `sky130_fd_sc_hd` with Yosys at the
   `tt_025C_1v80` Liberty corner into `flow/synth/baseband_top_netlist.v` and
   `flow/synth/liberty_record.txt`; `synth-check` regenerates both and fails on any
@@ -60,6 +62,24 @@ Individual steps: `make test`, `make test-negative`, `make test-le1m-rx`,
 Run outputs land under `flow/build/<block>/` (gitignored, never committed):
 `sim/` and `sim_neg/` (simulator build and `results.xml`), `negative.log`;
 synthesis reports (`cell_count.rpt`, `yosys.log`) under `flow/build/synth/`.
+
+## One file list
+
+`rtl/baseband.f` is the only place a Verilog source list is written down. The
+whole file is the `baseband_top` list that `verilator -f`, `flow/synth/synth.tcl`
+and `flow/synth/profile.sh` read directly; its `# block: <name>` comments group
+the same paths into the per-block lists that each block's lint and each
+`run_*.py` compile, through one parser, `verification/rtl_sources.py`:
+
+```
+python3 verification/rtl_sources.py le1m_rx          # the block's paths
+python3 verification/rtl_sources.py --check          # the list is complete
+```
+
+The Makefile reads it as a generated `verilator -f` file list under
+`flow/build/filelists/` (never hand-edited); the benches import
+`block_sources(name)`. So a block's membership is declared once: adding,
+renaming or moving an RTL file is one edit, in `rtl/baseband.f`.
 
 ## Pins
 

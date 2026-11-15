@@ -3,6 +3,13 @@
 Chronological record of merged PRs and closed issues, maintained by the Guide
 triage role. Newest first.
 
+### 2026-11-14
+
+- **PR #131**: feat(synth): timestamp profile.sh logs and record the dominant pass per leaf
+- **Issue #123** (closed): Record per-pass Yosys timing for oqpsk_rx_corr and le1m_rx_sync, with and without the generic ABC pass
+- **PR #115**: refactor(sim): share CM-A stages 4/6/7 between both channel models
+- **Issue #114** (closed): Share the CM-A resample/noise/AGC/quantize tail between cm_a.py and cm_a_oqpsk.py (one copy of the declared channel model)
+
 ### 2026-11-12
 
 - **PR #111**: Bump Repo Skills 0.25.10 -> 0.26.1
