@@ -12,6 +12,7 @@ preamble and the shard/merge harness are ``sweep_common``'s.
     python3 sim/sweep/ber_sweep.py                    # full sweep, see sim/README.md
     python3 sim/sweep/ber_sweep.py --only ROW         # one shard: results/<date>-<sha>/shards/ROW.json
     python3 sim/sweep/ber_sweep.py --merge DIR        # assemble shards into ber.json
+    python3 sim/sweep/ber_sweep.py --only ROW --sim-git-sha SHA  # shard with no repo git root
 """
 
 import os
