@@ -61,11 +61,53 @@ run) and `0` when every item is `met`. Any change that affects the verdict
 — new evidence, a manifest edit, a vendored-doc bump, a version-pin bump —
 regenerates and commits the record in the same PR.
 
+### A hygiene artifact changed
+
+**Editing a file one inventory lists means re-attesting that item**, because
+each envelope records the sha256 of every file it checked. The two inventories
+overlap with this directory and with CI, so in particular: changing
+`.github/workflows/signoff.yml`, this README, the root `README.md`, `LICENSE`,
+`sim/README.md`, `verification/README.md` or either other workflow drifts
+**item 10** and must be followed by the item-10 re-attest below — otherwise
+the item-10 `--check` step fails even though the verdict record is fresh.
+Likewise, touching any bench under `verification/` drifts **item 9**. The
+`--check` steps are what catch this, and they catch it at CI time, not review
+time.
+
+The re-attest is the only step an artifact edit needs. The inventory is
+byte-unchanged, so the manifest's `evidence."10".content_hash` pin — the
+**inventory's** sha256, never the envelope's — still holds, and
+`manifests/sky130-ble-baseband.signoff.json` is byte-unchanged too, because
+an artifact-only edit does not change the graded verdict. Re-pinning the
+**envelope's** own sha256 into `evidence."10".content_hash` instead grades
+item 10 `stale_evidence`. And if `manifests/item10-attestation.json`
+conflicts on rebase, resolve the conflict by re-running `--attest` on the
+rebased tree — never by hand-merging the JSON.
+
+Item 10 (run `make venv` first so its `local_only` checks can run):
+
+```console
+uvx --from "klayout-tools==0.8.0" klt signoff --attest 10 \
+    --inventory manifests/hygiene-inventory.json \
+    -o manifests/item10-attestation.json
+```
+
+Item 9 (its `cold_start` runs `make venv` itself, then every bench; allow
+~10 minutes with the pinned tools on `PATH`):
+
+```console
+uvx --from "klayout-tools==0.8.0" klt signoff --attest 9 \
+    --inventory manifests/testbench-inventory.json \
+    -o manifests/item9-attestation.json
+```
+
+### The inventory changed
+
 To re-attest an item after changing its inventory, re-pin **that inventory's**
 sha256 in the manifest's `evidence.<item>.content_hash` — the manifest pins the
 inventory, not the envelope — and regenerate the record above, all in the same
-PR. Item 9 (its `cold_start` runs `make venv` itself, then every bench; allow
-~10 minutes with the pinned tools on `PATH`):
+PR, in addition to the re-attest. Item 9 (its `cold_start` runs `make venv`
+itself, then every bench; allow ~10 minutes with the pinned tools on `PATH`):
 
 ```console
 uvx --from "klayout-tools==0.8.0" klt signoff --attest 9 \
@@ -81,19 +123,9 @@ uvx --from "klayout-tools==0.8.0" klt signoff --attest 10 \
     -o manifests/item10-attestation.json
 ```
 
-Both exit `3` and write nothing to `-o` when a check fails, so a failed
-re-attest never silently overwrites a passing envelope.
-
-**Editing a file one inventory lists means re-attesting that item**, because
-each envelope records the sha256 of every file it checked. The two inventories
-overlap with this directory and with CI, so in particular: changing
-`.github/workflows/signoff.yml`, this README, the root `README.md`, `LICENSE`,
-`sim/README.md`, `verification/README.md` or either other workflow drifts
-**item 10** and must be followed by the item-10 re-attest above — otherwise
-the item-10 `--check` step fails even though the verdict record is fresh.
-Likewise, touching any bench under `verification/` drifts **item 9**. The
-`--check` steps are what catch this, and they catch it at CI time, not review
-time.
+Every `--attest` command above exits `3` and writes nothing to `-o` when a
+check fails, so a failed re-attest never silently overwrites a passing
+envelope.
 
 ## Freshness is CI-enforced
 
