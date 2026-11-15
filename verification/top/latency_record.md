@@ -72,7 +72,7 @@ measurement and must fail with `expected=` (negative control below).
     (9, 37, 1) (116, 37, 1)` → PSDU 12 / 20 / 127 octets (the 20 is the
     golden PSDU size; the 127 the maximum); PAN 0x1234, short addr 0x0042,
     channel 11.
-  - One host-commanded TX per PHY (LE golden 10-octet PDU; 15.4 18-octet
+  - One host-commanded TX per PHY (LE golden 11-octet PDU; 15.4 18-octet
     payload) for the `cmd_tx_start` path's `L_tx`.
 - Measured, clk at 32 MHz (min/max/spread over the 6 packets per PHY):
 

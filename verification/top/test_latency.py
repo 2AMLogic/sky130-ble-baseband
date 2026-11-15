@@ -83,7 +83,7 @@ import le1m_tx  # noqa: E402
 import oqpsk_tx  # noqa: E402
 import packet  # noqa: E402
 import cases as oq_cases  # noqa: E402
-from top_env import (CMD, CMD_ABORT, CMD_RX, CMD_TX, DESC_COUNT, DESC_INFO,  # noqa: E402
+from top_env import (CMD, CMD_ABORT, CMD_RX, CMD_TX, DESC_COUNT,  # noqa: E402
                     DESC_POP, INT_ENABLE, INT_RAW, RX_DATA, RX_LEVEL, STATE,
                     TIMING_CTRL, TX_DATA, TX_DONE, TX_LENGTH, Env, configure,
                     expect, frame_154)
@@ -260,7 +260,7 @@ async def latency_oqpsk(dut):
 
     packets = []
     for payload_len, lead, drive_seed in OQ_MATRIX:
-        name = f"oqpsk psdu={payload_len + 2} lead={lead} jitter={drive_seed}"
+        name = f"oqpsk psdu={payload_len + 11} lead={lead} jitter={drive_seed}"
         rng = np.random.Generator(np.random.PCG64(200 + payload_len))
         payload = bytes(rng.integers(0, 256, payload_len, dtype=np.uint8).tolist())
         mpdu = frame_154(0x5A, pan, me, 0x0001, payload)
@@ -277,7 +277,7 @@ async def latency_oqpsk(dut):
         got = await drain(env, len(mpdu), name)
         expect(f"{name}: octets", got.hex(), mpdu.hex())
         await stop_rx(env)
-        packets.append({"psdu_octets": payload_len + 2, "lead": lead,
+        packets.append({"psdu_octets": payload_len + 11, "lead": lead,
                         "drive_seed": drive_seed,
                         "L_rx": l_rx, "L_tx": l_tx, "L_dig": l_rx + l_tx})
     report("oqpsk", host_l_tx, packets)

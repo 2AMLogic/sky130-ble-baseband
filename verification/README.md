@@ -52,7 +52,7 @@ Individual steps: `make test`, `make test-negative`, `make test-le1m-rx`,
 - `test-top-latency` (issue #122) measures L_rx, L_tx and L_dig and their spread
   in clk cycles at 32 MHz over a matrix of model-generated packets per PHY
   (LE 1M timed response on PDUs of 2 / 22 / 257 octets, 15.4 automatic ACK on
-  PSDUs of 3 / 20 / 127 octets; 2 strobe-jitter seeds x 2 timing phases at the
+  PSDUs of 12 / 20 / 127 octets; 2 strobe-jitter seeds x 2 timing phases at the
   short length, then the mid and maximum lengths), plus the host-commanded
   TX path's L_tx. It fails if any maximum or spread(L_dig) exceeds the
   timing-and-area section 3 bounds converted at 32 MHz. The interpretation
