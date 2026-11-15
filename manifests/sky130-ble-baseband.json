@@ -2,6 +2,10 @@
   "block": "sky130-ble-baseband",
   "kind": "digital",
   "evidence": {
+    "9": {
+      "file": "manifests/item9-attestation.json",
+      "content_hash": "sha256:2fa06aff5b2fdfb109377632da00c8156ebd49c4860873892a25790b4636bab6"
+    },
     "10": {
       "file": "manifests/item10-attestation.json",
       "content_hash": "sha256:0a151f626ac45cd99b5fe85c96f4f123adb138bc59845d8bafec089ed8650278"

@@ -68,7 +68,7 @@ simulated.
 Maturity ladder: spec ratified → reference receiver meets error-rate targets
 in link-level simulation → RTL bit-exact against the reference → turnaround
 timing verified → layout DRC/LVS-clean → timing closed across corners →
-shuttle seat → measured silicon. **Current position: spec ratified (revision 1); reference receiver and transmitter models and the sweep harness have landed, and the full error-rate sweep has not been run, so the receiver is not yet shown to meet the error-rate targets. No block RTL yet.**
+shuttle seat → measured silicon. **Current position: spec ratified (revision 1); the fixed-point reference receiver and transmitter models and the seeded sweep harness have landed, and the full error-rate sweep has not been run, so the receiver is not yet shown to meet the error-rate targets; RTL exists for every sub-block and is integrated in `rtl/top/baseband_top.v`, with the modem blocks bit-exact against the reference model in simulation (decision 0007) and the MAC, host interface and top-level integration covered by cocotb testbenches; no netlist, layout or timing result.**
 
 ## Repo layout
 
