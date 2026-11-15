@@ -4,7 +4,7 @@ A digital baseband (LE 1M GFSK and IEEE 802.15.4 O-QPSK modems plus the
 time-critical lower MAC) on sky130 `sky130_fd_sc_hd`, taken through the
 klayout-tools T1 checklist with every claim tied to a recorded result.
 
-Status as of 2026-11-15, `main` @ `27905fb`. The per-item ledger is issue #5;
+Status as of 2026-11-15, `main` @ `cd5d15d`. The per-item ledger is issue #5;
 the verdict of record is `manifests/sky130-ble-baseband.signoff.json`.
 `WORK_PLAN.md` is the generated label view and `WORK_LOG.md` the merge history.
 
