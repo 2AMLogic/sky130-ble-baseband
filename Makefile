@@ -1,7 +1,7 @@
 # Single entry point for the verification / lint / synthesis flow.
 #   make            -> all: check-tools, test, test-negative, test-le1m-rx, test-le1m-rx-negative, lint, synth,
 #                      model-test, test-le1m-tx, test-le1m-tx-negative, test-oqpsk, test-oqpsk-negative,
-#                      test-top, test-top-negative
+#                      test-top, test-top-negative, test-top-latency, test-top-latency-negative
 #                      (test/test-negative/lint include the rtl/host and rtl/mac benches)
 # `make synth` rewrites the committed netlist flow/synth/baseband_top_netlist.v;
 # `make synth-check` regenerates it in flow/build/ and fails if it differs.
@@ -26,9 +26,9 @@ CIEL_HOME?= $(HOME)/.ciel
 PDK_ROOT ?= $(CIEL_HOME)/ciel/$(PDK_FAMILY)/versions/$(PDK_REV)
 LIB_FILE := $(PDK_ROOT)/$(PDK_VARIANT)/libs.ref/$(STD_CELL_LIB)/lib/$(STD_CELL_LIB)__$(LIB_CORNER).lib
 
-.PHONY: all venv check-tools check-pdk test test-negative lint synth clean model-test host-test host-test-negative host-lint test-le1m-rx test-le1m-rx-negative test-le1m-tx test-le1m-tx-negative test-oqpsk test-oqpsk-negative test-top test-top-negative synth-check mac-test mac-test-negative mac-lint
+.PHONY: all venv check-tools check-pdk test test-negative lint synth clean model-test host-test host-test-negative host-lint test-le1m-rx test-le1m-rx-negative test-le1m-tx test-le1m-tx-negative test-oqpsk test-oqpsk-negative test-top test-top-negative test-top-latency test-top-latency-negative synth-check mac-test mac-test-negative mac-lint
 
-all: check-tools test test-negative test-le1m-rx test-le1m-rx-negative lint synth model-test test-le1m-tx test-le1m-tx-negative test-oqpsk test-oqpsk-negative test-top test-top-negative
+all: check-tools test test-negative test-le1m-rx test-le1m-rx-negative lint synth model-test test-le1m-tx test-le1m-tx-negative test-oqpsk test-oqpsk-negative test-top test-top-negative test-top-latency test-top-latency-negative
 
 venv:
 	python3 -m venv $(VENV)
@@ -141,6 +141,23 @@ test-top-negative: check-tools
 	  echo "ERROR: top negative control passed; the bench does not detect a broken expectation"; exit 1; \
 	else n=$$(grep -c 'expected=' $(TOP)/negative.log); [ "$$n" -ge 7 ] || { echo "ERROR: top negative control failed for the wrong reason ($$n expected= reports of 7); see $(TOP)/negative.log"; exit 1; }; \
 	  echo "top negative control OK (every perturbed expectation was rejected)"; fi
+
+# Latency bench (issue #122): L_rx / L_tx / L_dig and their spread over the
+# shared stimulus at baseband_top, checked against the timing-and-area
+# section 3 bounds at 32 MHz. Writes <build dir>/latency.json; the committed
+# evidence is verification/top/latency_record.md.
+test-top-latency: check-tools
+	$(PYTHON) verification/top/run_latency.py $(CURDIR)/$(TOP)/latency
+
+# A tightened bound (LE L_dig below the measured minimum) must FAIL, and for
+# the right reason: the bound report carries `expected=`. The negative run
+# executes the LE test only (the tightened bound lives there).
+test-top-latency-negative: check-tools
+	@mkdir -p $(TOP)
+	@if LATENCY_NEGATIVE=1 $(PYTHON) verification/top/run_latency.py $(CURDIR)/$(TOP)/latency_neg latency_le1m >$(TOP)/latency_negative.log 2>&1; then \
+	  echo "ERROR: top-latency negative control passed; the bench does not detect an exceeded bound"; exit 1; \
+	else grep -q 'expected=' $(TOP)/latency_negative.log || { echo "ERROR: top-latency negative control failed for the wrong reason; see $(TOP)/latency_negative.log"; exit 1; }; \
+	  echo "top-latency negative control OK (tightened bound was rejected)"; fi
 
 # Host interface (rtl/host/): APB registers, FIFOs, interrupts, timestamps.
 HOST_BUILD := flow/build/host
