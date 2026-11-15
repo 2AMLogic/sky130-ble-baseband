@@ -143,7 +143,7 @@
         "role": "testbench",
         "path": "verification/oqpsk/run_oqpsk.py",
         "passed": true,
-        "content_hash": "sha256:b03cc273b24bd6eaa0dc3ef5902dae395c91884c488a9f58d236d12c2bba3a56"
+        "content_hash": "sha256:c091692b73585d35315309c4658aec42951ea17f0724e9f029980d7e42b9b035"
       },
       {
         "check": "present",

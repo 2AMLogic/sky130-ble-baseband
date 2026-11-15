@@ -14,8 +14,11 @@
 //
 // The discriminator products and the CORDIC are the LE 1M receiver's modules,
 // instantiated unchanged (rtl/le1m_rx/le1m_rx_disc.v, le1m_rx_cordic.v): the
-// model shares le1m_rx.discriminate between the two PHYs. The FIR, the chip
-// integrator and everything after it are new.
+// model shares le1m_rx.discriminate between the two PHYs. The chip integrator
+// is the shared rx_moving_sum (rtl/le1m_rx/rx_moving_sum.v), at N=4 where the
+// LE 1M chain uses N=8: the two model copies, le1m_rx.integrate and
+// oqpsk_rx.chip_integrate, are the same sliding sum apart from the window
+// length. The FIR and everything after the chip sum are new.
 //
 // One packet per capture, as the model: after the SFD the engine decodes one
 // packet (or runs to rx_flush), then stays quiet until rst_n.
@@ -95,9 +98,9 @@ module oqpsk_rx (
     wire               int_v;
     wire signed [17:0] int_g;
     wire        [8:0]  int_mag;
-    oqpsk_rx_integ #(.SIDE_W(9)) u_integ (
+    rx_moving_sum #(.N(4), .SIDE_W(9)) u_integ (
         .clk(clk), .rst_n(rst_n), .in_valid(cor_v), .in_f(cor_angle), .in_side(cor_mag),
-        .out_valid(int_v), .out_g(int_g), .out_side(int_mag));
+        .out_valid(int_v), .out_sum(int_g), .out_side(int_mag));
 
     wire              c_valid;
     wire [31:0]       c_n;

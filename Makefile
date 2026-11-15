@@ -95,8 +95,8 @@ test-le1m-rx-negative: check-tools
 
 # 802.15.4 O-QPSK RTL (rtl/oqpsk): TX words and RX trace taps replayed through
 # cocotb + Icarus against sim/model/oqpsk_{tx,rx}.py by sample index (decision
-# 0007), including the committed golden traces. The RX top reuses two LE 1M
-# stages unchanged; the `# block: oqpsk_rx` section of rtl/baseband.f names them.
+# 0007), including the committed golden traces. The RX top shares three LE 1M
+# stages; the `# block: oqpsk_rx` section of rtl/baseband.f names them.
 test-oqpsk: check-tools
 	$(PYTHON) verification/oqpsk/run_oqpsk.py $(CURDIR)/$(OQPSK)/sim
 
