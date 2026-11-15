@@ -50,6 +50,42 @@ none. Peak RSS is recorded for timed-out rows too, because `/usr/bin/time` wraps
 `synth -top` without `-flatten`, then `dfflibmap` and `abc -liberty` per module
 (`SYNTH_ABC_FAST=1` switches to `abc -fast -liberty`).
 
+### Record-log footprint convention
+
+`profile.sh` writes one `-t -d` log for **every** module it runs, so a default
+(no-argument) invocation sweeps the whole 37-module filelist of
+`rtl/baseband.f` and stages 37 logs under `records/<date>/logs/` in one go.
+`.gitignore:15` (`!flow/*/records/**/*.log`) deliberately makes all of them
+committable — it does not, and cannot, enforce a footprint bound (below). The
+bound is what gets `git add`-ed, so the convention is:
+
+**Commit logs only for the modules a record is about** — the leaves or parents
+under investigation — not a full-filelist sweep. Pass explicit module arguments
+to `profile.sh`, or stage selectively, when recording. Both `2026-11-14`
+records follow this.
+
+Measured cost of a record's logs, so the next agent need not re-derive it
+(checked against `origin/main` @ `4fe5b03`, 2026-11-15; content bytes from
+`git ls-tree -r --long`, on-disk bytes from
+`git cat-file --batch-check='%(objectsize:disk)'`):
+
+- A scoped two-leaf record like the committed `2026-11-14` ones: 1,097,780
+  bytes (≈1.1 MB) of log content, 151,530 bytes (≈148 KiB) on disk.
+- An unscoped 37-module record would be ≈10 MB of content — **extrapolated**,
+  not measured (no such sweep has been run), to ≈1.3 MiB on disk using the
+  ratio below, recurring once per unscoped sweep.
+
+That ratio is measured, on the four committed log blobs: 1,097,780 bytes of
+content occupy 151,530 bytes on disk — **13.8 %**. The blobs are loose in the
+measured checkout, so the figure is standalone zlib with no cross-object
+delta: a conservative upper bound on packed cost, not an estimate of it.
+
+`.gitignore` does not enforce the scoping on purpose. No maintainable glob
+can: requiring a `logs/` path component still matches the same 37 files,
+because `profile.sh` writes every log under `$OUT/logs/`; enumerating module
+names would bound the set, but would silently drop a newly added module's log
+from this append-only record trail.
+
 Recorded 2026-11-05 in `records/2026-11-05/` (120 s timeout per module, Yosys 0.67):
 
 - 32 of 37 rows finish in under 10 s each; `le1m_rx_pkt` takes 103 s (22,307
