@@ -12,18 +12,18 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from cocotb_run import run_cocotb, verdict  # noqa: E402
+from rtl_sources import rtl_sources  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parents[1]
 
-# The file list is read from the one place lint and synthesis also use.
-RTL = [ln.strip() for ln in (ROOT / "rtl" / "baseband.f").read_text().splitlines()
-       if ln.strip() and not ln.startswith("#")]
+# The file list is read from the one place lint, synthesis and every other
+# bench also use, through the one parser (verification/rtl_sources.py).
+RTL = rtl_sources()
 
 
 def main(build_dir: str, names) -> int:
     return verdict(*run_cocotb("baseband_top", "test_top", HERE, build_dir,
-                               [ROOT / f for f in RTL], testcase=names or None))
+                               RTL, testcase=names or None))
 
 
 if __name__ == "__main__":
