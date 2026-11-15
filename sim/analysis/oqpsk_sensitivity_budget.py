@@ -30,10 +30,10 @@ What it measures, per acceptance criterion of issue #137:
 4. The crossing bracket, finer than the committed 2 dB grid: baseline points
    at 7.5, 8 and 8.5 dB.
 
-Every point is labelled "simulated, CM-A" (``ber_sweep.LABEL``), carries its
+Every point is labelled "simulated, CM-A" (``sweep_common.LABEL``), carries its
 seed, run index, packet cap and stop rule, and marks a capped point
 `bound_only`: an upper bound, not a measurement. Statistics and seed derivation
-are ``ber_sweep``'s (``clopper_pearson``, ``point_seed``), so a point with the
+are ``sweep_common``'s (``clopper_pearson``, ``point_seed``), so a point with the
 committed constants and caps reproduces the committed sweep exactly; the
 script asserts that against the committed 5/7/9 dB reference before any
 variant delta is reported. Same-machine identity only (sim/README.md
@@ -59,15 +59,15 @@ import numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__))
 SIM = os.path.dirname(HERE)
 sys.path[:0] = [os.path.join(SIM, "sweep"), os.path.join(SIM, "channel"), os.path.join(SIM, "model")]
-import ber_sweep  # noqa: E402
 import cm_a  # noqa: E402
 import cm_a_oqpsk  # noqa: E402
 import le1m_rx  # noqa: E402
 import oqpsk_rx  # noqa: E402
 import per_sweep  # noqa: E402
+import sweep_common  # noqa: E402
 
 FORMAT = 1
-LABEL = ber_sweep.LABEL
+LABEL = sweep_common.LABEL
 ROW_ID = "per_snr"
 PSDU_OCTETS = per_sweep.PSDU_TYPICAL
 
@@ -277,7 +277,7 @@ def run_point_variant(variant, overrides, snr_db, packet_cap, min_errors, base_s
     committed sweep, so the packet stream is shared across arms (common random
     numbers): packet k carries the same stimulus in every arm."""
     desc = dict(cm_a_oqpsk.OqpskParams(snr_db=snr_db).describe(), psdu_octets=PSDU_OCTETS)
-    seed = ber_sweep.point_seed(ROW_ID, desc, SNR_POINT_INDEX[snr_db], run_index, base_seed)
+    seed = sweep_common.point_seed(ROW_ID, desc, SNR_POINT_INDEX[snr_db], run_index, base_seed)
     t0 = time.time()
     with override_constants(overrides):
         p = per_sweep.run_point(ROW_ID, SNR_POINT_INDEX[snr_db],
@@ -298,7 +298,7 @@ def run_point_fine(snr_db, frac_bits, packet_cap, min_errors, base_seed, run_ind
     draw), so its packets are the committed stream's packets."""
     params = cm_a_oqpsk.OqpskParams(snr_db=snr_db)
     desc = dict(params.describe(), psdu_octets=PSDU_OCTETS)
-    seed = ber_sweep.point_seed(ROW_ID, desc, SNR_POINT_INDEX[snr_db], run_index, base_seed)
+    seed = sweep_common.point_seed(ROW_ID, desc, SNR_POINT_INDEX[snr_db], run_index, base_seed)
     rng = np.random.Generator(np.random.PCG64(seed))
     errors = packets = sync_misses = fcs_failures = clipped = samples = 0
     t0 = time.time()
@@ -317,9 +317,9 @@ def run_point_fine(snr_db, frac_bits, packet_cap, min_errors, base_seed, run_ind
         elif not rx["crc_ok"] or rx["psdu"] != psdu:
             fcs_failures += 0 if rx["crc_ok"] else 1
             errors += 1
-    lower, upper = ber_sweep.clopper_pearson(errors, packets)
+    lower, upper = sweep_common.clopper_pearson(errors, packets)
     capped = errors < min_errors
-    r = ber_sweep._round
+    r = sweep_common._round
     return {
         "row_id": ROW_ID, "label": LABEL, "channel_model": "CM-A",
         "variant": f"quant_frac{frac_bits}",
@@ -457,7 +457,7 @@ def build_report(args, sha, points, quant_points, slope):
                       "bracket_packet_cap": args.bracket_cap,
                       "variant_packet_cap": args.variant_cap,
                       "quant_packet_cap": args.quant_cap,
-                      "confidence": ber_sweep.CONFIDENCE,
+                      "confidence": sweep_common.CONFIDENCE,
                       "interval": "Clopper-Pearson, two-sided",
                       "capped_point": "upper bound, not a measurement"},
         "receiver": {"model": "sim/model/oqpsk_rx.py", "arithmetic": "integer",
@@ -511,7 +511,7 @@ def main(argv=None):
     ap.add_argument("--quick", action="store_true", help="few points, tiny caps (CI smoke)")
     ap.add_argument("--seed", type=int, default=1, help="base seed, as the committed sweep")
     ap.add_argument("--run-index", type=int, default=0)
-    ap.add_argument("--min-errors", type=int, default=ber_sweep.MIN_ERRORS)
+    ap.add_argument("--min-errors", type=int, default=sweep_common.MIN_ERRORS)
     ap.add_argument("--baseline-cap", type=int, default=20000)
     ap.add_argument("--bracket-cap", type=int, default=6000, help="packet cap at the 7.5/8/8.5 dB baseline points")
     ap.add_argument("--variant-cap", type=int, default=4000)
@@ -522,7 +522,7 @@ def main(argv=None):
     if args.quick:
         args.baseline_cap = args.bracket_cap = args.variant_cap = args.quant_cap = 40
 
-    sha = ber_sweep.git_sha()
+    sha = sweep_common.git_sha()
     out = args.out or os.path.join(
         SIM, "results", f"oqpsk-sensitivity-budget-{datetime.date.today().isoformat()}.json")
     os.makedirs(os.path.dirname(out), exist_ok=True)
