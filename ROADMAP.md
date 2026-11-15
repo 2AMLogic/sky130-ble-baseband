@@ -4,7 +4,7 @@ A digital baseband (LE 1M GFSK and IEEE 802.15.4 O-QPSK modems plus the
 time-critical lower MAC) on sky130 `sky130_fd_sc_hd`, taken through the
 klayout-tools T1 checklist with every claim tied to a recorded result.
 
-Status as of 2026-11-15, `main` @ `4fe5b03`. The per-item ledger is issue #5;
+Status as of 2026-11-15, `main` @ `27905fb`. The per-item ledger is issue #5;
 the verdict of record is `manifests/sky130-ble-baseband.signoff.json`.
 `WORK_PLAN.md` is the generated label view and `WORK_LOG.md` the merge history.
 
@@ -21,10 +21,8 @@ On the README's maturity ladder:
 | Layout DRC/LVS clean, timing closed | not started | `layout/` is empty; no netlist exists to place |
 
 On the T1 checklist (`klt signoff`, klayout-tools 0.8.0): 2 of 11 items met
-(items 9 and 10). Two caveats are tracked, not hidden: the item-10 attestation
-was produced by an unpinned klt dev build (#148), and `klt signoff` is red on
-`main` since the item-9 attestation drifted when #127 merged (#153, fix in
-flight).
+(items 9 and 10). One caveat is tracked, not hidden: the item-10 attestation
+was produced by an unpinned klt dev build (#148).
 
 | Item | Verdict | What is missing | Issue |
 |---|---|---|---|
@@ -73,10 +71,11 @@ the netlist.
    module replaces `le1m_rx_integ` and `oqpsk_rx_integ`; done when the replay
    benches and negative controls pass bit-exactly and the synthesis profile
    rows are re-recorded, feeding #72 with less logic to place.
-6. **Restore `klt signoff` green on `main`** (#153, in flight). The item-9
-   attestation drifted when #127 merged. Done when the attestation matches the
-   tree, CI is green, and the follow-up queue (#136, #142, #147) is
-   scheduled after it.
+6. **Close out the signoff follow-up queue** (#136, #142, both building).
+   The item-9 attestation drift is fixed and `klt signoff` is green on `main`
+   again (#153 closed by PR #160). Done when the manifests README records
+   what to regenerate when a hygiene artifact changes (#136) and the item-9
+   inventory scope over the sim/ benches is settled (#142); #147 is closed.
 
 ## Next
 
