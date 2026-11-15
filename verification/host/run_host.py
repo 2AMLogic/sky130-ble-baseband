@@ -14,11 +14,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from cocotb_run import run_cocotb, verdict  # noqa: E402
+from rtl_sources import block_sources  # noqa: E402
 
-ROOT = Path(__file__).resolve().parents[2]
-SOURCES = [ROOT / "rtl/host" / f for f in (
-    "host_fifo.v", "host_desc_fifo.v", "host_irq.v", "host_timestamp.v",
-    "host_regs.v", "host_top.v")]
+SOURCES = block_sources("host")
 CONFIGS = [
     {"FIFO_DEPTH": 288, "CLK_PER_US": 32},
     {"FIFO_DEPTH": 5, "CLK_PER_US": 16},
