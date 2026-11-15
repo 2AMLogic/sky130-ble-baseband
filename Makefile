@@ -46,6 +46,21 @@ define need_tool
  case "$$v" in $(2)*) ;; *) echo "$(if $(ALLOW_TOOL_DRIFT),WARNING,ERROR): $(1) version mismatch: want $(2)*, got '$$v' (pins: flow/versions.mk)"; $(if $(ALLOW_TOOL_DRIFT),true,exit 1);; esac
 endef
 
+# negative_control <build dir> <perturb env assignment> <runner> <log path> \
+#   <right-reason grep pattern> <error label> <pass why> <ok label> <ok why> [<min count>]
+# The single copy of the guard every negative-control target runs: the bench
+# must FAIL under its perturb env var, and for the stated right reason. The
+# grep pattern is passed bare (no quotes) — the body quotes it; a comma would
+# split the $(call) argument list. A min count turns the right-reason check
+# into a grep -c threshold instead of the default grep -q presence test.
+define negative_control
+mkdir -p $(1); \
+if $(2) $(3) >$(4) 2>&1; then \
+  echo "ERROR: $(6) negative control passed; $(7)"; exit 1; \
+else $(if $(10),n=$$(grep -c '$(5)' $(4)); [ "$$n" -ge $(10) ] || { echo "ERROR: $(6) negative control failed for the wrong reason ($$n $(5) reports of $(10)); see $(4)"; exit 1; },grep -q '$(5)' $(4) || { echo "ERROR: $(6) negative control failed for the wrong reason; see $(4)"; exit 1; }); \
+  echo "$(8) negative control OK ($(9))"; fi
+endef
+
 check-tools:
 	$(call need_tool,iverilog,$(ICARUS_VERSION),iverilog -V)
 	$(call need_tool,verilator,$(VERILATOR_VERSION),verilator --version)
@@ -76,11 +91,7 @@ test-le1m-rx: check-tools
 # A perturbed expectation must be rejected, and for the right reason: the
 # mismatch report carries `expected=`.
 test-le1m-rx-negative: check-tools
-	@mkdir -p $(LE1M_RX)
-	@if LE1M_RX_NEGATIVE=1 $(PYTHON) verification/le1m_rx/run_le1m_rx.py $(CURDIR)/$(LE1M_RX)/sim_neg nominal_noiseless >$(LE1M_RX)/negative.log 2>&1; then \
-	  echo "ERROR: le1m_rx negative control passed; the replay does not detect a broken expectation"; exit 1; \
-	else grep -q 'first mismatch.*expected=' $(LE1M_RX)/negative.log || { echo "ERROR: le1m_rx negative control failed for the wrong reason; see $(LE1M_RX)/negative.log"; exit 1; }; \
-	  echo "le1m_rx negative control OK (perturbed expectation was rejected)"; fi
+	@$(call negative_control,$(LE1M_RX),LE1M_RX_NEGATIVE=1,$(PYTHON) verification/le1m_rx/run_le1m_rx.py $(CURDIR)/$(LE1M_RX)/sim_neg nominal_noiseless,$(LE1M_RX)/negative.log,first mismatch.*expected=,le1m_rx,the replay does not detect a broken expectation,le1m_rx,perturbed expectation was rejected)
 
 # 802.15.4 O-QPSK RTL (rtl/oqpsk): TX words and RX trace taps replayed through
 # cocotb + Icarus against sim/model/oqpsk_{tx,rx}.py by sample index (decision
@@ -92,12 +103,8 @@ test-oqpsk: check-tools
 # A perturbed expectation must be rejected by each half, and for the right
 # reason: the mismatch report carries `expected=`.
 test-oqpsk-negative: check-tools
-	@mkdir -p $(OQPSK)
 	@for half in "tx payload3" "rx psdu1_no_fcs"; do set -- $$half; \
-	  if OQPSK_NEGATIVE=1 $(PYTHON) verification/oqpsk/run_oqpsk.py $(CURDIR)/$(OQPSK)/sim_neg_$$1 $$1 $$2 >$(OQPSK)/negative_$$1.log 2>&1; then \
-	    echo "ERROR: oqpsk $$1 negative control passed; the replay does not detect a broken expectation"; exit 1; \
-	  else grep -q 'first mismatch.*expected=' $(OQPSK)/negative_$$1.log || { echo "ERROR: oqpsk $$1 negative control failed for the wrong reason; see $(OQPSK)/negative_$$1.log"; exit 1; }; \
-	    echo "oqpsk $$1 negative control OK (perturbed expectation was rejected)"; fi; \
+	  $(call negative_control,$(OQPSK),OQPSK_NEGATIVE=1,$(PYTHON) verification/oqpsk/run_oqpsk.py $(CURDIR)/$(OQPSK)/sim_neg_$$1 $$1 $$2,$(OQPSK)/negative_$$1.log,first mismatch.*expected=,oqpsk $$1,the replay does not detect a broken expectation,oqpsk $$1,perturbed expectation was rejected); \
 	done
 
 # A .v on disk that $(RTL_LIST) does not declare would be linted by nothing
@@ -148,11 +155,7 @@ test-top: check-tools
 
 # Each test perturbs one expected value; the run must fail with `expected=`.
 test-top-negative: check-tools
-	@mkdir -p $(TOP)
-	@if TOP_NEGATIVE=1 $(PYTHON) verification/top/run_top.py $(CURDIR)/$(TOP)/sim_neg >$(TOP)/negative.log 2>&1; then \
-	  echo "ERROR: top negative control passed; the bench does not detect a broken expectation"; exit 1; \
-	else n=$$(grep -c 'expected=' $(TOP)/negative.log); [ "$$n" -ge 7 ] || { echo "ERROR: top negative control failed for the wrong reason ($$n expected= reports of 7); see $(TOP)/negative.log"; exit 1; }; \
-	  echo "top negative control OK (every perturbed expectation was rejected)"; fi
+	@$(call negative_control,$(TOP),TOP_NEGATIVE=1,$(PYTHON) verification/top/run_top.py $(CURDIR)/$(TOP)/sim_neg,$(TOP)/negative.log,expected=,top,the bench does not detect a broken expectation,top,every perturbed expectation was rejected,7)
 
 # Latency bench (issue #122): L_rx / L_tx / L_dig and their spread over the
 # shared stimulus at baseband_top, checked against the timing-and-area
@@ -179,11 +182,7 @@ host-test: check-tools
 
 # A broken expectation (W1C on a disabled INT_STATUS bit) must FAIL the bench.
 host-test-negative: check-tools
-	@mkdir -p $(HOST_BUILD)
-	@if HOST_NEGATIVE=1 $(PYTHON) verification/host/run_host.py $(CURDIR)/$(HOST_BUILD)/sim_neg >$(HOST_BUILD)/negative.log 2>&1; then \
-	  echo "ERROR: host negative control passed; the test does not detect a broken expectation"; exit 1; \
-	else grep -q 'expected=' $(HOST_BUILD)/negative.log || { echo "ERROR: host negative control failed for the wrong reason; see $(HOST_BUILD)/negative.log"; exit 1; }; \
-	  echo "host negative control OK (broken expectation was rejected)"; fi
+	@$(call negative_control,$(HOST_BUILD),HOST_NEGATIVE=1,$(PYTHON) verification/host/run_host.py $(CURDIR)/$(HOST_BUILD)/sim_neg,$(HOST_BUILD)/negative.log,expected=,host,the test does not detect a broken expectation,host,broken expectation was rejected)
 
 host-lint: check-tools $(FLISTS)/host.f
 	verilator --lint-only -Wall --top-module host_top -f $(FLISTS)/host.f
@@ -196,10 +195,7 @@ clean:
 model-test:
 	@mkdir -p $(BUILD)
 	$(PYTHON) -m pytest -q sim/tests
-	@if CRC_NEGATIVE=1 $(PYTHON) -m pytest -q sim/tests -k crc24_kat >$(BUILD)/model_negative.log 2>&1; then \
-	  echo "ERROR: model negative control passed; the CRC known-answer test does not detect a flipped init"; exit 1; \
-	else grep -q 'crc24 KAT mismatch' $(BUILD)/model_negative.log || { echo "ERROR: model negative control failed for the wrong reason; see $(BUILD)/model_negative.log"; exit 1; }; \
-	  echo "model negative control OK (flipped CRC init was rejected)"; fi
+	@$(call negative_control,$(BUILD),CRC_NEGATIVE=1,$(PYTHON) -m pytest -q sim/tests -k crc24_kat,$(BUILD)/model_negative.log,crc24 KAT mismatch,model,the CRC known-answer test does not detect a flipped init,model,flipped CRC init was rejected)
 
 # The file-list parser's own tests (verification/tests, issue #147). Pure
 # Python: no simulator and no PDK, so no check-tools. The parser gates
@@ -225,11 +221,7 @@ test-le1m-tx: check-tools
 	$(PYTHON) verification/le1m_tx/run_le1m_tx.py $(CURDIR)/$(LE1M_TX_BUILD)/sim
 
 test-le1m-tx-negative: check-tools
-	@mkdir -p $(LE1M_TX_BUILD)
-	@if LE1M_TX_NEGATIVE=1 $(PYTHON) verification/le1m_tx/run_le1m_tx.py $(CURDIR)/$(LE1M_TX_BUILD)/sim_neg >$(LE1M_TX_BUILD)/negative.log 2>&1; then \
-	  echo "ERROR: LE 1M TX negative control passed; the replay does not detect a wrong expected word"; exit 1; \
-	else grep -q 'tx trace mismatch: .*field txdev' $(LE1M_TX_BUILD)/negative.log || { echo "ERROR: LE 1M TX negative control failed for the wrong reason; see $(LE1M_TX_BUILD)/negative.log"; exit 1; }; \
-	  echo "le1m_tx negative control OK (corrupted txdev record was rejected)"; fi
+	@$(call negative_control,$(LE1M_TX_BUILD),LE1M_TX_NEGATIVE=1,$(PYTHON) verification/le1m_tx/run_le1m_tx.py $(CURDIR)/$(LE1M_TX_BUILD)/sim_neg,$(LE1M_TX_BUILD)/negative.log,tx trace mismatch: .*field txdev,LE 1M TX,the replay does not detect a wrong expected word,le1m_tx,corrupted txdev record was rejected)
 
 # rtl/mac/: lower-MAC timers, trigger, auto-ACK, address filters (issue #51).
 # Cycle-count benches at the 32 MHz target counts and the 16 MHz fallback counts.
@@ -245,11 +237,7 @@ mac-test: check-tools
 
 # Same benches with wrong cycle-budget expectations (MAC_NEGATIVE=1); must fail.
 mac-test-negative: check-tools
-	@mkdir -p $(MAC_BUILD)
-	@if MAC_NEGATIVE=1 PYTHONPATH=verification/mac $(PYTHON) verification/mac/run_mac.py $(CURDIR)/$(MAC_BUILD)/sim_neg 32 >$(MAC_BUILD)/negative.log 2>&1; then \
-	  echo "ERROR: mac negative control passed; the cycle-budget tests do not detect a wrong expectation"; exit 1; \
-	else grep -q 'expected=' $(MAC_BUILD)/negative.log || { echo "ERROR: mac negative control failed for the wrong reason; see $(MAC_BUILD)/negative.log"; exit 1; }; \
-	  echo "mac negative control OK (wrong cycle budgets were rejected)"; fi
+	@$(call negative_control,$(MAC_BUILD),MAC_NEGATIVE=1,PYTHONPATH=verification/mac $(PYTHON) verification/mac/run_mac.py $(CURDIR)/$(MAC_BUILD)/sim_neg 32,$(MAC_BUILD)/negative.log,expected=,mac,the cycle-budget tests do not detect a wrong expectation,mac,wrong cycle budgets were rejected)
 
 mac-lint: check-tools $(FLISTS)/mac.f
 	@mods=$$(python3 $(RTL_SOURCES) --modules mac) || exit 1; \
