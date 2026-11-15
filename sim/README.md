@@ -81,8 +81,16 @@ id from its shards).
 **Reading `ber.json`.** Each point carries seed, errors, bits, 95 % Clopper-Pearson
 bounds, clip count, `stopped_by` and `bound_only`, and the label "simulated,
 CM-A". A `bound_only` point hit its packet cap and is an upper bound, not a
-measurement. `rows` reports, per row at 16 dB, the worst upper bound and whether it
-is ≤ 1e-3; that is a report for the evidence record, not a claim that the row is met.
+measurement. Bit errors are wrong decisions among the bits the receiver
+returned: a packet delivered with the wrong length (length field corrupted, or
+the demodulation exhausted the record) is counted in `undelivered_packets` and
+scored over the comparable prefix, never charged for bits it did not demodulate
+(decision [0009](../spec/decisions/0009-le-ber-undelivered-packet-accounting.md));
+`packet_loss` is the fraction of packets not delivered intact (sync miss or
+wrong-length delivery) and qualifies a BER row. A sync-missed packet counts as
+every PDU+CRC bit in error. `rows` reports, per row at 16 dB, the worst upper
+bound, the worst `packet_loss` and whether the bound is ≤ 1e-3; that is a report
+for the evidence record, not a claim that the row is met.
 `negative_control` and `out_of_spec` points are excluded from `rows`.
 
 ## The committed LE 1M sweep (`sim/results/2026-11-14-88245d69b74d/`)

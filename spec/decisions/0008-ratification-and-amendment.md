@@ -72,6 +72,7 @@ Newest last. One line per amendment: date, kind, files, issue/PR.
 
 - 2026-10-18 — revision 1 ratified (this record; issue #9).
 - 2026-10-18 — wording-only: `host-interface.md` interrupt-status gating and error-flag text corrected, adds `ERR_STATUS` and `TX_LENGTH` to the map (issue #15, PR #20). The file is ratified in revision 1; no decision record.
+- 2026-11-15 — substantive: `target-spec.md` Statistics — how an undelivered packet contributes to the LE bit-error count is now defined in the spec; it was an unreviewed harness convention, and a recorded LE BER was a BER/PLR mixture (issue #133, [0009](0009-le-ber-undelivered-packet-accounting.md)). No Target / Fallback / Stretch value changes.
 
 ## Rejected
 
