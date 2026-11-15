@@ -138,9 +138,12 @@ def control_summary(points):
             "fails_row": bool(ctl[0]["cp_upper"] >= TARGET_PER)}
 
 
-def build_report(points, args, sha):
+def build_report(points, args, sha, sha_source=None, prng=None):
+    """``sha_source``/``prng`` come from the shared merge protocol; this driver
+    has no ``--sim-git-sha``, so its reports record no ``sim_git_sha_source``
+    field, but a merge does carry the shards' ``prng``."""
     return dict(
-        sweep_common.report_preamble(args, sha),
+        sweep_common.report_preamble(args, sha, prng=prng),
         channel={"rx_rate_msps": cm_a_oqpsk.FS // 1_000_000, "rx_bits": cm_a.RX_BITS,
                  "agc": f"settled gain from whole-record rms of the noisy signal, "
                         f"target {cm_a.AGC_TARGET_RMS} LSB rms, 1.5 dB steps",

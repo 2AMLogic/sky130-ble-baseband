@@ -29,6 +29,7 @@ import hashlib
 import json
 import math
 import os
+import re
 import subprocess
 
 import numpy as np
@@ -190,8 +191,10 @@ def row_summary(points, *, x_key, x_target, target_field, target, inclusive):
 
 # ---------------------------------------------------------------------- CLI
 
-def build_parser(doc, *, max_length_help, out_help, merge_help=None):
-    """The sweep CLI. ``merge_help`` adds ``--merge`` for a sharded sweep."""
+def build_parser(doc, *, max_length_help, out_help, sim_git_sha_help=None, merge_help=None):
+    """The sweep CLI. ``sim_git_sha_help`` adds ``--sim-git-sha`` for a driver
+    that can run where the tree has no repo git root; ``merge_help`` adds
+    ``--merge`` for a sharded sweep."""
     ap = argparse.ArgumentParser(description=doc, formatter_class=argparse.RawTextHelpFormatter)
     ap.add_argument("--quick", action="store_true", help="few points, small packet caps (CI)")
     ap.add_argument("--seed", type=int, default=1, help="base seed mixed into every point seed")
@@ -203,6 +206,8 @@ def build_parser(doc, *, max_length_help, out_help, merge_help=None):
     ap.add_argument("--max-length-packet-cap", type=int, default=None, help=max_length_help)
     ap.add_argument("--only", action="append", default=[], help="run only this row id (repeatable)")
     ap.add_argument("--out", default=None, help=out_help)
+    if sim_git_sha_help is not None:
+        ap.add_argument("--sim-git-sha", metavar="SHA", default=None, help=sim_git_sha_help)
     if merge_help is not None:
         ap.add_argument("--merge", metavar="DIR", default=None, help=merge_help)
     return ap
@@ -246,21 +251,30 @@ def run_grid(grid, args, *, run_point, max_length_payload, flag_point, progress)
 
 # -------------------------------------------------------------------- report
 
-def report_preamble(args, sha):
-    """The report header every sweep writes, from the parsed arguments."""
-    return {
+def report_preamble(args, sha, sha_source=None, prng=None):
+    """The report header every sweep writes, from the parsed arguments.
+
+    ``sha_source`` (:data:`SHA_DERIVED` / :data:`SHA_ASSERTED`) is recorded only
+    by a driver that carries ``--sim-git-sha``; a driver without the flag keeps
+    a preamble without the field. ``prng`` lets ``--merge`` record the shards'
+    NumPy instead of the merging host's.
+    """
+    preamble = {
         "format": FORMAT,
         "label": LABEL,
         "channel_model": CHANNEL_MODEL,
         "mode": "quick" if args.quick else "full",
         "sim_git_sha": sha,
-        "prng": {"family": "PCG64", "numpy_version": np.__version__},
+        "prng": prng or {"family": "PCG64", "numpy_version": np.__version__},
         "base_seed": args.seed,
         "stop_rule": {"min_errors": args.min_errors, "packet_cap": args.packet_cap,
                       "max_length_packet_cap": args.max_length_packet_cap,
                       "confidence": CONFIDENCE, "interval": "Clopper-Pearson, two-sided",
                       "capped_point": "upper bound, not a measurement"},
     }
+    if sha_source is not None:
+        preamble["sim_git_sha_source"] = sha_source
+    return preamble
 
 
 def git_sha():
@@ -275,6 +289,26 @@ def git_sha():
         return sha + ("-dirty" if dirty else "")
     except (OSError, subprocess.CalledProcessError):
         return "unknown"
+
+
+SHA_RE = re.compile(r"^[0-9a-f]{7,40}$")
+SHA_DERIVED = "derived"      # read out of this checkout's git by git_sha()
+SHA_ASSERTED = "asserted"    # named by the caller with --sim-git-sha
+
+
+def check_sha(sha):
+    """A caller-asserted ``sim_git_sha``: a bare lowercase hex commit id.
+
+    The batch job kind these sweeps shard onto (2AMLogic/2am#6381) ships the
+    tree as a ``git archive`` tarball and re-creates a throwaway git root on
+    the instance, so ``git_sha()`` there would report that synthetic commit --
+    a different one per shard, and never the repo's. The submitting host knows
+    the real commit, so it asserts it and the report records that it was
+    asserted (``sim_git_sha_source``), never passing an asserted id off as a
+    derived one."""
+    if not SHA_RE.match(sha):
+        raise ValueError(f"not a bare lowercase hex commit id: {sha!r}")
+    return sha
 
 
 def results_dir(sha):
@@ -323,7 +357,8 @@ def merge_shards(shard_dir, *, full_grid, build_report):
 
     Refuses (MergeError naming the row where there is one) on a missing,
     duplicate or partial row, on shards that disagree on seed / run index /
-    mode / stop rule / SHA, and on a dirty-SHA or quick-mode shard."""
+    mode / stop rule / SHA / SHA provenance / NumPy, and on a dirty-SHA or
+    quick-mode shard."""
     names = sorted(n for n in os.listdir(shard_dir) if n.endswith(".json"))
     if not names:
         raise MergeError(f"no shard files in {shard_dir}")
@@ -337,8 +372,9 @@ def merge_shards(shard_dir, *, full_grid, build_report):
             raise MergeError(f"{n}: mode is {rep.get('mode')!r}, only full-mode shards merge")
         if str(rep.get("sim_git_sha", "")).endswith("-dirty") or rep.get("sim_git_sha") == "unknown":
             raise MergeError(f"{n}: sim_git_sha {rep.get('sim_git_sha')!r} is not a clean commit")
-        for key in ("base_seed", "stop_rule", "sim_git_sha", "mode"):
-            if rep.get(key) != first.get(key):
+        for key in ("base_seed", "stop_rule", "sim_git_sha", "mode", "sim_git_sha_source",
+                    "prng"):
+            if rep.get(key, SHA_DERIVED) != first.get(key, SHA_DERIVED):
                 raise MergeError(f"{n}: {key} {rep.get(key)!r} disagrees with "
                                  f"{shards[0][0]} ({first.get(key)!r})")
     runs = {p["run_index"] for _, rep in shards for p in rep["points"]}
@@ -369,4 +405,8 @@ def merge_shards(shard_dir, *, full_grid, build_report):
     args = argparse.Namespace(quick=False, seed=first["base_seed"], min_errors=sr["min_errors"],
                               packet_cap=sr["packet_cap"],
                               max_length_packet_cap=sr["max_length_packet_cap"])
-    return build_report(points, args, first["sim_git_sha"])
+    # The PRNG record belongs to the hosts that ran the shards, not to this one:
+    # a merge runs no simulation, so reporting the merging host's NumPy would
+    # misattribute every number in the file.
+    return build_report(points, args, first["sim_git_sha"],
+                        first.get("sim_git_sha_source", SHA_DERIVED), first["prng"])

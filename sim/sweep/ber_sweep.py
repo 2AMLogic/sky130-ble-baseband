@@ -150,9 +150,13 @@ def row_summary(points):
                                     inclusive=True)
 
 
-def build_report(points, args, sha):
+SHA_DERIVED = sweep_common.SHA_DERIVED
+SHA_ASSERTED = sweep_common.SHA_ASSERTED
+
+
+def build_report(points, args, sha, sha_source=SHA_DERIVED, prng=None):
     return dict(
-        sweep_common.report_preamble(args, sha),
+        sweep_common.report_preamble(args, sha, sha_source=sha_source, prng=prng),
         channel={"rx_rate_msps": cm_a.FS // 1_000_000, "rx_bits": cm_a.RX_BITS,
                  "agc": f"settled gain from whole-record rms of the noisy signal, "
                         f"target {cm_a.AGC_TARGET_RMS} LSB rms, 1.5 dB steps",
@@ -180,9 +184,20 @@ def main(argv=None):
                         f"{sweep_common.FULL_MAX_LENGTH_PACKET_CAP})",
         out_help="ber.json path (default sim/results/<date>-<sha>/ber.json; a single "
                  "--only row defaults to .../shards/<row>.json)",
+        sim_git_sha_help="record SHA as sim_git_sha instead of reading it from this "
+                         "checkout's git, for a runner whose tree has no repo git root "
+                         "(the batch job kind); marked sim_git_sha_source=asserted",
         merge_help="merge the shard files in DIR into one full ber.json (writes --out, "
                    "default DIR/../ber.json); runs no simulation")
     args = ap.parse_args(argv)
+    if args.sim_git_sha is not None:
+        if args.merge:
+            ap.error("--sim-git-sha does not apply to --merge: the merged report takes "
+                     "sim_git_sha from the shards, which must already agree on it")
+        try:
+            sweep_common.check_sha(args.sim_git_sha)
+        except ValueError as e:
+            ap.error(f"--sim-git-sha: {e}")
     if args.merge:
         try:
             report = sweep_common.merge_shards(args.merge, full_grid=full_grid,
@@ -202,9 +217,10 @@ def main(argv=None):
                                    max_length_payload=PAYLOAD_MAX,
                                    flag_point=_flag_out_of_spec, progress=_progress)
 
-    sha = sweep_common.git_sha()
+    sha = args.sim_git_sha or sweep_common.git_sha()
+    sha_source = SHA_ASSERTED if args.sim_git_sha else SHA_DERIVED
     out = sweep_common.resolve_out(args, sha, "ber.json", shardable=True)
-    report = build_report(points, args, sha)
+    report = build_report(points, args, sha, sha_source)
     sweep_common.write_report(report, out)
     for row_id, r in report["rows"].items():
         print(f"row {row_id}: worst cp_upper at {TARGET_EBN0_DB:g} dB = {r['worst_cp_upper']:.3e}; "
