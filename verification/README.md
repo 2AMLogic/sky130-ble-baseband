@@ -95,6 +95,10 @@ The Makefile reads it as a generated `verilator -f` file list under
 `block_sources(name)`. So a block's membership is declared once: adding,
 renaming or moving an RTL file is one edit, in `rtl/baseband.f`.
 
+The parser has its own tests: `make parser-test` runs
+`verification/tests/` (pure Python, no EDA tools needed), and CI runs it in
+the `flow` workflow's `test-lint` job.
+
 ## Pins
 
 | What | Pin | Where |
