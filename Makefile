@@ -1,6 +1,6 @@
 # Single entry point for the verification / lint / synthesis flow.
 #   make            -> all: check-tools, test, test-negative, test-le1m-rx, test-le1m-rx-negative, lint, synth,
-#                      model-test, test-le1m-tx, test-le1m-tx-negative, test-oqpsk, test-oqpsk-negative,
+#                      model-test, parser-test, test-le1m-tx, test-le1m-tx-negative, test-oqpsk, test-oqpsk-negative,
 #                      test-top, test-top-negative
 #                      (test/test-negative/lint include the rtl/host and rtl/mac benches)
 # `make synth` rewrites the committed netlist flow/synth/baseband_top_netlist.v;
@@ -31,9 +31,9 @@ CIEL_HOME?= $(HOME)/.ciel
 PDK_ROOT ?= $(CIEL_HOME)/ciel/$(PDK_FAMILY)/versions/$(PDK_REV)
 LIB_FILE := $(PDK_ROOT)/$(PDK_VARIANT)/libs.ref/$(STD_CELL_LIB)/lib/$(STD_CELL_LIB)__$(LIB_CORNER).lib
 
-.PHONY: all venv check-tools check-pdk check-rtl-list test test-negative lint synth clean model-test host-test host-test-negative host-lint test-le1m-rx test-le1m-rx-negative test-le1m-tx test-le1m-tx-negative test-oqpsk test-oqpsk-negative test-top test-top-negative synth-check mac-test mac-test-negative mac-lint
+.PHONY: all venv check-tools check-pdk check-rtl-list test test-negative lint synth clean model-test parser-test host-test host-test-negative host-lint test-le1m-rx test-le1m-rx-negative test-le1m-tx test-le1m-tx-negative test-oqpsk test-oqpsk-negative test-top test-top-negative synth-check mac-test mac-test-negative mac-lint
 
-all: check-tools test test-negative test-le1m-rx test-le1m-rx-negative lint synth model-test test-le1m-tx test-le1m-tx-negative test-oqpsk test-oqpsk-negative test-top test-top-negative
+all: check-tools test test-negative test-le1m-rx test-le1m-rx-negative lint synth model-test parser-test test-le1m-tx test-le1m-tx-negative test-oqpsk test-oqpsk-negative test-top test-top-negative
 
 venv:
 	python3 -m venv $(VENV)
@@ -179,6 +179,13 @@ model-test:
 	@mkdir -p $(BUILD)
 	$(PYTHON) -m pytest -q sim/tests
 	@$(call negative_control,$(BUILD),CRC_NEGATIVE=1,$(PYTHON) -m pytest -q sim/tests -k crc24_kat,$(BUILD)/model_negative.log,crc24 KAT mismatch,model,the CRC known-answer test does not detect a flipped init,model,flipped CRC init was rejected)
+
+# The file-list parser's own tests (verification/tests, issue #147). Pure
+# Python: no simulator and no PDK, so no check-tools. The parser gates
+# check-rtl-list and every generated per-block list, so a regression here
+# fails in the same CI job (flow) as the lint it would break.
+parser-test:
+	$(PYTHON) -m pytest -q verification/tests
 
 # sim/: CM-A channels, integer LE 1M and 802.15.4 receivers, BER and PER sweeps (needs numpy, pytest from `make venv`)
 .PHONY: sim-test sim-quick
