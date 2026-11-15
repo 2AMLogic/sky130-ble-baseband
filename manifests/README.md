@@ -27,8 +27,11 @@ rather than from prose.
   (PDK revision and tool versions) item 9 requires. The cold start is
   marked `local_only` — it needs Icarus, Verilator, Yosys and the cocotb
   venv, so `--attest` runs it and `--check` carries its committed outcome.
-  It is the bench targets only: `lint` belongs to item 10, and `synth`
-  cannot complete yet (`flow/synth/README.md`), so neither is in it.
+  It is the bench targets only: `lint` belongs to item 10, `synth`
+  cannot complete yet (`flow/synth/README.md`), and the `sim/`
+  reference-model, channel-model and sweep-harness tests are anchored
+  outside item 9 — the decision and its reasoning are recorded in
+  "Item 9 scope" below.
 - **`item9-attestation.json`** — the envelope `klt signoff --attest 9`
   produced from that inventory. Generated, committed, never hand-edited:
   `status` is derived from the checks `--attest` actually ran (one
@@ -41,6 +44,45 @@ rather than from prose.
 - **`item10-attestation.json`** — the envelope `klt signoff --attest 10`
   produced from the inventory. The manifest pins the inventory's sha256, so
   editing the inventory without re-attesting turns item 10 stale.
+
+### Item 9 scope: why no `sim/` path is inventoried
+
+Recorded 2026-11-15 (#142). Item 9's claim is every *claimed measurement's*
+testbench. This block's chain is a reference receiver in `sim/` under a
+declared channel model, error-rate sweeps on it, then RTL benches that
+replay the models' traces bit-exactly (decision 0007) — and the item-9
+inventory holds the RTL side of that chain, the part that ties an error-rate
+record to this block. The `sim/` side is deliberately anchored elsewhere:
+
+1. **Reference-model and channel-model tests** (`sim/tests/`): audited by
+   item 10's `reference-model tests (make sim-test)` check, and run in CI
+   twice — `flow.yml` via `make model-test` and `sim.yml` via
+   `make sim-test`. Folding them into item 9's cold start would re-run what
+   item 10 already attests, spending cold-start headroom (~607 s of klt's
+   1800 s command-evidence bound, measured at the #129 review) for no new
+   evidence.
+2. **BER sweep harness and result** (`sim/sweep/ber_sweep.py`,
+   `sim/tests/test_ber_sweep.py`,
+   `sim/results/2026-11-14-88245d69b74d/`): the inventory description's
+   commitment — "those sweeps enter this inventory when their results land"
+   — fired when PR #134 committed the LE 1M results. Discharged by this
+   record rather than by widening: the harness is committed with
+   reproduction commands in `sim/README.md` (an item-10 hygiene artifact;
+   item 10's README requirement covers reproducing every result), its pytest
+   control runs in CI and is audited by item 10's `make sim-test` check, and
+   the committed `ber.json` rows are records — simulated, CM-A — not row
+   claims item 9 grades. No BER *result* is attested under item 9.
+3. **PER sweep** (`sim/sweep/per_sweep.py`, `sim/tests/test_per_sweep.py`,
+   `sim/results/2026-11-14-1564a0ec0cfb/per.json`): deferred. #56 landed the
+   sweep and #137 the attribution analysis; the committed sensitivity budget
+   (simulated, CM-A) puts the PER < 1 % crossing at ~8 dB against the
+   ratified ≤ 5 dB row (≤ 7 dB fallback), so no PER result can back an
+   item-9 claim until the row is met or the row is revisited through
+   `spec/`.
+
+`verification/rtl_sources.py` (added by #141) is deliberately not listed:
+it is a source-list helper consumed by the inventoried runners, not a bench;
+its inventory status is tracked in #158.
 
 ## Pinned tool
 
