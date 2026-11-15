@@ -70,17 +70,31 @@ requirement below.
 ## 3. Digital latency `L_dig` (resolves the symbol left open by #7)
 
 `L_dig` is defined in [frontend-interface.md](frontend-interface.md) §5.1 as the
-digital latency from the last on-air bit received to the first TX word. It is
-split here, measured at the block's pins (the front-end group delay `D_fe` is
+sum of the two processing latencies below — `L_rx + L_tx` — **excluding** the
+programmed turnaround between them
+([0010](decisions/0010-digital-latency-reference-points.md)). It is measured at
+the block's pins (the front-end group delay `D_fe` is
 **not** included; it is the front end's):
 
 - `L_rx`: the `rx_valid` strobe that carries the last sample of the final
   received bit/chip to the cycle the baseband's end-of-packet decision (CRC
   result final, TX decision allowed) is made.
-- `L_tx`: that decision cycle to the first `tx_valid` word of the response
-  (preamble/SHR).
+- `L_tx`: the TX-command strobe (`resp_tx_req` for the LE timed response,
+  `ack_tx_req` for the 802.15.4 automatic ACK, `cmd_tx_start` for a
+  host-triggered transmission) to the first `tx_valid` word of the response
+  (preamble/SHR). It does **not** start at the end-of-packet decision cycle:
+  between the two sits the programmed turnaround wait of
+  [0006](decisions/0006-lower-mac-split.md)'s deadline table, which is the
+  timer's deliberate wait, not latency.
 
-| PHY | `L_rx` ≤ | `L_tx` ≤ | `L_dig` ≤ | Cycles @ 32 MHz (@ 16 MHz) | Jitter (max − min over all packets and offsets) ≤ |
+The programmed turnaround wait (LE `T_IFS`, 802.15.4 `T_TA`; 0006,
+"Hardware-resident deadlines") lies between `L_rx`'s end and `L_tx`'s start and
+is excluded from both. `L_dig = L_rx + L_tx` is therefore the **sum of the two
+processing latencies**, not the wall-clock interval from the last on-air bit
+received to the first TX word — that interval is the turnaround deadline itself
+(4800 cycles on LE, 6144 on 802.15.4 at 32 MHz), which 0006 bounds separately.
+
+| PHY | `L_rx` ≤ | `L_tx` ≤ | `L_dig` ≤ | Cycles @ 32 MHz (@ 16 MHz) | Jitter, spread(`L_dig`) (max − min over all packets and offsets) ≤ |
 |---|---|---|---|---|---|
 | LE 1M | 6 µs | 4 µs | **10 µs** | 320 (160) | 1 µs |
 | 802.15.4 | 16 µs | 16 µs | **32 µs** | 1024 (512) | 4 µs |
@@ -92,9 +106,12 @@ pre-loaded packet and the Gaussian pulse-shaping pipeline must be primed ahead
 of the TX start, so `L_tx` is short. 802.15.4 decides on whole 16 µs symbols
 (despreading is per symbol), so `L_rx` is up to one symbol and `L_tx` up to one
 symbol; the interval, 192 µs, is far looser. The
-timer fires the TX command early by `L_tx + T_settle` (0006), which only works
-if latency is **repeatable**: that is the jitter column. 2 µs of LE `T_IFS`
-tolerance (0006, §4.1.1, unverified) is the reason the LE jitter bound is 1 µs.
+timer fires the TX command early by `L_dig + T_settle` (0006), so the placement
+error it must absorb is the spread of `L_dig` — the total is what the timer
+compensates. That is the jitter column; spread(`L_rx`) and spread(`L_tx`) are
+recorded by the bench as evidence but are not separately bounded. 2 µs of LE
+`T_IFS` tolerance (0006, §4.1.1, unverified) is the reason the LE jitter bound
+is 1 µs.
 
 Substituting into the front-end budget (§5.2 of the front-end document), with
 the 10 % margin already stated there:
@@ -104,9 +121,9 @@ the 10 % margin already stated there:
 | LE 1M | 135 µs − 10 µs − `D_fe` = **125 µs − `D_fe`** |
 | 802.15.4 | 172.8 µs − 32 µs − `D_fe` = **140.8 µs − `D_fe`** |
 
-Verification: a cocotb testbench measures `L_rx`, `L_tx` and their spread over
-the shared stimulus ([0007](decisions/0007-bit-exactness.md)) in cycles of
-`clk`; the µs figures above divide by the clock period at the claimed
+Verification: a cocotb testbench measures `L_rx`, `L_tx` and the spread of
+`L_dig` over the shared stimulus ([0007](decisions/0007-bit-exactness.md)) in
+cycles of `clk`; the µs figures above divide by the clock period at the claimed
 frequency. **Simulated at RTL level, so the claim is on cycle counts, not on
 post-route timing**; the cycle counts hold at either clock, the wall-clock
 conversion names the clock used.
