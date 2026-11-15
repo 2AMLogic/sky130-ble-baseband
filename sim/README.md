@@ -300,6 +300,32 @@ gets under 1 % at 9 dB (5.5e-4, CP upper 9.8e-4), so the reference receiver is a
 recorded result, not a reason to relax a ratified row; the shortfall is dispositioned
 in #137.
 
+### Sensitivity budget (issue #137)
+
+The committed `per_snr` row misses the ratified ceiling, and
+`sim/analysis/oqpsk_sensitivity_budget.py` is the attribution measurement: it
+re-runs selected `per_snr` points with the receiver's acquisition constants
+overridden one at a time (proving each override took effect through the real
+`_accept`/`channel_filter`), splits error classes per point, and measures the
+input-quantization contribution on a 1/16 LSB grid via the `keep_float` hook.
+It changes no committed behaviour — `sim/model/`, `rtl/` and `spec/` stay
+byte-identical, and the script asserts its unmodified baseline reproduces the
+committed 5/7/9 dB `per_snr` points exactly before reporting any delta.
+
+```
+python3 sim/analysis/oqpsk_sensitivity_budget.py --quick    # smoke, < 1 min
+python3 sim/analysis/oqpsk_sensitivity_budget.py            # full budget, ~25 min single-threaded
+```
+
+The recorded finding is `results/oqpsk-sensitivity-budget-2026-11-15.md`
+(raw points in the `.json` beside it), all simulated, CM-A: the crossing is
+in (7.5, 8] dB (shortfall (2.5, 3] dB vs the 5 dB target); `sync_misses`
+dominates everywhere and the residual class is zero; the accept **ratio**
+term (`4·corr ≥ 3·mag`) is the dominant recoverable cost (≈ 3.1 dB by
+relaxing it to `corr ≥ mag/2`, which is a receiver change carrying the
+matching RTL edit with it), the absolute floor never binds, `PREAMBLE_RUN`
+is ≈ 0.2 dB, and 8-bit quantization and clipping are measurably ~0 dB.
+
 ## Determinism
 
 Seed = SHA-256 of (row id, impairment settings, point index, run index, `--seed`),
