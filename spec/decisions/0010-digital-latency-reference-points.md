@@ -14,11 +14,12 @@ deliberately spends waiting: LE timed response 4800 clk and 802.15.4 automatic
 ACK 6144 clk at 32 MHz ([0006](0006-lower-mac-split.md), "Hardware-resident
 deadlines"), against §3's own `L_tx` bounds of 128 clk (LE) and 512 clk
 (802.15.4). The literal reading is unsatisfiable by construction on exactly the
-paths §3 exists to bound. PR #144's bench therefore measured `L_tx` from the
-TX-command strobe and recorded that reading in
-`verification/top/latency_record.md` and `rtl/top/README.md` — correct
-behaviour for a bench, which may not edit the spec. This record is the
-spec-clarification that situation owed.
+paths §3 exists to bound. PR #144 (open, unmerged, at the time of writing)
+therefore measures `L_tx` from the TX-command strobe and will record that
+reading in `verification/top/latency_record.md`, joining the `L_DIG_CYCLES`
+decomposition already in `rtl/top/README.md` — correct behaviour for a bench,
+which may not edit the spec. This record is the spec-clarification that
+situation owed.
 
 The second ambiguity is quieter: §3's jitter column says only "max − min over
 all packets and offsets", without naming which quantity's spread it bounds.
@@ -178,18 +179,23 @@ unchanged, and §1, §2 and §4 of the timing file are untouched.
 
 Under 0008 rule 1, the argument is a **spec misread** — the three ratified-text
 contradictions above — and explicitly not "the measured design missed the
-bound": no bound is loosened and no result is being excused. The bench that
-measured the strobe-referenced `L_tx` conforms to the reading ratified here.
+bound": no bound is loosened and no result is being excused. PR #144's bench
+(open at the time of writing) measures the strobe-referenced `L_tx` and
+conforms to the reading ratified here.
 Direction of causation: this record is the authority; if the ratified reading
 had differed from what #144 enforces, the follow-up would re-align the bench,
 never this spec.
 
 ## Who is affected
 
-- **The top-level bench** (`verification/top`, `make test-top`): it already
-  measures `L_rx`, `L_tx` and `L_dig` from the strobes ratified here; this
-  record names what it measures. #144's latency record remains the evidence
-  log.
+- **The top-level bench** (`verification/top`, `make test-top`): it currently
+  measures end of packet (air) → `rx_end` and → first TX word, asserted against
+  the wall-clock turnaround deadlines of 0006 (4800/6144 clk) — `L_rx` plus the
+  turnaround, not yet the strobe-referenced split. PR #144 (open at the time of
+  writing) is what re-anchors it on `L_rx`, `L_tx` and `L_dig` from the strobes
+  ratified here and will record the spread in a
+  `verification/top/latency_record.md`; this record names what that bench will
+  measure.
 - **The `L_DIG_CYCLES` parameters** (`rtl/top`, `LE_L_DIG_CYCLES` /
   `OQ_L_DIG_CYCLES`): their decomposition (end of packet → `rx_end`, then
   `rx_end` → first word) is the `L_rx + L_tx` sum excluding the programmed
