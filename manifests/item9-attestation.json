@@ -3,14 +3,14 @@
   "kind": "generic",
   "status": "pass",
   "t1_item": 9,
-  "summary": "T1 item 9 (Testbenches shipped): 28/28 attestation checks passed (klt signoff --attest)",
+  "summary": "T1 item 9 (Testbenches shipped): 31/31 attestation checks passed (klt signoff --attest)",
   "source": "manifests/testbench-inventory.json",
   "attestation": {
     "producer": "klt signoff --attest",
     "inventory_schema_version": 1,
     "hash_algorithm": "sha256-raw-bytes",
-    "check_count": 28,
-    "passed_count": 28,
+    "check_count": 31,
+    "passed_count": 31,
     "checks": [
       {
         "check": "present",
@@ -169,6 +169,13 @@
       {
         "check": "present",
         "role": "testbench",
+        "path": "verification/top/run_latency.py",
+        "passed": true,
+        "content_hash": "sha256:e4b629391a5faf3054f982fcafb3ed8d39f764df4a3ef20f12f23227c39e74b5"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
         "path": "verification/top/run_top.py",
         "passed": true,
         "content_hash": "sha256:4925c9f150f3d9fe79f9cb0fe847032c687301d8da1c666e7915539520aacdc7"
@@ -176,9 +183,23 @@
       {
         "check": "present",
         "role": "testbench",
+        "path": "verification/top/test_latency.py",
+        "passed": true,
+        "content_hash": "sha256:df72ef0a038e2b55b340e2f9e6a8b15e2ee7a5661d7057a1a4e1fcabec09b114"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
         "path": "verification/top/test_top.py",
         "passed": true,
-        "content_hash": "sha256:60c12a0a867abf12e424591ed7cf8ba756b04d2e2f4cd9032ed0f126fa523eb1"
+        "content_hash": "sha256:b9e436bdbfe434dc4ed2ee0dc20068d45af57ee495fd0f3c220fa13404c5d709"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "verification/top/top_env.py",
+        "passed": true,
+        "content_hash": "sha256:e5050316940a7e0c4c9d6988032c684921f6c475b1bc8b99c96b8bedae2a0f3e"
       },
       {
         "check": "present",
@@ -202,7 +223,9 @@
           "test-oqpsk",
           "test-oqpsk-negative",
           "test-top",
-          "test-top-negative"
+          "test-top-negative",
+          "test-top-latency",
+          "test-top-latency-negative"
         ],
         "cwd": ".",
         "exit_status": 0,
@@ -242,7 +265,7 @@
         "path": "manifests/testbench-inventory.json",
         "scope": "repo"
       },
-      "content_hash": "sha256:2fa06aff5b2fdfb109377632da00c8156ebd49c4860873892a25790b4636bab6"
+      "content_hash": "sha256:111f649712ff5ef97ea8b8143fcb22e8b0c98b71dff1adf9b2d1189e12bda7cd"
     }
   }
 }
