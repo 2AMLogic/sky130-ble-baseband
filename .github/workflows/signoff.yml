@@ -40,25 +40,14 @@ jobs:
           set -uo pipefail
           want="$(klt --version | awk '{print $2}')"
           rc=0
-          for f in $(python3 -c '
-import json
-m = json.load(open("manifests/sky130-ble-baseband.json"))
-for _, e in sorted(m.get("evidence", {}).items()):
-    print(e["file"])
-'); do
-            got="$(python3 -c '
-import json, sys
-try:
-    env = json.load(open(sys.argv[1]))
-    print(env["provenance"]["klt_version"])
-except (OSError, KeyError, TypeError):
-    sys.exit(3)
-' "$f")"
-            if [ "$?" -ne 0 ]; then
+          for f in $(python3 -c 'import json; print("\n".join(e["file"] for _, e in sorted(json.load(open("manifests/sky130-ble-baseband.json")).get("evidence", {}).items())))'); do
+            if got="$(python3 -c 'import json, sys; v = json.load(open(sys.argv[1])).get("provenance", {}).get("klt_version"); print(v) if v else sys.exit(3)' "$f" 2>/dev/null)"; then
+              if [ "$got" != "$want" ]; then
+                echo "::error file=$f::provenance.klt_version is '$got' but this job installed klt '$want' - re-attest with the pinned release"
+                rc=1
+              fi
+            else
               echo "::error file=$f::does not record a provenance.klt_version (unreadable or not a klt signoff envelope); expected the installed version '$want'"
-              rc=1
-            elif [ "$got" != "$want" ]; then
-              echo "::error file=$f::provenance.klt_version is '$got' but this job installed klt '$want' - re-attest with the pinned release"
               rc=1
             fi
           done
