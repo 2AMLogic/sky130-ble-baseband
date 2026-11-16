@@ -13,7 +13,8 @@ make        # every bench, negative control, lint, synth; exit 0 = all pass
 
 Individual steps: `make test`, `make test-negative`, `make test-le1m-rx`,
 `make test-le1m-rx-negative`, `make test-oqpsk`, `make test-oqpsk-negative`,
-`make test-top`, `make test-top-negative`, `make lint`, `make synth`, `make synth-check`.
+`make test-top`, `make test-top-negative`, `make test-top-latency`,
+`make test-top-latency-negative`, `make lint`, `make synth`, `make synth-check`.
 
 - `test-le1m-rx` replays the shared RX stimulus of `verification/le1m_rx/cases.py`
   (CM-A noiseless and noisy, offset/drift/clock corners, bad CRC, missed detect,
@@ -40,7 +41,7 @@ Individual steps: `make test`, `make test-negative`, `make test-le1m-rx`,
 - `test-top` drives `baseband_top` (every sub-block, `rtl/baseband.f`) through its
   pins only: APB for registers and FIFOs, `rx_i`/`rx_q`/`rx_valid` for samples,
   `tx_dev`/`tx_valid` for the modulator words, and a front-end model for
-  `fe_ready`. Six tests: LE 1M TX and RX, 15.4 TX and RX, the 15.4 automatic ACK
+  `fe_ready`. Seven tests: LE 1M TX and RX, 15.4 TX and RX, the 15.4 automatic ACK
   and the LE timed response. Every stimulus and expected value comes from the
   models (`sim/model/le1m_tx.py`, `oqpsk_tx.py`, the CM-A channel model, the
   15.4 loopback), none is hand-written. It prints `MEASURED` lines with the
@@ -48,6 +49,19 @@ Individual steps: `make test`, `make test-negative`, `make test-le1m-rx`,
   (rtl/top/README.md). It makes no error-rate claim: the stimulus is noiseless
   and one packet per test. `test-top-negative` perturbs one expected value in
   each test and fails unless every test is rejected with an `expected=` report.
+- `test-top-latency` (issue #122) measures L_rx, L_tx and L_dig and their spread
+  in clk cycles at 32 MHz over a matrix of model-generated packets per PHY
+  (LE 1M timed response on PDUs of 2 / 22 / 257 octets, 15.4 automatic ACK on
+  PSDUs of 12 / 20 / 127 octets; 2 strobe-jitter seeds x 2 timing phases at the
+  short length, then the mid and maximum lengths), plus the host-commanded
+  TX path's L_tx. It fails if any maximum or spread(L_dig) exceeds the
+  timing-and-area section 3 bounds converted at 32 MHz. The interpretation
+  readings (L_tx from the TX-command strobe; the spread bound on L_dig; the
+  LE air-end reference) are stated in `verification/top/latency_record.md`,
+  the append-only record. It measures cycle counts on the RTL, not wall-clock
+  timing, and makes no error-rate claim: the stimulus is noiseless.
+  `test-top-latency-negative` tightens the LE L_dig bound below the measured
+  minimum and fails unless the bench rejects it with an `expected=` report.
 - `test-negative` runs the host and lower-MAC negative controls.
 - `lint` is Verilator `--lint-only -Wall`: each block, then `baseband_top`; any
   warning fails. Every list comes from `rtl/baseband.f` (below), and `lint`
@@ -81,6 +95,10 @@ The Makefile reads it as a generated `verilator -f` file list under
 `block_sources(name)`. So a block's membership is declared once: adding,
 renaming or moving an RTL file is one edit, in `rtl/baseband.f`.
 
+The parser has its own tests: `make parser-test` runs
+`verification/tests/` (pure Python, no EDA tools needed), and CI runs it in
+the `flow` workflow's `test-lint` job.
+
 ## Pins
 
 | What | Pin | Where |
@@ -100,7 +118,7 @@ is absent rather than using any other. Fetch it with
 
 ## CI
 
-`.github/workflows/flow.yml` runs `make test test-negative test-le1m-rx test-le1m-rx-negative test-le1m-tx test-le1m-tx-negative test-oqpsk test-oqpsk-negative test-top test-top-negative lint ALLOW_TOOL_DRIFT=1` (apt tool versions differ
+`.github/workflows/flow.yml` runs `make test test-negative test-le1m-rx test-le1m-rx-negative test-le1m-tx test-le1m-tx-negative test-oqpsk test-oqpsk-negative test-top test-top-negative test-top-latency test-top-latency-negative lint ALLOW_TOOL_DRIFT=1` (apt tool versions differ
 from the pins, so mismatches are warnings there; local runs must match). Synthesis is
 not run in CI: it needs the full PDK fetch, which this workflow does not
 perform. Run `make synth-check` locally.

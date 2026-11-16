@@ -140,7 +140,11 @@ def main(argv):
         elif a == "--modules":
             modules = True
         elif a == "--check":
-            problems = check()
+            try:
+                problems = check()
+            except (ValueError, KeyError) as e:
+                print(f"ERROR: {e.args[0]}", file=sys.stderr)
+                return 1
             for problem in problems:
                 print(f"ERROR: {problem}", file=sys.stderr)
             if problems:

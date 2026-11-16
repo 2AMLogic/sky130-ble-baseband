@@ -27,8 +27,11 @@
     "verification/oqpsk/run_oqpsk.py",
     "verification/oqpsk/test_oqpsk_rx.py",
     "verification/oqpsk/test_oqpsk_tx.py",
+    "verification/top/run_latency.py",
     "verification/top/run_top.py",
-    "verification/top/test_top.py"
+    "verification/top/test_latency.py",
+    "verification/top/test_top.py",
+    "verification/top/top_env.py"
   ],
   "cold_start": {
     "argv": [
@@ -43,7 +46,9 @@
       "test-oqpsk",
       "test-oqpsk-negative",
       "test-top",
-      "test-top-negative"
+      "test-top-negative",
+      "test-top-latency",
+      "test-top-latency-negative"
     ],
     "cwd": ".",
     "local_only": true

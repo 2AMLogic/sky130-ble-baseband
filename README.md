@@ -93,6 +93,7 @@ Yosys on `PATH`; details and pinned versions in
 |---|---|---|
 | Whole flow (block and top benches, negative controls, lint, synthesis, model tests) | `make` | [verification/README.md](verification/README.md) |
 | Top-level integration bench and its negative control | `make test-top test-top-negative` | [verification/README.md](verification/README.md) |
+| Measured L_rx / L_tx / L_dig and spread vs timing-and-area section 3 (simulated, RTL, 32 MHz, cycle counts) | `make test-top-latency test-top-latency-negative` | [verification/top/latency_record.md](verification/top/latency_record.md) |
 | Synthesis and netlist freshness check (netlist not yet committed) | `make synth`, `make synth-check` | [flow/synth/README.md](flow/synth/README.md) |
 | Reference-model tests (channel, LE 1M RX, LE 1M TX) | `make sim-test` | [sim/README.md](sim/README.md) |
 | TX model tests with CRC negative control | `make model-test` | [sim/README.md](sim/README.md) |
