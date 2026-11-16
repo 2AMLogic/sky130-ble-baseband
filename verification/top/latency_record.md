@@ -163,3 +163,26 @@ first half stands — the spread bound is enforced on spread(`L_dig`), with
 spread(`L_rx`) and spread(`L_tx`) recorded as evidence — and the
 2026-11-15 run above is untouched, numbers and pass verdict as recorded.
 
+## 2026-11-16 — correction: definition 1's supporting quotation (issue #181)
+
+This note corrects definition 1's parenthetical citation, not the
+definition itself. Its closing parenthetical quotes section 3's rationale
+as "the timer fires the TX command early by `L_tx + T_settle`" — §3 as it
+read **before** 0010 (`spec/decisions/0010-digital-latency-reference-points.md`,
+issue #146, PR #152, merged `58d0990`) was ratified. 0010 records that swap
+explicitly as "Old text (§3 rationale)" → "New text"; the rationale a
+reader finds in §3 today is:
+
+```
+$ grep -nE 'early by' spec/timing-and-area.md
+109:timer fires the TX command early by `L_dig + T_settle` (0006), so the placement
+```
+
+The timer compensates the total `L_dig` (the same re-ratification
+definition 2's correction note above records), which is why the quoted
+`L_tx + T_settle` sentence no longer exists in §3. Definition 1's
+substance is unaffected: the reference point it states — TX-command
+strobe (`resp_tx_req` / `ack_tx_req` / `cmd_tx_start`) to the first
+`tx_valid` word — is exactly the `L_tx` reference point 0010 ratifies,
+and the measurement, recorded numbers and verdicts above are untouched.
+
