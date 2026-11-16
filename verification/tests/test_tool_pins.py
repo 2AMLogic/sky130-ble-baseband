@@ -149,6 +149,7 @@ def test_f_unpinned_mentions_are_not_flagged(tmp_path):
     "manifests/repo.signoff.json",          # generated, byte-compared record
     ".loom/scripts/probe.sh",               # installed Loom tooling
     ".claude/skills/repo/SKILL.md",         # installed repo-skills
+    "verification/tests/test_tool_pins.py",  # this file: load-bearing drift fixtures
 ])
 def test_g_drifted_literal_in_excluded_path_passes(tmp_path, rel):
     files = {
