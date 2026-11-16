@@ -156,8 +156,8 @@ spread(`L_dig`) by subadditivity: "`L_dig = L_rx + L_tx` makes spread(`L_dig`)
 ≤ spread(`L_rx`) + spread(`L_tx`), so the enforced bound is the binding one".
 That argument gets the direction backwards: subadditivity bounds the total
 *from above* by the sum of the parts, so enforcing each part at the column's
-value would permit spread(`L_dig`) up to 2 µs on LE — outside the whole
-`T_IFS` tolerance. The sound reason to bound the total directly is that the
+value would permit spread(`L_dig`) up to 2 µs on LE — twice §3's ratified
+1 µs bound. The sound reason to bound the total directly is that the
 total is the amount the timer compensates: 0006 fires the command early by
 `L_dig` (plus the settle budget), so its placement error is spread(`L_dig`),
 whatever its parts do. §3's 1 µs LE bound sits inside 0006's ± 2 µs `T_IFS`
