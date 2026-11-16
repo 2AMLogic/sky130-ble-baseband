@@ -261,7 +261,11 @@ async def top_le1m_response(dut):
     expect("response word count", len(env.words), len(exp))
     for i, (g, e) in enumerate(zip(env.words, exp)):
         assert g == e, f"response tx_dev word {i}: got={g} expected={e}"
-    end_air = env.sample_cycle[out.packet_start + 8 * nbits]
+    # Air end is the group-delay-corrected end of the final bit (packet_stop -
+    # 16 samples; the CM-A channel model's 33-tap Gaussian has a 16-sample
+    # group delay, sim/channel/cm_a.py), the same reference test_latency.py
+    # uses, not the pre-correction packet_start + 8*nbits index (~64 clk early).
+    end_air = env.sample_cycle[out.packet_stop - 16]
     print(f"MEASURED LE 1M end of packet (air, +/-4 clk) to rx_end {env.end_cycle - end_air} clk; "
           f"to first response word {env.first_tx - end_air} clk (T_IFS 4800 clk at 32 MHz)")
     late = env.first_tx - end_air - 4800

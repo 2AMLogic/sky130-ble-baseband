@@ -14,12 +14,15 @@
 //
 // CLK_MHZ is the clock in MHz (32 target, 16 fallback); the lower-MAC counts are
 // derived from it. The L_DIG counts are the measured L_rx + L_tx of this
-// integrated top at 32 MHz (end of packet at the input to the first tx_valid word,
-// from `make test-top`; rtl/top/README.md "L_DIG_CYCLES"). The 16 MHz fallback is
+// integrated top at 32 MHz, from the group-delay-corrected air end (CM-A
+// packet_stop - 16 samples, sim/channel/cm_a.py) to the input of the first
+// tx_valid word, from `make test-top` (rtl/top/README.md "L_DIG_CYCLES");
+// decision 0010 ratifies L_DIG_CYCLES as exactly this L_rx + L_tx fire-early
+// amount. The 16 MHz fallback is
 // not measured: override them with the timing-and-area section 3 bounds there.
 module baseband_top #(
     parameter integer CLK_MHZ          = 32,
-    parameter integer LE_L_DIG_CYCLES  = 139,
+    parameter integer LE_L_DIG_CYCLES  = 74,
     parameter integer OQ_L_DIG_CYCLES  = 41,
     parameter integer FIFO_DEPTH       = 288
 ) (

@@ -30,7 +30,7 @@ bounds, so "end of packet to first `tx_valid` equals the deadline" holds by
 construction of `L_DIG_CYCLES`. The measured quantity of this block is
 `rx_end` to the TX command (5120 / 4480 cycles at 32 MHz, jitter 0). The integrated
 top (#52) measures the real latency: at the bounds the 15.4 ACK started 983 clk
-early, so `baseband_top` sets `L_DIG_CYCLES` to 41 (15.4) and 139 (LE) at 32 MHz.
+early, so `baseband_top` sets `L_DIG_CYCLES` to 41 (15.4) and 74 (LE) at 32 MHz.
 See `rtl/top/README.md`, "L_DIG_CYCLES". The 16 MHz values are not measured.
 
 ## Assumptions to check (spec clauses are unverified, see 0006)
