@@ -31,7 +31,7 @@ CIEL_HOME?= $(HOME)/.ciel
 PDK_ROOT ?= $(CIEL_HOME)/ciel/$(PDK_FAMILY)/versions/$(PDK_REV)
 LIB_FILE := $(PDK_ROOT)/$(PDK_VARIANT)/libs.ref/$(STD_CELL_LIB)/lib/$(STD_CELL_LIB)__$(LIB_CORNER).lib
 
-.PHONY: all venv check-tools check-pdk check-rtl-list test test-negative lint synth clean model-test parser-test host-test host-test-negative host-lint test-le1m-rx test-le1m-rx-negative test-le1m-tx test-le1m-tx-negative test-oqpsk test-oqpsk-negative test-top test-top-negative test-top-latency test-top-latency-negative synth-check mac-test mac-test-negative mac-lint
+.PHONY: all venv check-tools check-pdk check-rtl-list check-tool-pins test test-negative lint synth clean model-test parser-test host-test host-test-negative host-lint test-le1m-rx test-le1m-rx-negative test-le1m-tx test-le1m-tx-negative test-oqpsk test-oqpsk-negative test-top test-top-negative test-top-latency test-top-latency-negative synth-check mac-test mac-test-negative mac-lint
 
 all: check-tools test test-negative test-le1m-rx test-le1m-rx-negative lint synth model-test parser-test test-le1m-tx test-le1m-tx-negative test-oqpsk test-oqpsk-negative test-top test-top-negative test-top-latency test-top-latency-negative
 
@@ -112,12 +112,18 @@ test-oqpsk-negative: check-tools
 check-rtl-list:
 	@python3 $(RTL_SOURCES) --check
 
+# The klayout-tools pin literals in the re-attest runbook (manifests/README.md)
+# must match the version .github/workflows/signoff.yml installs; a drifting
+# runbook documents the wrong build (issue #171, cost recorded in #148).
+check-tool-pins:
+	@python3 verification/tool_pins.py --check
+
 $(FLISTS)/%.f: $(RTL_LIST) $(RTL_SOURCES)
 	python3 $(RTL_SOURCES) --out $@ $*
 
 LINT_BLOCKS := le1m_tx le1m_rx oqpsk_tx oqpsk_rx
 
-lint: check-tools check-rtl-list host-lint $(addprefix $(FLISTS)/,$(addsuffix .f,$(LINT_BLOCKS)))
+lint: check-tools check-rtl-list check-tool-pins host-lint $(addprefix $(FLISTS)/,$(addsuffix .f,$(LINT_BLOCKS)))
 	verilator --lint-only -Wall --top-module baseband_top -f $(RTL_LIST)
 	verilator --lint-only -Wall --top-module le1m_tx -f $(FLISTS)/le1m_tx.f
 	verilator --lint-only -Wall --top-module le1m_rx -f $(FLISTS)/le1m_rx.f
