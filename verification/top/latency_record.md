@@ -112,3 +112,30 @@ measurement and must fail with `expected=` (negative control below).
   alike, and the 15.4 spread is 1 clk. This matches section 3's rationale
   (latency must be repeatable; the jitter column guards the timer's
   early-fire margin).
+
+## 2026-11-16 — correction: definition 2's justification (issue #165)
+
+This note retracts the second half of definition 2 — the sentence
+"`L_dig = L_rx + L_tx` makes spread(`L_dig`) ≤ spread(`L_rx`) +
+spread(`L_tx`), so the enforced bound is the binding one". The argument
+gets the inequality's direction backwards: subadditivity bounds the total
+**from above** by the sum of the parts, so enforcing each part at its own
+section 3 column value would not bound the total — on LE it would admit
+spread(`L_dig`) up to 2 µs (64 clk at 32 MHz), twice the ratified 1 µs
+(32 clk) jitter column.
+
+The sound reason to enforce on the total is the timer's early fire: 0006
+(`spec/decisions/0006-lower-mac-split.md`) has the timer fire the TX
+command early by `L_dig + T_settle`, so the placement error the timer must
+absorb is spread(`L_dig`) — the total is what the timer compensates,
+whatever its parts do. That reason is ratified in
+`spec/decisions/0010-digital-latency-reference-points.md`
+(issue #146, PR #152, merged `58d0990`), which retracts the subadditivity
+argument by name; this note records the same correction where the
+argument was written.
+
+No measured value, bound, assertion or verdict changes. Definition 2's
+first half stands — the spread bound is enforced on spread(`L_dig`), with
+spread(`L_rx`) and spread(`L_tx`) recorded as evidence — and the
+2026-11-15 run above is untouched, numbers and pass verdict as recorded.
+
