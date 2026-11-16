@@ -42,8 +42,12 @@ last frame word's sample, `lead + len(words) - 1` (each tx_dev word is one
 sample of the ideal loopback; it has no filter tail).
 
 Matrix (6 packets per PHY, sized for CI): at the short length, 2 strobe-jitter
-seeds x 2 timing phases; then a mid length and the maximum length. Spread is
-driven by jitter and phase, not by length, so length varies separately.
+seeds x 2 arrival-phase variants; then a mid length and the maximum length.
+The two variants differ per PHY: LE 1M gets 2 timing phases (the CM-A channel
+model draws sub-sample `timing` per seed); 802.15.4 gets 2 strobe-jitter
+alignments (its ideal loopback has no sub-sample phase knob — see the
+OQ_MATRIX comment). Spread is driven by jitter (and, for LE, phase), not by
+length, so length varies separately.
 LE 1M drives the timed response (TIMING_CTRL.RESP_EN) on PDUs of 2 / 22 / 257
 octets; 802.15.4 drives the automatic ACK (TIMING_CTRL.ACK_EN) on PSDUs of
 12 / 20 / 127 octets (the maximum, and the golden 20-octet shape; the 9-octet
@@ -109,9 +113,16 @@ LE_MATRIX = [
 
 # (payload_octets, lead, drive_seed): PSDU = MPDU (frame_154: 9 header octets
 # + payload) + FCS, so the shapes are PSDU 12 / 20 / 127 octets - the 20 is
-# the golden PSDU size (payload 9), the 127 the maximum (payload 116); the
-# lead in integer samples is the timing phase (4 clk per sample against the
-# 4-clk strobe grid).
+# the golden PSDU size (payload 9), the 127 the maximum (payload 116). The
+# two leads (37, 41) are NOT a timing-phase axis: they differ by 4 samples =
+# one chip (SPS_CHIP) = 16 clk = 4x the 4-clk strobe period, so the frame's
+# alignment to both the chip grid and the strobe grid is unchanged across the
+# pair. modulate(lead=) prepends whole zero samples and every sample strobes
+# on the same 4-clk grid, so no integer lead can vary sub-sample arrival
+# phase. What differs is which +/-1 clk jitter draws land on which frame
+# samples (drive() indexes the jitter sequence by absolute sample number),
+# so the pair is a second strobe-jitter alignment; the ideal loopback offers
+# no sub-sample timing phase.
 OQ_MATRIX = [
     (1, 37, 1), (1, 41, 1), (1, 37, 2), (1, 41, 2),
     (9, 37, 1),
