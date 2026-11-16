@@ -29,6 +29,38 @@ jobs:
       - name: Install pinned klt
         run: pip install klayout-tools==0.8.0
 
+      - name: Assert every envelope records the installed klt version
+        # Each committed evidence envelope names the klt build that produced
+        # it (provenance.klt_version). It must match the pinned release this
+        # job just installed, or the envelope was re-attested off-pin and the
+        # evidence provenance is broken. The expected version is read from
+        # the installed tool, and the envelope list from the block manifest,
+        # so neither can go stale here. See manifests/README.md.
+        run: |
+          set -uo pipefail
+          want="$(klt --version | awk '{print $2}')"
+          # Derive the envelope list first, and fail the step if the
+          # derivation itself breaks (schema drift, moved or unreadable
+          # manifest): feeding the loop from $( ... ) directly would turn a
+          # raising Python into an empty list, a zero-iteration loop and a
+          # green step. -e stays off so the loop below can still report
+          # every offender in one run.
+          envelopes="$(python3 -c 'import json; print("\n".join(e["file"] for _, e in sorted(json.load(open("manifests/sky130-ble-baseband.json")).get("evidence", {}).items())))')" || { echo "::error::could not derive the evidence envelope list from manifests/sky130-ble-baseband.json (manifest moved, unreadable, or evidence schema drifted)"; exit 1; }
+          [ -n "$envelopes" ] || { echo "::error::the block manifest manifests/sky130-ble-baseband.json cites no evidence envelopes"; exit 1; }
+          rc=0
+          for f in $envelopes; do
+            if got="$(python3 -c 'import json, sys; v = json.load(open(sys.argv[1])).get("provenance", {}).get("klt_version"); print(v) if v else sys.exit(3)' "$f" 2>/dev/null)"; then
+              if [ "$got" != "$want" ]; then
+                echo "::error file=$f::provenance.klt_version is '$got' but this job installed klt '$want' - re-attest with the pinned release"
+                rc=1
+              fi
+            else
+              echo "::error file=$f::does not record a provenance.klt_version (unreadable or not a klt signoff envelope); expected the installed version '$want'"
+              rc=1
+            fi
+          done
+          exit $rc
+
       - name: Re-check the item-10 hygiene attestation
         # Hygiene artifacts must exist; checks marked local_only in the
         # inventory need the full toolchain and are carried, not re-run, here.

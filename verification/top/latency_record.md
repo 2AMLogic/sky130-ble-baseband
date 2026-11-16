@@ -113,6 +113,30 @@ measurement and must fail with `expected=` (negative control below).
   (latency must be repeatable; the jitter column guards the timer's
   early-fire margin).
 
+## 2026-11-16 — correction: the 15.4 `lead` axis is a second strobe-jitter alignment, not a timing phase (issue #162)
+
+Append-only correction to the 2026-11-15 section above; every recorded
+number, bound and verdict in it stays correct and is untouched. That
+section's phrase "× 2 timing phases" is wrong **for the 15.4 leg only**.
+The `OQ_MATRIX` leads (37 and 41) differ by 4 samples = exactly one chip
+(`SPS_CHIP = 4`) = 16 clk = 4× the 4-clk strobe period, so the frame's
+alignment to both the chip grid and the strobe grid is unchanged across the
+pair. `oqpsk_tx.modulate(lead=)` prepends whole zero samples at 8 Msps and
+every sample strobes on the same 4-clk grid (`env.drive` draws ±1 clk per
+strobe, indexed by absolute sample number), so no integer `lead` can vary
+sub-sample arrival phase. What the pair varies is which jitter draws land on
+which frame samples — a **second strobe-jitter alignment**, not a timing
+phase. The LE leg's "2 timing phases" wording stays correct: the CM-A model
+draws `timing = rng.uniform(0, SPS)` per seed.
+
+Consistent with this, the recorded 15.4 `L_rx` spread is 1 clk over the
+whole matrix, against 9 clk for LE, whose short-length axis does vary
+arrival phase: the ideal loopback offers no sub-sample timing-phase knob
+(creating one was scoped out in #122; if a true 15.4 phase axis is ever
+wanted, `sim/channel/cm_a_oqpsk.py` already draws a sub-sample
+`timing = rng.uniform(0.0, SPS_CHIP)` through a Lagrange resampler and is
+the existing mechanism). No bound, number or verdict above is affected.
+
 ## 2026-11-16 — correction: definition 2's justification (issue #165)
 
 This note retracts the second half of definition 2 — the sentence
