@@ -106,7 +106,9 @@ above.
 ## Pinned tool
 
 `klayout-tools==0.8.0` (the first release with `--attest`, needed for items 9
-and 10). CI and the committed record use the same pin.
+and 10). CI and the committed record use the same pin. `make lint` checks
+these literals against CI's pin (`verification/tool_pins.py`, #171), so a
+bump changes `signoff.yml` and every command block here in the same commit.
 
 ## Regenerate
 
