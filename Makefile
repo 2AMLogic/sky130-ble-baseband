@@ -174,11 +174,7 @@ test-top-latency: check-tools
 # the right reason: the bound report carries `expected=`. The negative run
 # executes the LE test only (the tightened bound lives there).
 test-top-latency-negative: check-tools
-	@mkdir -p $(TOP)
-	@if LATENCY_NEGATIVE=1 $(PYTHON) verification/top/run_latency.py $(CURDIR)/$(TOP)/latency_neg latency_le1m >$(TOP)/latency_negative.log 2>&1; then \
-	  echo "ERROR: top-latency negative control passed; the bench does not detect an exceeded bound"; exit 1; \
-	else grep -q 'expected=' $(TOP)/latency_negative.log || { echo "ERROR: top-latency negative control failed for the wrong reason; see $(TOP)/latency_negative.log"; exit 1; }; \
-	  echo "top-latency negative control OK (tightened bound was rejected)"; fi
+	@$(call negative_control,$(TOP),LATENCY_NEGATIVE=1,$(PYTHON) verification/top/run_latency.py $(CURDIR)/$(TOP)/latency_neg latency_le1m,$(TOP)/latency_negative.log,expected=,top-latency,the bench does not detect an exceeded bound,top-latency,tightened bound was rejected)
 
 # Host interface (rtl/host/): APB registers, FIFOs, interrupts, timestamps.
 HOST_BUILD := flow/build/host

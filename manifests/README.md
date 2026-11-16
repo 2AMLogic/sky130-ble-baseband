@@ -21,17 +21,24 @@ rather than from prose.
   committed output of the command below. Never hand-edit it. Today all 11
   T1 items read `unmet` / `no_evidence` except items 9 and 10 (`met`); the
   three rows beyond T1 read `unmet` / `tier_not_supported`.
-- **`testbench-inventory.json`** — the item-9 attestation inventory: every
-  committed cocotb bench under `verification/`, the one `cold_start`
-  invocation that runs them all from a clean checkout, and the `pins` block
-  (PDK revision and tool versions) item 9 requires. The cold start is
-  marked `local_only` — it needs Icarus, Verilator, Yosys and the cocotb
-  venv, so `--attest` runs it and `--check` carries its committed outcome.
-  It is the bench targets only: `lint` belongs to item 10, `synth`
-  cannot complete yet (`flow/synth/README.md`), and the `sim/`
-  reference-model, channel-model and sweep-harness tests are anchored
-  outside item 9 — the decision and its reasoning are recorded in
-  "Item 9 scope" below.
+- **`testbench-inventory.json`** — the item-9 attestation inventory. Its
+  listing rule: every tracked file under `verification/` other than that
+  directory's own README (an item-10 hygiene artifact) that the targets in
+  this inventory's own `cold_start.argv` execute or import. Benches and the
+  harness modules those targets load qualify alike, which is why
+  `cocotb_run.py`, `rtl_sources.py`, the shared runners, case tables and
+  common helpers are listed next to the benches they serve. A file the cold
+  start never executes or imports is deliberately not listed; each such
+  file is dispositioned under "Item 9 scope" below. The inventory also
+  carries the one `cold_start` invocation that runs them all from a clean
+  checkout, and the `pins` block (PDK revision and tool versions) item 9
+  requires. The cold start is marked `local_only` — it needs Icarus,
+  Verilator, Yosys and the cocotb venv, so `--attest` runs it and `--check`
+  carries its committed outcome. The cold start runs the bench targets
+  only: `lint` belongs to item 10, `synth` cannot complete yet
+  (`flow/synth/README.md`), and the `sim/` reference-model, channel-model
+  and sweep-harness tests are anchored outside item 9 — the decision and
+  its reasoning are recorded in "Item 9 scope" below.
 - **`item9-attestation.json`** — the envelope `klt signoff --attest 9`
   produced from that inventory. Generated, committed, never hand-edited:
   `status` is derived from the checks `--attest` actually ran (one
@@ -80,9 +87,21 @@ record to this block. The `sim/` side is deliberately anchored elsewhere:
    item-9 claim until the row is met or the row is revisited through
    `spec/`.
 
-`verification/rtl_sources.py` (added by #141) is deliberately not listed:
-it is a source-list helper consumed by the inventoried runners, not a bench;
-its inventory status is tracked in #158.
+`verification/rtl_sources.py` (added by #127) **is listed**: every
+`run_*.py` runner imports it to build its RTL source list, so it
+participates in the cold start this inventory attests. Its earlier
+"deliberately not
+listed" disposition (recorded here by #142) was settled the other way by
+#158, against the listing rule stated above.
+
+Two files under `verification/` remain deliberately not listed, because no
+`cold_start.argv` target executes or imports them:
+`verification/tests/test_rtl_sources.py` runs under `make parser-test` in
+`.github/workflows/flow.yml`, and `verification/top/latency_record.md` is
+the append-only record the latency target produces, not code a run
+executes. Neither is anchored by an attestation today; anchoring them
+elsewhere is a separate completeness question, not an omission of the rule
+above.
 
 ## Pinned tool
 
