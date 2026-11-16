@@ -34,8 +34,8 @@ rather than from prose.
   checkout, and the `pins` block (PDK revision and tool versions) item 9
   requires. The cold start is marked `local_only` — it needs Icarus,
   Verilator, Yosys and the cocotb venv, so `--attest` runs it and `--check`
-  carries its committed outcome. It is the bench targets only: `lint`
-  belongs to item 10, `synth` cannot complete yet
+  carries its committed outcome. The cold start runs the bench targets
+  only: `lint` belongs to item 10, `synth` cannot complete yet
   (`flow/synth/README.md`), and the `sim/` reference-model, channel-model
   and sweep-harness tests are anchored outside item 9 — the decision and
   its reasoning are recorded in "Item 9 scope" below.
@@ -87,9 +87,10 @@ record to this block. The `sim/` side is deliberately anchored elsewhere:
    item-9 claim until the row is met or the row is revisited through
    `spec/`.
 
-`verification/rtl_sources.py` (added by #127) **is listed**: all six
-runners import it to build their RTL source lists, so it participates in
-the cold start this inventory attests. Its earlier "deliberately not
+`verification/rtl_sources.py` (added by #127) **is listed**: every
+`run_*.py` runner imports it to build its RTL source list, so it
+participates in the cold start this inventory attests. Its earlier
+"deliberately not
 listed" disposition (recorded here by #142) was settled the other way by
 #158, against the listing rule stated above.
 
