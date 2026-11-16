@@ -29,6 +29,41 @@ jobs:
       - name: Install pinned klt
         run: pip install klayout-tools==0.8.0
 
+      - name: Assert every envelope records the installed klt version
+        # Each committed evidence envelope names the klt build that produced
+        # it (provenance.klt_version). It must match the pinned release this
+        # job just installed, or the envelope was re-attested off-pin and the
+        # evidence provenance is broken. The expected version is read from
+        # the installed tool, and the envelope list from the block manifest,
+        # so neither can go stale here. See manifests/README.md.
+        run: |
+          set -uo pipefail
+          want="$(klt --version | awk '{print $2}')"
+          rc=0
+          for f in $(python3 -c '
+import json
+m = json.load(open("manifests/sky130-ble-baseband.json"))
+for _, e in sorted(m.get("evidence", {}).items()):
+    print(e["file"])
+'); do
+            got="$(python3 -c '
+import json, sys
+try:
+    env = json.load(open(sys.argv[1]))
+    print(env["provenance"]["klt_version"])
+except (OSError, KeyError, TypeError):
+    sys.exit(3)
+' "$f")"
+            if [ "$?" -ne 0 ]; then
+              echo "::error file=$f::does not record a provenance.klt_version (unreadable or not a klt signoff envelope); expected the installed version '$want'"
+              rc=1
+            elif [ "$got" != "$want" ]; then
+              echo "::error file=$f::provenance.klt_version is '$got' but this job installed klt '$want' - re-attest with the pinned release"
+              rc=1
+            fi
+          done
+          exit $rc
+
       - name: Re-check the item-10 hygiene attestation
         # Hygiene artifacts must exist; checks marked local_only in the
         # inventory need the full toolchain and are carried, not re-run, here.
