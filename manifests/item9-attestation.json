@@ -192,7 +192,7 @@
         "role": "testbench",
         "path": "verification/top/test_latency.py",
         "passed": true,
-        "content_hash": "sha256:df72ef0a038e2b55b340e2f9e6a8b15e2ee7a5661d7057a1a4e1fcabec09b114"
+        "content_hash": "sha256:66810db0130255d8717646fe0e360ecaf47b500780f74c252eb4c650539a5aac"
       },
       {
         "check": "present",
