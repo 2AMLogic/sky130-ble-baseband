@@ -199,10 +199,11 @@ model-test:
 	$(PYTHON) -m pytest -q sim/tests
 	@$(call negative_control,$(BUILD),CRC_NEGATIVE=1,$(PYTHON) -m pytest -q sim/tests -k crc24_kat,$(BUILD)/model_negative.log,crc24 KAT mismatch,model,the CRC known-answer test does not detect a flipped init,model,flipped CRC init was rejected)
 
-# The file-list parser's own tests (verification/tests, issue #147). Pure
-# Python: no simulator and no PDK, so no check-tools. The parser gates
-# check-rtl-list and every generated per-block list, so a regression here
-# fails in the same CI job (flow) as the lint it would break.
+# The file-list parser's own tests (verification/tests, issue #147) plus the
+# CI workflow YAML parse-validity check (issue #172). Pure Python: no
+# simulator and no PDK, so no check-tools. The parser gates check-rtl-list
+# and every generated per-block list, so a regression here fails in the same
+# CI job (flow) as the lint it would break.
 parser-test:
 	$(PYTHON) -m pytest -q verification/tests
 
