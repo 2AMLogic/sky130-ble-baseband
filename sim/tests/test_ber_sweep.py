@@ -1,7 +1,9 @@
-"""BER sweep harness: statistics, seeds, stop rule, JSON contract."""
+"""BER sweep driver: grids, stop rule, row verdict, shards and the JSON contract.
+
+The statistics, seeding and shared scaffolding these exercise through the driver
+are tested directly in test_sweep_common.py."""
 
 import json
-import math
 import os
 import pathlib
 import subprocess
@@ -15,43 +17,7 @@ SWEEP = os.path.join(HERE, "..", "sweep", "ber_sweep.py")
 sys.path[:0] = [os.path.join(HERE, "..", "sweep")]
 import ber_sweep  # noqa: E402
 import cm_a  # noqa: E402
-
-
-@pytest.mark.parametrize("k,n,lo,hi", [
-    (0, 10, 0.0, 0.3084971078187608),
-    (10, 10, 0.6915028921812392, 1.0),
-    (0, 3000, 0.0, 0.0012288708038255115),
-    (100, 1000, 0.08210533435558, 0.12028793651869264),
-    (100, 100000, 0.0008137116819701752, 0.001216136395647647),
-    (1, 33600, 7.535059061229095e-07, 0.00016581143942111533),
-    (5, 50, 0.03327509358902247, 0.21813536643420225),
-])
-def test_clopper_pearson_known_values(k, n, lo, hi):
-    """Reference values from the beta-quantile form of the exact interval."""
-    got_lo, got_hi = ber_sweep.clopper_pearson(k, n)
-    assert got_lo == pytest.approx(lo, rel=1e-6, abs=1e-12)
-    assert got_hi == pytest.approx(hi, rel=1e-6, abs=1e-12)
-
-
-def test_clopper_pearson_zero_errors_closed_form():
-    n = 5000
-    assert ber_sweep.clopper_pearson(0, n)[1] == pytest.approx(1 - 0.025 ** (1.0 / n), rel=1e-9)
-
-
-def test_clopper_pearson_rejects_bad_input():
-    for k, n in ((-1, 10), (11, 10), (0, 0)):
-        with pytest.raises(ValueError):
-            ber_sweep.clopper_pearson(k, n)
-
-
-def test_point_seed_is_stable_and_sensitive():
-    base = ber_sweep.point_seed("r", {"a": 1}, 3, 0, 1)
-    assert base == ber_sweep.point_seed("r", {"a": 1}, 3, 0, 1)
-    assert base == int.from_bytes(__import__("hashlib").sha256(
-        b'["r",{"a":1},3,0,1]').digest()[:8], "big")      # pinned: not Python's hash()
-    for other in (("s", {"a": 1}, 3, 0, 1), ("r", {"a": 2}, 3, 0, 1),
-                  ("r", {"a": 1}, 4, 0, 1), ("r", {"a": 1}, 3, 1, 1), ("r", {"a": 1}, 3, 0, 2)):
-        assert base != ber_sweep.point_seed(*other)
+import sweep_common  # noqa: E402
 
 
 def test_capped_point_is_an_upper_bound_and_measured_point_is_not():
@@ -255,8 +221,8 @@ def test_full_grid_appends_negative_control_last_without_moving_seeds():
 
 
 def test_single_row_shard_defaults_to_named_file(tmp_path, monkeypatch):
-    monkeypatch.setattr(ber_sweep, "SIM", str(tmp_path))
-    monkeypatch.setattr(ber_sweep, "git_sha", lambda: CLEAN_SHA)
+    monkeypatch.setattr(sweep_common, "SIM", str(tmp_path))
+    monkeypatch.setattr(sweep_common, "git_sha", lambda: CLEAN_SHA)
     assert ber_sweep.main(["--only", "le1m_uniform", *TINY]) == 0
     files = list(tmp_path.glob("results/*/shards/*.json"))
     assert [f.name for f in files] == ["le1m_uniform.json"]
@@ -319,8 +285,8 @@ def test_merge_refuses_dirty_and_quick_shards(tiny, tmp_path, capsys):
 
 def test_asserted_sha_is_recorded_as_asserted(tmp_path, monkeypatch):
     """A runner with no repo git root names the commit; the report says so."""
-    monkeypatch.setattr(ber_sweep, "SIM", str(tmp_path))
-    monkeypatch.setattr(ber_sweep, "git_sha",
+    monkeypatch.setattr(sweep_common, "SIM", str(tmp_path))
+    monkeypatch.setattr(sweep_common, "git_sha",
                         lambda: pytest.fail("git must not be consulted for an asserted sha"))
     assert ber_sweep.main(["--only", "le1m_uniform", "--sim-git-sha", CLEAN_SHA, *TINY]) == 0
     files = list(tmp_path.glob("results/*/shards/*.json"))
@@ -332,8 +298,8 @@ def test_asserted_sha_is_recorded_as_asserted(tmp_path, monkeypatch):
 
 
 def test_derived_sha_is_recorded_as_derived(tmp_path, monkeypatch):
-    monkeypatch.setattr(ber_sweep, "SIM", str(tmp_path))
-    monkeypatch.setattr(ber_sweep, "git_sha", lambda: CLEAN_SHA)
+    monkeypatch.setattr(sweep_common, "SIM", str(tmp_path))
+    monkeypatch.setattr(sweep_common, "git_sha", lambda: CLEAN_SHA)
     assert ber_sweep.main(["--only", "le1m_uniform", *TINY]) == 0
     rep = json.loads(next(tmp_path.glob("results/*/shards/*.json")).read_text())
     assert rep["sim_git_sha_source"] == ber_sweep.SHA_DERIVED
@@ -342,7 +308,7 @@ def test_derived_sha_is_recorded_as_derived(tmp_path, monkeypatch):
 @pytest.mark.parametrize("bad", ["", "0123456789AB", "0123", "0123456789ab-dirty",
                                  "unknown", "0123456789ab ", "z123456789ab"])
 def test_asserted_sha_must_be_a_bare_hex_commit_id(tmp_path, monkeypatch, bad):
-    monkeypatch.setattr(ber_sweep, "SIM", str(tmp_path))
+    monkeypatch.setattr(sweep_common, "SIM", str(tmp_path))
     with pytest.raises(SystemExit) as e:
         ber_sweep.main(["--only", "le1m_uniform", "--sim-git-sha", bad, *TINY])
     assert e.value.code == 2
@@ -414,8 +380,8 @@ def test_committed_result_parses_and_its_negative_control_fails_the_row(path):
     deterministic negative control stays a visible failure. A capped point is
     never read as a measurement."""
     rep = json.loads(path.read_text())
-    assert rep["format"] == ber_sweep.FORMAT
-    assert rep["mode"] == "full" and rep["label"] == ber_sweep.LABEL
+    assert rep["format"] == sweep_common.FORMAT
+    assert rep["mode"] == "full" and rep["label"] == sweep_common.LABEL
     assert not str(rep["sim_git_sha"]).endswith("-dirty")
     assert rep["prng"]["numpy_version"] and rep["prng"]["family"] == "PCG64"
 
