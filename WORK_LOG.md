@@ -5,6 +5,8 @@ triage role. Newest first.
 
 ### 2026-11-18
 
+- **PR #195**: fix: refuse shards missing provenance fields instead of silent fallbacks
+- **Issue #143** (closed): ber_sweep --merge: provenance fields fall back silently instead of refusing (prng falsy, missing-key sentinel)
 - **PR #194**: test: pin worst_packet_loss in the BER row summary and its absence in the PER one
 - **PR #191**: feat: conjunctive packet-loss bound on the ratified LE 1M BER row
 - **Issue #192** (closed): sim: no test pins worst_packet_loss in the BER row summary — dropping it is silent
