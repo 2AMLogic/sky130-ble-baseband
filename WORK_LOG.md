@@ -3,8 +3,66 @@
 Chronological record of merged PRs and closed issues, maintained by the Guide
 triage role. Newest first.
 
+### 2026-11-18
+
+- **PR #187**: ci: add merge_group trigger to the required-check workflows
+- **PR #151**: fix(sim): LE BER charges only the bits the receiver returned (decision 0009)
+- **Issue #186** (closed): Merge queue: add the merge_group trigger to the required-check workflow(s)
+- **Issue #133** (closed): LE 1M RX: BER is worst at ZERO carrier offset and non-monotonic in Eb/N0, which is why le1m_cfo misses 1e-3
+
+### 2026-11-17
+
+- **PR #185**: test: add CI workflow YAML parse-validity check to parser-test
+- **PR #184**: chore(loom): resync installed Loom to v0.19.1306
+- **PR #183**: docs: note definition 1's stale §3 quotation in the latency record
+- **Issue #181** (closed): latency_record.md definition 1 quotes section 3's pre-0010 rationale (`L_tx + T_settle`)
+- **Issue #172** (closed): No CI check validates .github/workflows/*.yml, so a broken workflow presents as a required context that never reports
+
+### 2026-11-16
+
+- **PR #180**: ci: fail signoff envelope-list derivation errors instead of passing silently
+- **PR #176**: docs(verification): call the 15.4 lead axis a second jitter alignment, not a timing phase
+- **PR #175**: chore(loom): resync installed Loom to v0.19.1302
+- **PR #174**: docs: retract the subadditivity justification in the latency record
+- **PR #173**: lint: tie the runbook klayout-tools pin literals to signoff.yml's pin
+- **PR #170**: build: convert test-top-latency-negative to the negative_control define
+- **PR #169**: ci: fail signoff job when an envelope's provenance.klt_version mismatches the installed klt
+- **PR #168**: spec: replace 0010's faulty T_IFS-tolerance aside with the ratified 1 µs bound
+- **PR #167**: manifests: inventory rtl_sources.py and state the item-9 listing rule
+- **PR #155**: docs: scope manifests README re-attest guidance by trigger
+- **PR #120**: docs: roadmap as of 2026-11-13
+- **Issue #179** (closed): signoff guard: envelope-list derivation failure exits 0 (silent pass) instead of failing the step
+- **Issue #178** (closed): Tighten the latency-matrix axis wording: rewrap verification/README.md:58 and drop the shared "arrival-phase" umbrella
+- **Issue #171** (closed): CI does not check manifests/README.md's klayout-tools pin against signoff.yml's
+- **Issue #166** (closed): Follow-on: test-top-latency-negative still hand-rolls the negative-control guard (eighth bench, not using the negative_control define)
+- **Issue #165** (closed): latency_record.md: the subadditivity justification for enforcing spread(L_dig) is wrong and contradicts ratified 0010
+- **Issue #164** (closed): spec: 0010's subadditivity paragraph overstates the T_IFS comparison ("outside the whole T_IFS tolerance")
+- **Issue #162** (closed): 15.4 latency matrix: modulate(lead=) is not a timing-phase axis; the record says it is
+- **Issue #158** (closed): item-9 inventory: verification/rtl_sources.py is tracked-tree-present but unlisted — the inventory's 'every file except README' property is broken
+- **Issue #148** (closed): Committed item-10 attestation was produced by an unpinned klt dev build (0.9.2.dev1029) while CI and manifests/README.md pin klayout-tools==0.8.0
+- **Issue #136** (closed): manifests/README.md: say what to regenerate when a hygiene artifact changes (not the inventory)
+
 ### 2026-11-15
 
+- **PR #161**: build: dedupe the seven negative-control recipes into one negative_control define
+- **PR #160**: fix(manifests): regenerate item-9 attestation envelope (main signoff red since #127)
+- **PR #159**: docs(manifests): record item-9 inventory scope decision for sim/ benches
+- **PR #157**: test: cover every rtl_sources.py rejection path, fix --check traceback
+- **PR #154**: docs(synth): document record-log scoping convention and measured footprint cost
+- **PR #152**: spec: L_tx starts at the TX-command strobe, jitter column bounds spread(L_dig)
+- **PR #149**: sim: measure the O-QPSK PER sensitivity budget (issue #137)
+- **PR #144**: feat(verification): measure L_rx/L_tx/L_dig and spread at baseband_top vs section 3
+- **PR #140**: rtl: share one rx_moving_sum between the LE 1M and O-QPSK RX chains
+- **Issue #163** (closed): manifests/README.md item-9 scope record misattributes verification/rtl_sources.py to PR #141 (it was #127)
+- **Issue #153** (closed): main: klt signoff CI red — item-9 attestation drifted when #127 merged (merge skew with #129)
+- **Issue #147** (closed): verification/rtl_sources.py has no automated test: the one file-list parser's rejection paths are hand-run only
+- **Issue #146** (closed): spec/timing-and-area.md section 3: name the L_tx reference point and the jitter column's quantity (editorial, decision 0008)
+- **Issue #142** (closed): Item-9 inventory scope: sim/ reference-model and channel-model benches are not inventoried or in the attested cold start
+- **Issue #137** (closed): 802.15.4 reference receiver is ~4 dB short of the ratified PER row (needs 9 dB for PER < 1 %, spec says 5 dB)
+- **Issue #135** (closed): Bound the committed footprint of flow/synth records logs
+- **Issue #128** (closed): Dedupe the seven negative-control recipes in the Makefile into one define
+- **Issue #125** (closed): Dedupe the RX moving-sum integrator: le1m_rx_integ and oqpsk_rx_integ are one parameterized module written twice
+- **Issue #122** (closed): Measure L_rx / L_tx and their spread over the shared stimulus at baseband_top, checked against spec section 3
 - **PR #141**: docs: correct README maturity-ladder position and regenerate item-10 attestation
 - **Issue #124** (closed): README "Current position" still says "No block RTL yet"; correct it and re-attest item 10
 - **PR #138**: sim: commit the full-caps 802.15.4 PER sweep evidence and its run record
