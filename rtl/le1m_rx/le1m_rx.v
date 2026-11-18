@@ -93,9 +93,9 @@ module le1m_rx (
     wire               int_v;
     wire signed [18:0] int_s;
     wire        [8:0]  int_mag;
-    le1m_rx_integ #(.SIDE_W(9)) u_integ (
+    rx_moving_sum #(.N(8), .SIDE_W(9)) u_integ (
         .clk(clk), .rst_n(rst_n), .in_valid(cor_v), .in_f(cor_angle), .in_side(cor_mag),
-        .out_valid(int_v), .out_s(int_s), .out_side(int_mag));
+        .out_valid(int_v), .out_sum(int_s), .out_side(int_mag));
 
     wire [31:0]              n_cnt;
     wire [HIST_W*19-1:0]     hist;

@@ -3,14 +3,14 @@
   "kind": "generic",
   "status": "pass",
   "t1_item": 9,
-  "summary": "T1 item 9 (Testbenches shipped): 28/28 attestation checks passed (klt signoff --attest)",
+  "summary": "T1 item 9 (Testbenches shipped): 32/32 attestation checks passed (klt signoff --attest)",
   "source": "manifests/testbench-inventory.json",
   "attestation": {
     "producer": "klt signoff --attest",
     "inventory_schema_version": 1,
     "hash_algorithm": "sha256-raw-bytes",
-    "check_count": 28,
-    "passed_count": 28,
+    "check_count": 32,
+    "passed_count": 32,
     "checks": [
       {
         "check": "present",
@@ -24,7 +24,7 @@
         "role": "testbench",
         "path": "verification/host/run_host.py",
         "passed": true,
-        "content_hash": "sha256:e76bb8d8209499f9bbcfc6ed3853fa9acff8d83fe43b935947488a119ff7e0a7"
+        "content_hash": "sha256:e81bbc1b293cdbb7c5faf39bb451c959afe6126c1e199d1ffcb7d108c270d5a1"
       },
       {
         "check": "present",
@@ -45,7 +45,7 @@
         "role": "testbench",
         "path": "verification/le1m_rx/run_le1m_rx.py",
         "passed": true,
-        "content_hash": "sha256:a10d170e4ce27997db1a3d315c53e61f7118dc545771de1c723ffcf7fc65749f"
+        "content_hash": "sha256:b34b904fdf616cfe32b0c5e460abc52295ca4c8915e51529b6a445ec86b8ff61"
       },
       {
         "check": "present",
@@ -59,7 +59,7 @@
         "role": "testbench",
         "path": "verification/le1m_tx/run_le1m_tx.py",
         "passed": true,
-        "content_hash": "sha256:dabc189a1612bbf0055b3d918731e03969ddb28b8743d147820dd94d40e92a14"
+        "content_hash": "sha256:2a63e8d16c53944fa95393959f26af8ea69d18626a880261d64a69351adac010"
       },
       {
         "check": "present",
@@ -80,7 +80,7 @@
         "role": "testbench",
         "path": "verification/mac/run_mac.py",
         "passed": true,
-        "content_hash": "sha256:d523c52ce9711a1972fc6ed3776499c57e765a744b1dab4d4116df7b7defc4e8"
+        "content_hash": "sha256:00d68de08b613467e564e5030ecf3b5e41564f5b0e9ff10fa9004be7518b2671"
       },
       {
         "check": "present",
@@ -143,7 +143,7 @@
         "role": "testbench",
         "path": "verification/oqpsk/run_oqpsk.py",
         "passed": true,
-        "content_hash": "sha256:8b481eabf4676316b62a10b8fbf276105ed4a67ea959b3802ba6ea46e1babfcd"
+        "content_hash": "sha256:c091692b73585d35315309c4658aec42951ea17f0724e9f029980d7e42b9b035"
       },
       {
         "check": "present",
@@ -162,6 +162,13 @@
       {
         "check": "present",
         "role": "testbench",
+        "path": "verification/rtl_sources.py",
+        "passed": true,
+        "content_hash": "sha256:8c162622b96f5282b5b733798a53551cf407201bd4a11900cccd9273853c6748"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
         "path": "verification/rx_common.py",
         "passed": true,
         "content_hash": "sha256:cbf171bc8f7056179b799d51f56c0428959dc184504edef26859cd0df0c2b95d"
@@ -169,16 +176,37 @@
       {
         "check": "present",
         "role": "testbench",
+        "path": "verification/top/run_latency.py",
+        "passed": true,
+        "content_hash": "sha256:e4b629391a5faf3054f982fcafb3ed8d39f764df4a3ef20f12f23227c39e74b5"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
         "path": "verification/top/run_top.py",
         "passed": true,
-        "content_hash": "sha256:6143a052da34153af3bf52adc5200929efe722b8e67614f421f60097b737e3ca"
+        "content_hash": "sha256:4925c9f150f3d9fe79f9cb0fe847032c687301d8da1c666e7915539520aacdc7"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "verification/top/test_latency.py",
+        "passed": true,
+        "content_hash": "sha256:66810db0130255d8717646fe0e360ecaf47b500780f74c252eb4c650539a5aac"
       },
       {
         "check": "present",
         "role": "testbench",
         "path": "verification/top/test_top.py",
         "passed": true,
-        "content_hash": "sha256:60c12a0a867abf12e424591ed7cf8ba756b04d2e2f4cd9032ed0f126fa523eb1"
+        "content_hash": "sha256:b9e436bdbfe434dc4ed2ee0dc20068d45af57ee495fd0f3c220fa13404c5d709"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "verification/top/top_env.py",
+        "passed": true,
+        "content_hash": "sha256:e5050316940a7e0c4c9d6988032c684921f6c475b1bc8b99c96b8bedae2a0f3e"
       },
       {
         "check": "present",
@@ -202,7 +230,9 @@
           "test-oqpsk",
           "test-oqpsk-negative",
           "test-top",
-          "test-top-negative"
+          "test-top-negative",
+          "test-top-latency",
+          "test-top-latency-negative"
         ],
         "cwd": ".",
         "exit_status": 0,
@@ -242,7 +272,7 @@
         "path": "manifests/testbench-inventory.json",
         "scope": "repo"
       },
-      "content_hash": "sha256:2fa06aff5b2fdfb109377632da00c8156ebd49c4860873892a25790b4636bab6"
+      "content_hash": "sha256:9d3798935b7ca5e6542f8e2006fc94a263bfec2aa5c5baee32524611edaa5b51"
     }
   }
 }

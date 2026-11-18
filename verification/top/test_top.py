@@ -10,6 +10,8 @@ the per-block benches (decision 0007); nothing is hand-written:
     that was sent.
 A front-end model drives fe_ready: it drops fe_ready for 20 clk after any change of
 fe_rx_en / fe_tx_en / fe_chan_we and raises it again only while a mode is requested.
+The shared harness (registers, `Env`, `expect`, `configure`, `frame_154`) lives in
+top_env.py, imported here and by test_latency.py.
 
 Covered: LE 1M and 15.4 TX and RX through the top, the STATE register, interrupt
 bits, descriptor length / flags, fe_* handshake. Not covered here: BER / PER (no
@@ -18,15 +20,13 @@ TOP_NEGATIVE=1 perturbs one expected value per test (message carries `expected=`
 """
 
 import os
-import random
 import sys
 from pathlib import Path
 
 import numpy as np
 
 import cocotb
-from cocotb.clock import Clock
-from cocotb.triggers import ClockCycles, FallingEdge, RisingEdge
+from cocotb.triggers import ClockCycles
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT / "sim" / "channel"), str(ROOT / "sim" / "model"),
@@ -36,128 +36,12 @@ import le1m_tx  # noqa: E402
 import oqpsk_tx  # noqa: E402
 import packet  # noqa: E402
 import cases as oq_cases  # noqa: E402
+from top_env import (CMD, CMD_ABORT, CMD_RX, CMD_TX, DESC_COUNT, DESC_INFO,  # noqa: E402
+                    INT_ENABLE, INT_RAW, RX_BAD, RX_DATA, RX_LEVEL, RX_OK, RX_SYNC,
+                    STATE, TIMING_CTRL, TX_DATA, TX_DONE, TX_ERR, TX_LENGTH, TX_LEVEL,
+                    Env, configure, expect, frame_154)
 
 NEGATIVE = os.environ.get("TOP_NEGATIVE") == "1"
-
-CTRL, CMD, STATE = 0x000, 0x004, 0x008
-INT_RAW, INT_ENABLE, INT_STATUS = 0x040, 0x044, 0x048
-TIMING_CTRL = 0x080
-ACCESS_ADDR, CRC_INIT, WHITEN_CH = 0x0C0, 0x0C4, 0x0C8
-TX_DATA, TX_LENGTH, TX_LEVEL, RX_DATA, RX_LEVEL = 0x100, 0x104, 0x108, 0x10C, 0x110
-DESC_COUNT, DESC_INFO, DESC_POP = 0x114, 0x118, 0x12C
-RX_SYNC, RX_OK, RX_BAD, RX_OVF, TX_DONE, TX_ERR = 1, 2, 4, 8, 16, 32
-CMD_TX, CMD_RX, CMD_ABORT = 1, 2, 4
-AA, CRC = 0x8E89BED6, 0x555555
-
-
-class Env:
-    def __init__(self, dut):
-        self.dut = dut
-        self.words = []                 # tx_dev values with tx_valid
-        self.fe_log = []                # (cycle, rx_en, tx_en) changes
-        self.cycle = 0
-        self.ready_at = 0
-        self.sample_cycle = []          # env.cycle at each rx_valid strobe
-        self.first_tx = None            # cycle of the first tx_valid
-        self.end_cycle = None           # cycle of the adapter's rx_end
-
-    async def start(self):
-        d = self.dut
-        cocotb.start_soon(Clock(d.clk, 10, unit="ns").start())
-        for n in ("rx_i", "rx_q", "rx_valid", "rx_sat", "PSEL", "PENABLE", "PWRITE", "PADDR",
-                  "PWDATA", "PSTRB", "fe_ready"):
-            getattr(d, n).value = 0
-        d.agc_settled.value = 1
-        d.PSTRB.value = 0xF
-        d.rst_n.value = 0
-        await ClockCycles(d.clk, 4)
-        d.rst_n.value = 1
-        await ClockCycles(d.clk, 4)
-        cocotb.start_soon(self.monitor())
-
-    async def monitor(self):
-        d = self.dut
-        prev = (0, 0, 0)
-        while True:
-            await FallingEdge(d.clk)
-            self.cycle += 1
-            if int(d.tx_valid.value):
-                if self.first_tx is None:
-                    self.first_tx = self.cycle
-                v = int(d.tx_dev.value)
-                self.words.append(v - 256 if v > 127 else v)
-            if int(d.u_rxa.ev_end.value) and self.end_cycle is None:
-                self.end_cycle = self.cycle
-            cur = (int(d.fe_rx_en.value), int(d.fe_tx_en.value), int(d.fe_chan_we.value))
-            if cur != prev:
-                self.ready_at = self.cycle + 20
-                if cur[:2] != prev[:2]:
-                    self.fe_log.append((self.cycle, cur[0], cur[1]))
-                assert not (cur[0] and cur[1]), "fe_rx_en and fe_tx_en both set"
-            prev = cur
-            on = cur[0] or cur[1]
-            d.fe_ready.value = int(on and self.cycle >= self.ready_at)
-
-    async def wr(self, addr, data, strb=0xF):
-        d = self.dut
-        await FallingEdge(d.clk)
-        d.PADDR.value, d.PWDATA.value, d.PSTRB.value, d.PWRITE.value, d.PSEL.value = addr, data, strb, 1, 1
-        d.PENABLE.value = 0
-        await FallingEdge(d.clk)
-        d.PENABLE.value = 1
-        await FallingEdge(d.clk)
-        d.PSEL.value = d.PENABLE.value = d.PWRITE.value = 0
-
-    async def rd(self, addr):
-        d = self.dut
-        await FallingEdge(d.clk)
-        d.PADDR.value, d.PWRITE.value, d.PSEL.value, d.PENABLE.value = addr, 0, 1, 0
-        await FallingEdge(d.clk)
-        d.PENABLE.value = 1
-        await RisingEdge(d.clk)
-        val = int(d.PRDATA.value)
-        await FallingEdge(d.clk)
-        d.PSEL.value = d.PENABLE.value = 0
-        return val
-
-    async def wait_int(self, mask, limit):
-        for _ in range(limit):
-            if await self.rd(INT_RAW) & mask:
-                return
-            await ClockCycles(self.dut.clk, 40)
-        raise AssertionError(f"timeout waiting for INT_RAW & {mask:#x}")
-
-    async def drive(self, iq, flags, seed=1, tail=0):
-        """One rx_valid per sample on a 4-clk grid, +/-1 clk jitter (frontend-interface 2.1)."""
-        d = self.dut
-        rng = random.Random(seed)
-        await FallingEdge(d.clk)
-        clk = 0
-        for n in range(len(iq)):
-            due = max(4 * n + rng.choice((-1, 0, 0, 1)), clk)
-            while clk < due:
-                d.rx_valid.value = 0
-                await FallingEdge(d.clk)
-                clk += 1
-            d.rx_valid.value = 1
-            self.sample_cycle.append(self.cycle + 1)
-            d.rx_i.value = int(iq[n][0])
-            d.rx_q.value = int(iq[n][1])
-            d.rx_sat.value = int(flags[n]) & 1
-            await FallingEdge(d.clk)
-            clk += 1
-        d.rx_valid.value = 0
-
-
-def expect(name, got, exp):
-    assert got == exp, f"{name}: got={got!r} expected={exp!r}"
-
-
-async def configure(env, phy, chan, whiten=0):
-    await env.wr(ACCESS_ADDR, AA)
-    await env.wr(CRC_INIT, CRC)
-    await env.wr(WHITEN_CH, whiten)
-    await env.wr(CTRL, 1 | (phy << 1) | (chan << 8))
 
 
 async def tx_case(env, pdu, phy, expected_words, limit=20000):
@@ -253,12 +137,6 @@ async def top_oqpsk_rx(dut):
     iq, flags, _gain = oq_cases._loopback(oqpsk_tx.with_fcs(payload))
     await configure(env, 1, 11)
     await rx_case(env, iq, flags, payload, 1, "oqpsk")
-
-
-def frame_154(seq, dst_pan, dst, src, payload):
-    """Data frame, ACK requested, PAN compression, short addresses (MPDU without FCS)."""
-    return (bytes([0x61, 0x88, seq]) + dst_pan.to_bytes(2, "little") + dst.to_bytes(2, "little")
-            + src.to_bytes(2, "little") + payload)
 
 
 @cocotb.test()
