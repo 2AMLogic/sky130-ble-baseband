@@ -51,12 +51,12 @@ PHYs (decision [0001](decisions/0001-phy-set.md)).
 
 | Parameter | Target | Fallback | Stretch | Verification method | Governing section | Simulated? / channel model |
 |---|---|---|---|---|---|---|
-| LE 1M BER at ratified Eb/N0 | BER ≤ 1e-3 at Eb/N0 ≤ 16 dB (**provisional ceiling**, see note 1) | BER ≤ 1e-3 at Eb/N0 ≤ 18 dB | BER ≤ 1e-3 at Eb/N0 ≤ 14 dB | `sim/` BER sweep, ≥100 errors per point, 95 % interval reported; RTL bit-exact against the swept model | BCS Vol 6 Part A §4 (receiver characteristics) — unverified; the 1e-3 criterion is this repo's engineering choice, not a citation | **Simulated**, CM-A with LE-1M frequency offset/drift settings |
+| LE 1M BER at ratified Eb/N0 | BER ≤ 1e-3 and packet loss ≤ 1e-2 at Eb/N0 ≤ 16 dB (**provisional ceilings**, see note 1) | BER ≤ 1e-3 and packet loss ≤ 1e-2 at Eb/N0 ≤ 18 dB | BER ≤ 1e-3 and packet loss ≤ 1e-2 at Eb/N0 ≤ 14 dB | `sim/` BER sweep, ≥100 errors per point, 95 % interval reported; RTL bit-exact against the swept model | BCS Vol 6 Part A §4 (receiver characteristics) — unverified; the 1e-3 criterion is this repo's engineering choice, not a citation | **Simulated**, CM-A with LE-1M frequency offset/drift settings |
 | 802.15.4 PER (20-octet PSDU) at ratified SNR | PER < 1 % at SNR ≤ 5 dB in 2 MHz noise bandwidth (**provisional ceiling**, see note 1) | PER < 1 % at SNR ≤ 7 dB | PER < 1 % at SNR ≤ 3 dB | `sim/` PER sweep, ≥100 packet errors per point, 95 % interval reported; RTL bit-exact | 154 Clause 10 (receiver sensitivity criterion) / Clause 12 — unverified | **Simulated**, CM-A with 802.15.4 offset/drift settings |
 | LE 1M BER under optional impairments | informational: report Eb/N0 penalty vs CM-A, no pass/fail | — | pass/fail threshold set by a later record | `sim/` sweep | n/a | **Simulated**, CM-B |
 | 802.15.4 PER under optional impairments | informational: report SNR penalty vs CM-A, no pass/fail | — | pass/fail threshold set by a later record | `sim/` sweep | n/a | **Simulated**, CM-B |
 
-Note 1. The two ceilings are placeholders chosen so the architecture decision
+Note 1. The ceilings are placeholders chosen so the architecture decision
 ([0003](decisions/0003-demod-architecture.md)) has a bar to be judged against.
 No reference model exists yet; no gap, margin or achievability is claimed.
 Ratification (0008) keeps them as ceilings: a later decision record may
@@ -131,7 +131,7 @@ interference, DC offset, I/Q imbalance, ADC clock jitter.
 
 - Each point runs until ≥ 100 errors (bit errors for LE, packet errors for 802.15.4) or a stated packet cap; points that hit the cap are reported as upper bounds, not as measurements.
 - LE bit errors are wrong decisions among the bits the receiver actually returned. A packet delivered with the wrong length (its length field read corrupted, or its demodulation exhausted the record) is counted in an undelivered-packet counter of its own and scored over the comparable bits it returned; it is never charged for bits it did not demodulate. The bit-error denominator is delivered bits, and the fraction of packets not delivered intact (sync miss or wrong-length delivery) is reported alongside as the loss figure that qualifies a BER row. A sync-missed packet counts as every PDU+CRC bit in error ([0009](decisions/0009-le-ber-undelivered-packet-accounting.md)).
-- Report a 95 % Clopper–Pearson interval per point; a row passes only if the **upper** interval bound meets the target.
+- Report a 95 % Clopper–Pearson interval per point; a row passes only if the **upper** interval bound meets the target. For the LE 1M row, the row passes only if that bound **and** the worst graded packet loss meets its ceiling — both bounds must hold for the row to pass ([0011](decisions/0011-le-packet-loss-bound.md)).
 
 ### Optional impairments (CM-B) — reported, not in the ratified pass/fail
 

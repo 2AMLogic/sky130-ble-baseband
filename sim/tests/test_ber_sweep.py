@@ -109,6 +109,86 @@ def test_row_summary_worst_packet_loss_is_max_over_on_target_in_spec_points():
     assert r["worst_packet_loss"] == 2e-2
 
 
+# --------------------------------- conjunctive LE row verdict (issue #156)
+
+def _graded(row_id="r", cp_upper=5e-4, packet_loss=1e-3, **kw):
+    p = {"row_id": row_id, "ebn0_db": ber_sweep.TARGET_EBN0_DB, "cp_upper": cp_upper,
+         "packet_loss": packet_loss, "bound_only": False,
+         "negative_control": False, "out_of_spec": False}
+    p.update(kw)
+    return p
+
+
+def test_row_passes_only_when_both_bounds_hold():
+    """Decision 0011: the row verdict is the conjunction of the BER upper bound
+    and the graded packet-loss ceiling. A row whose BER bound meets 1e-3 while
+    its loss exceeds the ceiling must fail — the failure mode the issue is
+    about: a receiver that delivers short records on a few percent of packets
+    passes every pre-0011 ratified LE row while losing those packets."""
+    r = ber_sweep.row_summary([_graded()])["r"]
+    assert r["target_ber"] == ber_sweep.TARGET_BER
+    assert r["target_packet_loss"] == ber_sweep.TARGET_PACKET_LOSS
+    assert r["row_passes"] is True
+
+    r = ber_sweep.row_summary([_graded(packet_loss=2e-2)])["r"]
+    assert r["upper_bound_meets_target"] is True
+    assert r["packet_loss_meets_target"] is False
+    assert r["row_passes"] is False
+
+    r = ber_sweep.row_summary([_graded(cp_upper=2e-3, packet_loss=1e-3)])["r"]
+    assert r["packet_loss_meets_target"] is True
+    assert r["row_passes"] is False
+
+    r = ber_sweep.row_summary([_graded(cp_upper=2e-3, packet_loss=2e-2)])["r"]
+    assert r["row_passes"] is False
+
+
+def test_row_loss_verdict_uses_graded_points_only():
+    """Only ratified-Eb/N0 in-spec points feed the loss aggregate. The committed
+    record carries le1m_drift packet_loss 6.17e-02 at 12 dB — below the ratified
+    Eb/N0, correctly excluded by row_summary()'s filter; letting it reach the
+    verdict would fail the row spuriously."""
+    pts = [_graded(packet_loss=1e-3),
+           _graded(cp_upper=9e-1, packet_loss=6.17e-2, ebn0_db=12.0),
+           _graded(packet_loss=1.0, negative_control=True),
+           _graded(packet_loss=1.0, out_of_spec=True)]
+    r = ber_sweep.row_summary(pts)["r"]
+    assert r["points"] == 1
+    assert r["worst_packet_loss"] == 1e-3
+    assert r["row_passes"] is True
+
+
+def test_row_loss_verdict_uses_packet_loss_as_emitted():
+    """Decision 0011 binds ``packet_loss`` as emitted — the fraction of packets
+    not delivered intact (sync miss or wrong-length delivery) — not a
+    recomputation from the per-class counters. The record says which quantity
+    it binds; the verdict applies that quantity as written."""
+    p = _graded(packet_loss=2e-2)
+    p["sync_misses"] = 0
+    p["undelivered_packets"] = 0
+    r = ber_sweep.row_summary([p])["r"]
+    assert r["packet_loss_meets_target"] is False and r["row_passes"] is False
+
+
+def test_row_summary_with_no_graded_points_has_no_rows():
+    """An empty or fully-ungraded sweep produces no row and no verdict — never
+    a silently passing one."""
+    only_nc = _graded(packet_loss=0.0, negative_control=True)
+    assert ber_sweep.row_summary([only_nc]) == {}
+
+
+def test_quick_run_prints_both_verdicts(tmp_path):
+    out = tmp_path / "ber.json"
+    proc = subprocess.run([sys.executable, SWEEP, "--quick", "--out", str(out)],
+                          check=True, capture_output=True, text=True)
+    row_lines = [ln for ln in proc.stdout.splitlines() if ln.startswith("row ")]
+    assert row_lines
+    for ln in row_lines:
+        assert "packet loss" in ln
+        assert "row passes" in ln
+        assert "reported, not asserted" in ln
+
+
 # ------------------------------------ undelivered-packet accounting (issue #133)
 
 def _noiseless():
@@ -485,6 +565,26 @@ def test_committed_result_parses_and_its_negative_control_fails_the_row(path):
         # a row verdict is only reported as met when no point behind it was capped
         if r["upper_bound_meets_target"]:
             assert r["all_points_measured"], f"{row_id}: a capped point cannot meet the target"
+        if r.get("packet_loss_meets_target"):
+            assert r["all_points_measured"], f"{row_id}: a capped point cannot meet the loss ceiling"
+        if r.get("row_passes") is not None:
+            assert r["row_passes"] == (r["upper_bound_meets_target"]
+                                       and r["packet_loss_meets_target"]), row_id
     for p in rep["points"]:
         assert p["bound_only"] == (p["stopped_by"] == "packet_cap")
         assert p["cp_lower"] <= p["cp_upper"]
+
+
+def test_committed_corrected_accounting_record_passes_conjunctive_rule():
+    """Decision 0011 must not retroactively fail recorded evidence: the report
+    path re-run over the committed corrected-accounting record passes all four
+    LE rows — worst graded loss 1.24e-03 against the 1e-2 ceiling."""
+    path = RESULTS / "2026-11-15-8bdc8843f6f8" / "ber.json"
+    if not path.exists():
+        pytest.skip("committed corrected-accounting record not present")
+    rep = json.loads(path.read_text())
+    rows = ber_sweep.row_summary(rep["points"])
+    assert set(rows) == {"le1m_cfo", "le1m_drift", "le1m_clock", "le1m_uniform"}
+    for row_id, r in rows.items():
+        assert r["packet_loss_meets_target"] is True, row_id
+        assert r["row_passes"] is True, row_id

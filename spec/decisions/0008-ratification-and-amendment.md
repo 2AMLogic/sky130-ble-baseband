@@ -75,6 +75,7 @@ Newest last. One line per amendment: date, kind, files, issue/PR.
 - 2026-11-15 — substantive: `target-spec.md` Statistics — how an undelivered packet contributes to the LE bit-error count is now defined in the spec; it was an unreviewed harness convention, and a recorded LE BER was a BER/PLR mixture (issue #133, [0009](0009-le-ber-undelivered-packet-accounting.md)). No Target / Fallback / Stretch value changes.
 - 2026-11-15 — substantive (meaning only; no value moves): `timing-and-area.md` §3 and `frontend-interface.md` §5.1 — `L_tx` reference point named as the TX-command strobe, programmed turnaround excluded from `L_dig`, jitter column named as spread(`L_dig`) (record [0010](0010-digital-latency-reference-points.md); issue #146).
 - 2026-11-16 — editorial (wording only; no value moves): `decisions/0010-digital-latency-reference-points.md` — the subadditivity paragraph's comparative aside replaced by the comparison to §3's ratified 1 µs jitter bound (issue #164, PR #168). No decision, enforcement choice or number changes.
+- 2026-11-18 — substantive: `target-spec.md` Demodulator performance LE 1M row and Statistics pass rule — the row passes only if the BER upper bound and the worst graded packet loss ≤ 1e-2 (provisional) both hold; the ratified criteria previously placed no bound on packet delivery (issue #156, [0011](0011-le-packet-loss-bound.md)).
 
 ## Rejected
 
