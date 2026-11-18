@@ -44,9 +44,9 @@ The LE 1M row — Target / Fallback / Stretch:
 The pass-rule bullet:
 
 > Report a 95 % Clopper–Pearson interval per point; a row passes only if the
-> **upper** interval bound meets the target **and** the worst graded packet
-> loss meets its ceiling — both bounds must hold for the row to pass
-> ([0011](0011-le-packet-loss-bound.md)).
+> **upper** interval bound meets the target. For the LE 1M row, the row passes
+> only if that bound **and** the worst graded packet loss meets its ceiling —
+> both bounds must hold for the row to pass ([0011](0011-le-packet-loss-bound.md)).
 
 A row's graded packet loss is the worst `packet_loss` — the fraction of
 packets not delivered intact, sync miss or wrong-length delivery, as 0009
