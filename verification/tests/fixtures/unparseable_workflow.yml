@@ -1,0 +1,29 @@
+# Deliberately unparseable negative-control fixture (issue #172). This file
+# must never be valid YAML: it is the input the negative-control test in
+# test_workflows.py requires to FAIL parsing. It lives OUTSIDE .github/ on
+# purpose, so the production check's glob never matches it and GitHub never
+# tries to run it as a workflow.
+#
+# It reproduces the real defect class the check exists to catch, not arbitrary
+# malformed text: an inline `python3 -c '...'` script inside a `run: |` block
+# whose continuation lines were dedented to column 0. The column-0 lines end
+# the block scalar, so the parser reads them as top-level document content and
+# fails with "while scanning a simple key ... could not find expected ':'".
+# This is the exact shape of the signoff.yml defect at 23a387e5 (issue #172).
+name: signoff
+on: pull_request
+jobs:
+  attest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Attest
+        run: |
+          set -uo pipefail
+          for f in $(python3 -c '
+import json
+m = json.load(open("manifests/block.json"))
+for _, e in sorted(m.get("evidence", {}).items()):
+    print(e["file"])
+'); do
+            echo "$f"
+          done
