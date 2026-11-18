@@ -3,6 +3,19 @@
 Chronological record of merged PRs and closed issues, maintained by the Guide
 triage role. Newest first.
 
+### 2026-11-15
+
+- **PR #141**: docs: correct README maturity-ladder position and regenerate item-10 attestation
+- **Issue #124** (closed): README "Current position" still says "No block RTL yet"; correct it and re-attest item 10
+- **PR #138**: sim: commit the full-caps 802.15.4 PER sweep evidence and its run record
+- **Issue #56** (closed): T1 item 6b: 802.15.4 CM-A source and seeded PER sweep with negative control
+- **PR #134**: test(sim): commit the full LE 1M BER sweep, run as five Spot batch shards
+- **Issue #55** (closed): T1 item 6a: committed full LE 1M BER sweeps (all rows, CM-A) with negative control
+- **PR #129**: feat(manifests): attest T1 item 9 from the committed testbenches
+- **Issue #121** (closed): T1 item 9a: testbench inventory and `klt signoff --attest 9` for the benches on main
+- **PR #127**: build: derive every per-block RTL source list from rtl/baseband.f
+- **Issue #118** (closed): Derive the per-block RTL source lists from rtl/baseband.f: five file lists are hand-kept in two places each
+
 ### 2026-11-14
 
 - **PR #131**: feat(synth): timestamp profile.sh logs and record the dominant pass per leaf
