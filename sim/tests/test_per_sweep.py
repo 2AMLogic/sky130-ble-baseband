@@ -81,6 +81,15 @@ def test_row_summary_excludes_control_and_out_of_spec_and_reports_verdict():
     assert per_sweep.control_summary([dict(ctl, cp_upper=0.001)])["fails_row"] is False
 
 
+def test_row_summary_has_no_worst_packet_loss_field():
+    """802.15.4 points carry no ``packet_loss`` key, so the PER row summary must
+    not gain the BER sweep's field (#192) — the mirror of the inclusivity pin:
+    unifying the two drivers' row shapes flips this test."""
+    ok = point(snr=per_sweep.TARGET_SNR_DB, cap=3)
+    rows = per_sweep.row_summary([dict(ok, row_id="per_snr")])
+    assert "worst_packet_loss" not in rows["per_snr"]
+
+
 def test_quick_mode_cli_json_contract_and_time_bound(tmp_path):
     out = tmp_path / "per.json"
     t0 = time.time()

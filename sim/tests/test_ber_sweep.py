@@ -93,6 +93,22 @@ def test_row_summary_reports_not_asserts():
     assert r["upper_bound_meets_target"] is False and r["all_points_measured"] is False
 
 
+def test_row_summary_worst_packet_loss_is_max_over_on_target_in_spec_points():
+    """Decision 0009's per-row view: ``worst_packet_loss`` is the max over the
+    row's on-target, in-spec, non-control points, and a point missing the key
+    counts as 0.0. Pins the field against silent drops (#192) — without this
+    test, deleting ``worst_fields=("packet_loss",)`` at the call site passes CI."""
+    good = {"row_id": "r", "ebn0_db": ber_sweep.TARGET_EBN0_DB, "cp_upper": 5e-4,
+            "bound_only": False, "negative_control": False, "out_of_spec": False}
+    pts = [dict(good, packet_loss=2e-2),
+           dict(good, cp_upper=6e-4),                          # no packet_loss key -> 0.0
+           dict(good, ebn0_db=12.0, packet_loss=0.5),          # off-target Eb/N0
+           dict(good, out_of_spec=True, packet_loss=0.5),
+           dict(good, negative_control=True, packet_loss=0.5)]
+    r = ber_sweep.row_summary(pts)["r"]
+    assert r["worst_packet_loss"] == 2e-2
+
+
 # ------------------------------------ undelivered-packet accounting (issue #133)
 
 def _noiseless():
