@@ -130,6 +130,7 @@ interference, DC offset, I/Q imbalance, ADC clock jitter.
 ### Statistics
 
 - Each point runs until ≥ 100 errors (bit errors for LE, packet errors for 802.15.4) or a stated packet cap; points that hit the cap are reported as upper bounds, not as measurements.
+- LE bit errors are wrong decisions among the bits the receiver actually returned. A packet delivered with the wrong length (its length field read corrupted, or its demodulation exhausted the record) is counted in an undelivered-packet counter of its own and scored over the comparable bits it returned; it is never charged for bits it did not demodulate. The bit-error denominator is delivered bits, and the fraction of packets not delivered intact (sync miss or wrong-length delivery) is reported alongside as the loss figure that qualifies a BER row. A sync-missed packet counts as every PDU+CRC bit in error ([0009](decisions/0009-le-ber-undelivered-packet-accounting.md)).
 - Report a 95 % Clopper–Pearson interval per point; a row passes only if the **upper** interval bound meets the target.
 
 ### Optional impairments (CM-B) — reported, not in the ratified pass/fail

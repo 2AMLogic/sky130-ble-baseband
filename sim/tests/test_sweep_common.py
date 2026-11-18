@@ -212,7 +212,8 @@ def test_the_shared_point_keys_are_the_same_eighteen_in_both_sweeps():
     ber = ber_sweep.run_point("t", 0, cm_a.CmAParams(), 37, 1, 100, 1)
     per = per_sweep.run_point("t", 0, _oq(snr_db=9.0), 20, 1, 100, 1)
     assert set(ber) & set(per) == SHARED_POINT_KEYS
-    assert set(ber) - set(per) == {"ebn0_db", "ber", "bits", "crc_failures", "timing_steps"}
+    assert set(ber) - set(per) == {"ebn0_db", "ber", "bits", "crc_failures",
+                                   "timing_steps", "packet_loss", "undelivered_packets"}
     assert set(per) - set(ber) == {"snr_db", "per", "fcs_failures"}
     for key in SHARED_POINT_KEYS - {"impairments", "cp_lower", "cp_upper", "errors", "samples"}:
         assert type(ber[key]) is type(per[key]), key

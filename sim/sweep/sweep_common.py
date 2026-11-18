@@ -164,21 +164,28 @@ def flag_out_of_spec(params, flags, *, cfo_limit_hz, clock_limit_ppm):
 
 # ------------------------------------------------------------------- summary
 
-def row_summary(points, *, x_key, x_target, target_field, target, inclusive):
+def row_summary(points, *, x_key, x_target, target_field, target, inclusive,
+                worst_fields=()):
     """Per-row report at the ratified operating point. Reported, never asserted.
 
     ``inclusive`` selects ``<= target`` (LE 1M's documented <= 1e-3) or
     ``< target`` (802.15.4's documented < 1 %). Negative-control and
-    out-of-spec points are excluded from every row.
+    out-of-spec points are excluded from every row. ``worst_fields`` names
+    point keys that get a per-row ``worst_<key>`` maximum alongside
+    ``worst_cp_upper`` (LE 1M's ``worst_packet_loss``); a point missing the
+    key contributes 0.0.
     """
     rows = {}
     for p in points:
         if p["negative_control"] or p["out_of_spec"] or p[x_key] != x_target:
             continue
         r = rows.setdefault(p["row_id"], {"points": 0, "worst_cp_upper": 0.0,
+                                          **{f"worst_{f}": 0.0 for f in worst_fields},
                                           "all_points_measured": True})
         r["points"] += 1
         r["worst_cp_upper"] = max(r["worst_cp_upper"], p["cp_upper"])
+        for f in worst_fields:
+            r[f"worst_{f}"] = max(r[f"worst_{f}"], p.get(f, 0.0))
         r["all_points_measured"] &= not p["bound_only"]
     for r in rows.values():
         r[x_key] = x_target

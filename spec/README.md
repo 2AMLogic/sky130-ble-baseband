@@ -16,6 +16,7 @@ claim of qualification, certification or compliance.
 | [decisions/0006-lower-mac-split.md](decisions/0006-lower-mac-split.md) | Lower-MAC hardware/software split |
 | [decisions/0007-bit-exactness.md](decisions/0007-bit-exactness.md) | Bit-exactness: shared stimulus and golden traces, replayed by cocotb |
 | [decisions/0008-ratification-and-amendment.md](decisions/0008-ratification-and-amendment.md) | Ratification scope, open items, amendment rule, changelog |
+| [decisions/0009-le-ber-undelivered-packet-accounting.md](decisions/0009-le-ber-undelivered-packet-accounting.md) | LE BER accounting: a packet not delivered in full is not charged for bits it did not demodulate |
 | [decisions/0010-digital-latency-reference-points.md](decisions/0010-digital-latency-reference-points.md) | `L_tx` starts at the TX-command strobe; turnaround excluded from `L_dig`; jitter column bounds spread(`L_dig`) |
 | [timing-and-area.md](timing-and-area.md) | Liberty corners, clock targets, digital latency `L_dig`, area budget |
 | [frontend-interface.md](frontend-interface.md) | RX/TX signal tables, turnaround budget |
