@@ -5,6 +5,10 @@ triage role. Newest first.
 
 ### 2026-11-18
 
+- **PR #194**: test: pin worst_packet_loss in the BER row summary and its absence in the PER one
+- **PR #191**: feat: conjunctive packet-loss bound on the ratified LE 1M BER row
+- **Issue #192** (closed): sim: no test pins worst_packet_loss in the BER row summary — dropping it is silent
+- **Issue #156** (closed): Ratified LE criteria bound BER but not packet loss after decision 0009
 - **PR #190**: fix: declare channel and model sys.path entries in test_per_sweep so it collects alone
 - **PR #119**: refactor(sim): one copy of the sweep CLI, stop rule, row verdict and report envelope
 - **Issue #188** (closed): sim/tests/test_per_sweep.py cannot be collected alone: it inherits sys.path from a sibling test module
