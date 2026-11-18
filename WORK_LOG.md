@@ -5,6 +5,10 @@ triage role. Newest first.
 
 ### 2026-11-18
 
+- **PR #190**: fix: declare channel and model sys.path entries in test_per_sweep so it collects alone
+- **PR #119**: refactor(sim): one copy of the sweep CLI, stop rule, row verdict and report envelope
+- **Issue #188** (closed): sim/tests/test_per_sweep.py cannot be collected alone: it inherits sys.path from a sibling test module
+- **Issue #116** (closed): Dedupe the BER/PER sweep drivers: one copy of the CLI, stop rule, row verdict and report envelope
 - **PR #187**: ci: add merge_group trigger to the required-check workflows
 - **PR #151**: fix(sim): LE BER charges only the bits the receiver returned (decision 0009)
 - **Issue #186** (closed): Merge queue: add the merge_group trigger to the required-check workflow(s)
