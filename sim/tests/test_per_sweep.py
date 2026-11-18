@@ -10,7 +10,8 @@ import pytest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SWEEP = os.path.join(HERE, "..", "sweep", "per_sweep.py")
-sys.path[:0] = [os.path.join(HERE, "..", "sweep")]
+sys.path[:0] = [os.path.join(HERE, "..", "sweep"), os.path.join(HERE, "..", "channel"),
+                os.path.join(HERE, "..", "model")]
 import cm_a_oqpsk  # noqa: E402
 import per_sweep  # noqa: E402
 
