@@ -29,6 +29,9 @@ import packet  # noqa: E402
 import sweep_common  # noqa: E402
 
 TARGET_BER = 1e-3
+TARGET_PACKET_LOSS = 1e-2            # provisional ceiling, decision 0011: the LE 1M
+                                     # row passes only if the BER upper bound and the
+                                     # graded packet loss both meet their ceilings
 TARGET_EBN0_DB = 16.0
 SPEC_CFO_HZ = 150e3
 OUT_OF_SPEC_CFO_HZ = 250e3            # beyond the stretch row: flagged
@@ -160,10 +163,19 @@ def row_summary(points):
     """Per-row report at the ratified Eb/N0. Reported, never asserted.
 
     ``inclusive=True``: LE 1M's documented verdict is ``<= 1e-3``
-    (sim/README.md), unlike the PER sweep's ``< 1 %``."""
-    return sweep_common.row_summary(points, x_key="ebn0_db", x_target=TARGET_EBN0_DB,
+    (sim/README.md), unlike the PER sweep's ``< 1 %``. Decision 0011 (LE 1M
+    only) adds the conjunctive packet-loss verdict here, on top of the shared
+    summary, so ``sweep_common.row_summary`` -- and with it every 802.15.4
+    row -- keeps its shape unchanged.
+    """
+    rows = sweep_common.row_summary(points, x_key="ebn0_db", x_target=TARGET_EBN0_DB,
                                     target_field="target_ber", target=TARGET_BER,
                                     inclusive=True, worst_fields=("packet_loss",))
+    for r in rows.values():
+        r["target_packet_loss"] = TARGET_PACKET_LOSS
+        r["packet_loss_meets_target"] = r["worst_packet_loss"] <= TARGET_PACKET_LOSS
+        r["row_passes"] = r["upper_bound_meets_target"] and r["packet_loss_meets_target"]
+    return rows
 
 
 SHA_DERIVED = sweep_common.SHA_DERIVED
@@ -247,8 +259,11 @@ def main(argv=None):
     report = build_report(points, args, sha, sha_source)
     sweep_common.write_report(report, out)
     for row_id, r in report["rows"].items():
-        print(f"row {row_id}: worst cp_upper at {TARGET_EBN0_DB:g} dB = {r['worst_cp_upper']:.3e}; "
-              f"upper bound meets {TARGET_BER:g}: {r['upper_bound_meets_target']} "
+        print(f"row {row_id}: worst cp_upper at {TARGET_EBN0_DB:g} dB = {r['worst_cp_upper']:.3e}, "
+              f"worst packet loss = {r['worst_packet_loss']:.3e}; "
+              f"upper bound meets {TARGET_BER:g}: {r['upper_bound_meets_target']}, "
+              f"loss meets {TARGET_PACKET_LOSS:g}: {r['packet_loss_meets_target']}, "
+              f"row passes: {r['row_passes']} "
               f"(reported, not asserted)")
     print(f"wrote {out}")
     return 0
