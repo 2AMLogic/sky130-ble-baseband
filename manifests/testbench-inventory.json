@@ -5,6 +5,7 @@
   "description": "Testbenches shipped: the committed cocotb benches under verification/ that back this block's RTL claims - LE 1M TX/RX and 802.15.4 O-QPSK TX/RX trace replay against the sim/ reference models, the host (APB) interface bench, the lower-MAC cycle-count benches at 32 and 16 MHz, the baseband_top integration bench, and a negative control for each. The cold start below runs all of them from a clean checkout. No error-rate (BER/PER) result is claimed here; those sweeps enter this inventory when their results land.",
   "testbenches": [
     "verification/cocotb_run.py",
+    "verification/rtl_sources.py",
     "verification/rx_common.py",
     "verification/vector_common.py",
     "verification/host/run_host.py",

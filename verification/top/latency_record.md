@@ -125,3 +125,77 @@ measurement and must fail with `expected=` (negative control below).
   alike, and the 15.4 spread is 1 clk. This matches section 3's rationale
   (latency must be repeatable; the jitter column guards the timer's
   early-fire margin).
+
+## 2026-11-16 — correction: the 15.4 `lead` axis is a second strobe-jitter alignment, not a timing phase (issue #162)
+
+Append-only correction to the 2026-11-15 section above; every recorded
+number, bound and verdict in it stays correct and is untouched. That
+section's phrase "× 2 timing phases" is wrong **for the 15.4 leg only**.
+The `OQ_MATRIX` leads (37 and 41) differ by 4 samples = exactly one chip
+(`SPS_CHIP = 4`) = 16 clk = 4× the 4-clk strobe period, so the frame's
+alignment to both the chip grid and the strobe grid is unchanged across the
+pair. `oqpsk_tx.modulate(lead=)` prepends whole zero samples at 8 Msps and
+every sample strobes on the same 4-clk grid (`env.drive` draws ±1 clk per
+strobe, indexed by absolute sample number), so no integer `lead` can vary
+sub-sample arrival phase. What the pair varies is which jitter draws land on
+which frame samples — a **second strobe-jitter alignment**, not a timing
+phase. The LE leg's "2 timing phases" wording stays correct: the CM-A model
+draws `timing = rng.uniform(0, SPS)` per seed.
+
+Consistent with this, the recorded 15.4 `L_rx` spread is 1 clk over the
+whole matrix, against 9 clk for LE, whose short-length axis does vary
+arrival phase: the ideal loopback offers no sub-sample timing-phase knob
+(creating one was scoped out in #122; if a true 15.4 phase axis is ever
+wanted, `sim/channel/cm_a_oqpsk.py` already draws a sub-sample
+`timing = rng.uniform(0.0, SPS_CHIP)` through a Lagrange resampler and is
+the existing mechanism). No bound, number or verdict above is affected.
+
+## 2026-11-16 — correction: definition 2's justification (issue #165)
+
+This note retracts the second half of definition 2 — the sentence
+"`L_dig = L_rx + L_tx` makes spread(`L_dig`) ≤ spread(`L_rx`) +
+spread(`L_tx`), so the enforced bound is the binding one". The argument
+gets the inequality's direction backwards: subadditivity bounds the total
+**from above** by the sum of the parts, so enforcing each part at its own
+section 3 column value would not bound the total — on LE it would admit
+spread(`L_dig`) up to 2 µs (64 clk at 32 MHz), twice the ratified 1 µs
+(32 clk) jitter column.
+
+The sound reason to enforce on the total is the timer's early fire: 0006
+(`spec/decisions/0006-lower-mac-split.md`) has the timer fire the TX
+command early by `L_dig + T_settle`, so the placement error the timer must
+absorb is spread(`L_dig`) — the total is what the timer compensates,
+whatever its parts do. That reason is ratified in
+`spec/decisions/0010-digital-latency-reference-points.md`
+(issue #146, PR #152, merged `58d0990`), which retracts the subadditivity
+argument by name; this note records the same correction where the
+argument was written.
+
+No measured value, bound, assertion or verdict changes. Definition 2's
+first half stands — the spread bound is enforced on spread(`L_dig`), with
+spread(`L_rx`) and spread(`L_tx`) recorded as evidence — and the
+2026-11-15 run above is untouched, numbers and pass verdict as recorded.
+
+## 2026-11-16 — correction: definition 1's supporting quotation (issue #181)
+
+This note corrects definition 1's parenthetical citation, not the
+definition itself. Its closing parenthetical quotes section 3's rationale
+as "the timer fires the TX command early by `L_tx + T_settle`" — §3 as it
+read **before** 0010 (`spec/decisions/0010-digital-latency-reference-points.md`,
+issue #146, PR #152, merged `58d0990`) was ratified. 0010 records that swap
+explicitly as "Old text (§3 rationale)" → "New text"; the rationale a
+reader finds in §3 today is:
+
+```
+$ grep -nE 'early by' spec/timing-and-area.md
+109:timer fires the TX command early by `L_dig + T_settle` (0006), so the placement
+```
+
+The timer compensates the total `L_dig` (the same re-ratification
+definition 2's correction note above records), which is why the quoted
+`L_tx + T_settle` sentence no longer exists in §3. Definition 1's
+substance is unaffected: the reference point it states — TX-command
+strobe (`resp_tx_req` / `ack_tx_req` / `cmd_tx_start`) to the first
+`tx_valid` word — is exactly the `L_tx` reference point 0010 ratifies,
+and the measurement, recorded numbers and verdicts above are untouched.
+
