@@ -136,14 +136,18 @@ assumes a maximum, derived below, and the front end must meet it.
 |---|---|---|
 | `T_IFS` | LE inter-frame space, receive-to-transmit and transmit-to-receive | 150 us (Core Vol 6 Pt B, 4.1.1; *unverified*; tolerance per same section, *unverified*) |
 | `T_TA` | 802.15.4 aTurnaroundTime | 12 symbol periods; symbol = 16 us at 2.4 GHz O-QPSK, so 192 us (802.15.4 PHY constants, MAC constants clauses; *unverified*) |
-| `L_dig` | Digital latency: last on-air bit received to the TX decision, plus TX decision to the first `tx_valid` word | Resolved in [timing-and-area §3](timing-and-area.md): LE 1M ≤ 10 µs, 802.15.4 ≤ 32 µs |
+| `L_dig` | Digital latency: `L_rx` (last on-air bit received to the end-of-packet decision) plus `L_tx` (TX command to the first `tx_valid` word); the programmed turnaround between them is excluded | Resolved in [timing-and-area §3](timing-and-area.md): LE 1M ≤ 10 µs, 802.15.4 ≤ 32 µs |
 | `D_fe` | Front-end group delay, RX chain plus TX chain (antenna to `rx_valid` plus `tx_valid` to antenna) | Front end |
 | `T_settle` | Maximum time from `fe_tx_en`/`fe_rx_en` change to `fe_ready`=1 | Requirement derived here |
 | `M` | Margin | 10 % of the governing interval, floor 2 us |
 
 `L_dig` is the sum of the RX-side detection latency (from the last bit
 at the antenna to the baseband knowing the packet ended) and the TX-side
-latency (from TX decision to the first word on `tx_dev`). Its value is
+latency (from the TX command to the first word on `tx_dev`). The programmed
+turnaround between the two (the MAC timer's wait,
+[0006](decisions/0006-lower-mac-split.md)) lies outside both, so `L_dig` is
+not the wall-clock interval from the last on-air bit to the first word
+([0010](decisions/0010-digital-latency-reference-points.md)). Its value is
 **not chosen here**.
 
 ### 5.2 Arithmetic

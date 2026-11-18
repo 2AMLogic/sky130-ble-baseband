@@ -9,9 +9,10 @@ half. Environment: OQPSK_NEGATIVE=1 perturbs one expected record so the replay
 must fail (the Makefile `test-oqpsk-negative` target inverts the exit status).
 Exits non-zero if any cocotb test fails.
 
-The RX top reuses rtl/le1m_rx/le1m_rx_disc.v and le1m_rx_cordic.v unchanged
-(the model shares le1m_rx.discriminate), so rtl/baseband.f's `# block: oqpsk_rx`
-section reuses those two entries of the le1m_rx block.
+The RX top shares rtl/le1m_rx/le1m_rx_disc.v, le1m_rx_cordic.v and
+rx_moving_sum.v (the first two instantiated unchanged, the moving sum at N=4),
+so rtl/baseband.f's `# block: oqpsk_rx` section reuses those three entries of
+the le1m_rx block.
 """
 
 import os

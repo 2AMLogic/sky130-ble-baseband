@@ -68,6 +68,31 @@ bench, 32 MHz only; the 16 MHz fallback is not measured, so there `LE_L_DIG_CYCL
 and `OQ_L_DIG_CYCLES` must be overridden with the bounds. They exclude the front
 end's group delay `D_fe`.
 
+The `rx_end`-to-first-word column above is **derived** (`L_DIG_CYCLES` minus the
+measured first column), not measured: the bench's deadline assertion only pins
+`L_rx + L_tx ≈ L_DIG_CYCLES`, and for LE its tolerance (±16 clk) is larger than
+the quoted value. `make test-top-latency` (issue #122) measures the components
+directly, at the TX-command strobe, over a matrix of packets; the record is
+[`verification/top/latency_record.md`](../../verification/top/latency_record.md),
+simulated at RTL level, 32 MHz, cycle counts only, `D_fe` excluded:
+
+| PHY | `L_rx` min/max | `L_tx` min/max | `L_dig` min/max | spread(`L_dig`) | bounds (section 3 @ 32 MHz) |
+|---|---|---|---|---|---|
+| LE 1M | 64 / 73 clk | 5 / 5 clk | 69 / 78 clk | 9 clk | 192 / 128 / 320, spread ≤ 32 clk |
+| 802.15.4 | 37 / 38 clk | 5 / 6 clk | 42 / 43 clk | 1 clk | 512 / 512 / 1024, spread ≤ 128 clk |
+
+Readings of section 3 used by that bench, recorded in the file above and here:
+`L_tx` is measured from the TX-command strobe (`resp_tx_req` / `ack_tx_req` /
+`cmd_tx_start`) to the first `tx_valid` word — the literal "decision cycle"
+reading is the whole programmed turnaround on the timed paths and exceeds the
+`L_tx` bound by construction; the spread bound applies to spread(`L_dig`); the
+LE air-end reference is the group-delay-corrected end of the final bit
+(`packet_stop − 16` samples of the CM-A output, the 33-tap Gaussian's group
+delay), ~64 clk after the reference of the first table — which is why its
+`L_rx` (64–73) is ~64 clk smaller than the 133 above, and why the LE response
+lands 61–70 clk earlier than T_IFS referenced to the corrected end (the
+observation is recorded, nothing retuned: no section 3 bound is exceeded).
+
 ## Not done
 
 - Turnaround override registers (host-interface 0x080): `mac_timer` and its users

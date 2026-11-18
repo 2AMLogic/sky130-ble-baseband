@@ -73,6 +73,8 @@ Newest last. One line per amendment: date, kind, files, issue/PR.
 - 2026-10-18 — revision 1 ratified (this record; issue #9).
 - 2026-10-18 — wording-only: `host-interface.md` interrupt-status gating and error-flag text corrected, adds `ERR_STATUS` and `TX_LENGTH` to the map (issue #15, PR #20). The file is ratified in revision 1; no decision record.
 - 2026-11-15 — substantive: `target-spec.md` Statistics — how an undelivered packet contributes to the LE bit-error count is now defined in the spec; it was an unreviewed harness convention, and a recorded LE BER was a BER/PLR mixture (issue #133, [0009](0009-le-ber-undelivered-packet-accounting.md)). No Target / Fallback / Stretch value changes.
+- 2026-11-15 — substantive (meaning only; no value moves): `timing-and-area.md` §3 and `frontend-interface.md` §5.1 — `L_tx` reference point named as the TX-command strobe, programmed turnaround excluded from `L_dig`, jitter column named as spread(`L_dig`) (record [0010](0010-digital-latency-reference-points.md); issue #146).
+- 2026-11-16 — editorial (wording only; no value moves): `decisions/0010-digital-latency-reference-points.md` — the subadditivity paragraph's comparative aside replaced by the comparison to §3's ratified 1 µs jitter bound (issue #164, PR #168). No decision, enforcement choice or number changes.
 
 ## Rejected
 
