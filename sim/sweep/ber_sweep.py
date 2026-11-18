@@ -103,11 +103,20 @@ def _round(x):
 
 def run_point(row_id, point_index, params, payload_octets, packet_cap, min_errors,
               base_seed, run_index=0, flags=None):
-    """Run one sweep point until ``min_errors`` bit errors or ``packet_cap`` packets."""
+    """Run one sweep point until ``min_errors`` bit errors or ``packet_cap`` packets.
+
+    A bit error is a wrong decision among the bits the receiver actually
+    returned. A synced packet whose delivered length differs from the sent
+    PDU+CRC bit count (the length field read corrupted, or the demodulation
+    exhausted the record) is counted in ``undelivered_packets`` and scored over
+    the comparable prefix only; the un-demodulated remainder is never charged
+    (issue #133, decision 0009). A sync-missed packet still counts as every
+    PDU+CRC bit in error."""
     desc = dict(params.describe(), payload_octets=payload_octets)
     seed = point_seed(row_id, desc, point_index, run_index, base_seed)
     rng = np.random.Generator(np.random.PCG64(seed))
-    errors = bits = packets = sync_misses = crc_failures = clipped = samples = 0
+    errors = packets = sync_misses = crc_failures = clipped = samples = 0
+    bits = undelivered = 0
     steps = 0
     while errors < min_errors and packets < packet_cap:
         payload = bytes(rng.integers(0, 256, payload_octets, dtype=np.uint8).tolist())
@@ -117,16 +126,19 @@ def run_point(row_id, point_index, params, payload_octets, packet_cap, min_error
         ref = np.array(tx[40:], dtype=np.uint8)        # PDU + CRC
         rx = le1m_rx.demodulate(out.iq, out.flags, out.gain)
         packets += 1
-        bits += len(ref)
         clipped += out.clipped
         samples += len(out.iq)
         if not rx["synced"]:
             sync_misses += 1
+            bits += len(ref)
             errors += len(ref)                          # a missed packet loses every bit
             continue
         got = rx["bits"]
-        m = min(len(got), len(ref))
-        errors += int((got[:m] != ref[:m]).sum()) + (len(ref) - m)
+        m = min(len(got), len(ref))                     # the comparable delivered prefix
+        errors += int((got[:m] != ref[:m]).sum())
+        bits += m
+        if len(got) != len(ref):
+            undelivered += 1                            # wrong-length delivery: counted, not charged
         crc_failures += 0 if rx["crc_ok"] else 1
         steps += rx["timing_steps"]
     lower, upper = clopper_pearson(errors, bits)
@@ -146,11 +158,13 @@ def run_point(row_id, point_index, params, payload_octets, packet_cap, min_error
         "bits": bits,
         "errors": errors,
         "ber": _round(errors / bits),
+        "packet_loss": _round((sync_misses + undelivered) / packets),
         "cp_lower": _round(lower),
         "cp_upper": _round(upper),
         "stopped_by": "packet_cap" if capped else "errors",
         "bound_only": capped,
         "sync_misses": sync_misses,
+        "undelivered_packets": undelivered,
         "crc_failures": crc_failures,
         "timing_steps": steps,
         "clipped_samples": clipped,
@@ -222,9 +236,11 @@ def row_summary(points):
         if p["negative_control"] or p["out_of_spec"] or p["ebn0_db"] != TARGET_EBN0_DB:
             continue
         r = rows.setdefault(p["row_id"], {"points": 0, "worst_cp_upper": 0.0,
+                                          "worst_packet_loss": 0.0,
                                           "all_points_measured": True})
         r["points"] += 1
         r["worst_cp_upper"] = max(r["worst_cp_upper"], p["cp_upper"])
+        r["worst_packet_loss"] = max(r["worst_packet_loss"], p.get("packet_loss", 0.0))
         r["all_points_measured"] &= not p["bound_only"]
     for r in rows.values():
         r["ebn0_db"] = TARGET_EBN0_DB
@@ -369,7 +385,15 @@ def build_report(points, args, sha, sha_source=SHA_DERIVED, prng=None):
                     "noise": "complex white, full 8 MHz band, variance from Eb/N0"},
         "receiver": {"model": "sim/model/le1m_rx.py", "arithmetic": "integer",
                      "sync_threshold": f"{le1m_rx.SYNC_NUM}/{1 << le1m_rx.SYNC_DEN_SHIFT}",
-                     "missed_packet_counts_as": "every PDU+CRC bit in error"},
+                     "missed_packet_counts_as": "every PDU+CRC bit in error",
+                     "scoring": "bit errors are wrong decisions among the bits the "
+                                "receiver returned; a synced packet delivered with the "
+                                "wrong length (length field corrupted, or the demodulation "
+                                "exhausted the record) is counted in undelivered_packets "
+                                "and scored over the comparable prefix only — the "
+                                "un-demodulated remainder is not charged (decision 0009); "
+                                "packet_loss is the fraction of packets not delivered "
+                                "intact (sync miss or wrong-length delivery)"},
         "points": points,
         "rows": row_summary(points),
     }

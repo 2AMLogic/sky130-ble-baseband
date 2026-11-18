@@ -127,6 +127,84 @@ def test_row_summary_reports_not_asserts():
     assert r["upper_bound_meets_target"] is False and r["all_points_measured"] is False
 
 
+# ------------------------------------ undelivered-packet accounting (issue #133)
+
+def _noiseless():
+    """A channel no noise, offset or clock error can touch: charges come only
+    from the injected length-field flip."""
+    return cm_a.CmAParams(ebn0_db=float("inf"), cfo_hz=0.0, clock_ppm=0.0)
+
+
+def _flip_tx_length_bit(bit):
+    """Flip one bit of the on-air length octet (tx[48:56], LSB first): the
+    packet the receiver demodulates really does carry the corrupted field,
+    exactly as a noise hit delivers it. 37 with bit ``bit`` flipped."""
+    real = cm_a.generate_packet
+
+    def wrapper(tx, params, rng):
+        tx = list(tx)
+        tx[48 + bit] ^= 1
+        return real(tx, params, rng)
+
+    return wrapper
+
+
+def _force_sync_miss(rx):
+    rx["synced"] = False
+
+
+def _demodulate_wrapper(mutate):
+    real = ber_sweep.le1m_rx.demodulate
+
+    def wrapper(iq, flags=None, gain=None, **kw):
+        rx = real(iq, flags, gain, **kw)
+        mutate(rx)
+        return rx
+
+    return wrapper
+
+
+def test_length_flip_charges_only_demodulated_bits(monkeypatch):
+    """Issue #133: the receiver derives its output length from the received
+    length field. Bit 5 flipped (37 reads as 5, and the flip is inside the
+    delivered 80 bits) makes it return 80 of the 336 PDU+CRC bits; the 256
+    un-demodulated tail bits are not wrong decisions and must not be charged.
+    The no-flip control charges 0, so the assertion cannot pass vacuously."""
+    control = ber_sweep.run_point("t", 0, _noiseless(), 37, 1, 100, 1)
+    assert control["packets"] == 1
+    assert control["errors"] == 0 and control["bits"] == 336
+    assert control["undelivered_packets"] == 0 and control["crc_failures"] == 0
+
+    monkeypatch.setattr(cm_a, "generate_packet", _flip_tx_length_bit(5))
+    flipped = ber_sweep.run_point("t", 0, _noiseless(), 37, 1, 100, 1)
+    assert flipped["packets"] == 1 and flipped["errors"] == 1
+    assert flipped["bits"] == 16 + 8 * 5 + 24            # the delivered prefix only
+    assert flipped["undelivered_packets"] == 1 and flipped["crc_failures"] == 1
+
+
+def test_overlong_delivery_is_counted_undelivered_not_charged(monkeypatch):
+    """Bit 6 flipped (37 reads as 101) makes the receiver demodulate past the
+    packet end until the record exhausts; the surplus bits are handled
+    explicitly — the packet is counted undelivered and only the comparable
+    prefix is scored — never folded into a bit-error charge."""
+    monkeypatch.setattr(cm_a, "generate_packet", _flip_tx_length_bit(6))
+    pt = ber_sweep.run_point("t", 0, _noiseless(), 37, 1, 100, 1)
+    assert pt["packets"] == 1 and pt["errors"] == 1 and pt["bits"] == 336
+    assert pt["undelivered_packets"] == 1 and pt["crc_failures"] == 1
+
+
+def test_sync_miss_convention_is_unchanged(monkeypatch):
+    """A sync-missed packet still counts as every PDU+CRC bit in error — the
+    convention the committed record documents as ``missed_packet_counts_as``.
+    It has its own counter and is not an undelivered wrong-length delivery."""
+    monkeypatch.setattr(ber_sweep.le1m_rx, "demodulate",
+                        _demodulate_wrapper(_force_sync_miss))
+    missed = ber_sweep.run_point("t", 0, _noiseless(), 37, 1, 100, 1)
+    assert missed["sync_misses"] == 1
+    assert missed["errors"] == 336 and missed["bits"] == 336
+    assert missed["undelivered_packets"] == 0
+
+
 # ------------------------------------------------------------ shards and merge
 
 TINY = ["--packet-cap", "2", "--max-length-packet-cap", "2"]
