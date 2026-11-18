@@ -89,8 +89,11 @@ scored over the comparable prefix, never charged for bits it did not demodulate
 `packet_loss` is the fraction of packets not delivered intact (sync miss or
 wrong-length delivery) and qualifies a BER row. A sync-missed packet counts as
 every PDU+CRC bit in error. `rows` reports, per row at 16 dB, the worst upper
-bound, the worst `packet_loss` and whether the bound is ≤ 1e-3; that is a report
-for the evidence record, not a claim that the row is met.
+bound, the worst `packet_loss`, whether the bound is ≤ 1e-3, whether the loss
+is ≤ 1e-2 and `row_passes` — the conjunction of the two, since decision
+[0011](../spec/decisions/0011-le-packet-loss-bound.md) a row passes only if
+both hold; that is a report for the evidence record, not a claim that the row
+is met.
 `negative_control` and `out_of_spec` points are excluded from `rows`.
 
 ## The committed LE 1M sweep (`sim/results/2026-11-14-88245d69b74d/`)

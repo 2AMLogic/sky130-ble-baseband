@@ -36,6 +36,9 @@ FORMAT = 1
 CONFIDENCE = 0.95
 MIN_ERRORS = 100
 TARGET_BER = 1e-3
+TARGET_PACKET_LOSS = 1e-2            # provisional ceiling, decision 0011: the LE 1M
+                                     # row passes only if the BER upper bound and the
+                                     # graded packet loss both meet their ceilings
 TARGET_EBN0_DB = 16.0
 SPEC_CFO_HZ = 150e3
 OUT_OF_SPEC_CFO_HZ = 250e3            # beyond the stretch row: flagged
@@ -245,7 +248,10 @@ def row_summary(points):
     for r in rows.values():
         r["ebn0_db"] = TARGET_EBN0_DB
         r["target_ber"] = TARGET_BER
+        r["target_packet_loss"] = TARGET_PACKET_LOSS
         r["upper_bound_meets_target"] = r["worst_cp_upper"] <= TARGET_BER
+        r["packet_loss_meets_target"] = r["worst_packet_loss"] <= TARGET_PACKET_LOSS
+        r["row_passes"] = r["upper_bound_meets_target"] and r["packet_loss_meets_target"]
         r["note"] = ("reported by this run; a capped point is an upper bound, not a measurement; "
                      "ratified-row claims need a separate evidence record")
     return {k: rows[k] for k in sorted(rows)}
@@ -473,8 +479,11 @@ def main(argv=None):
     report = build_report(points, args, sha, sha_source)
     write_report(report, out)
     for row_id, r in report["rows"].items():
-        print(f"row {row_id}: worst cp_upper at {TARGET_EBN0_DB:g} dB = {r['worst_cp_upper']:.3e}; "
-              f"upper bound meets {TARGET_BER:g}: {r['upper_bound_meets_target']} "
+        print(f"row {row_id}: worst cp_upper at {TARGET_EBN0_DB:g} dB = {r['worst_cp_upper']:.3e}, "
+              f"worst packet loss = {r['worst_packet_loss']:.3e}; "
+              f"upper bound meets {TARGET_BER:g}: {r['upper_bound_meets_target']}, "
+              f"loss meets {TARGET_PACKET_LOSS:g}: {r['packet_loss_meets_target']}, "
+              f"row passes: {r['row_passes']} "
               f"(reported, not asserted)")
     print(f"wrote {out}")
     return 0
