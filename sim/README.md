@@ -163,7 +163,8 @@ its **zero-offset** point (BER 9.3e-03 at 16 dB), which is 160x worse than the
 the offset extremes, and BER is non-monotonic in Eb/N0 at several offsets. That
 pattern points at the receiver model rather than at the stop rule or the caps;
 it is a receiver finding, tracked separately, and nothing here was tuned to make
-a row pass. `le1m_drift` misses by about 1.7x on three points.
+a row pass. `le1m_drift` misses on three of its 16 dB points, by 1.38x, 1.63x
+and 1.69x of the 1e-3 target.
 
 **Superseded for LE BER readings** by the corrected-accounting record below:
 those two row misses were the error-accounting artifact of decision

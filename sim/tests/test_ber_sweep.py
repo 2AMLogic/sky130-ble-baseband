@@ -203,6 +203,13 @@ def _rewrite(path, **changes):
     path.write_text(json.dumps(rep, indent=1, sort_keys=True) + "\n")
 
 
+def _drop(path, *keys):
+    rep = json.loads(path.read_text())
+    for k in keys:
+        del rep[k]
+    path.write_text(json.dumps(rep, indent=1, sort_keys=True) + "\n")
+
+
 @pytest.fixture(scope="module")
 def tiny(tmp_path_factory):
     """One non-sharded tiny full run and one tiny shard per row, SHA made clean."""
@@ -377,6 +384,69 @@ def test_merge_refuses_mixed_numpy_versions(tiny, tmp_path, capsys):
     _rewrite(d / "le1m_clock.json", prng={"family": "PCG64", "numpy_version": "0.0.1"})
     assert ber_sweep.main(["--merge", str(d), "--out", str(tmp_path / "o.json")]) == 1
     assert "prng" in capsys.readouterr().err
+    assert not (tmp_path / "o.json").exists()
+
+
+# ---------------------------------- shard-shape validation in the merge (#143)
+
+MISSING_KEY_CASES = ["prng", "stop_rule", "base_seed", "sim_git_sha", "points"]
+
+
+@pytest.mark.parametrize("key", MISSING_KEY_CASES)
+def test_merge_refuses_a_shard_missing_a_required_key(tiny, tmp_path, capsys, key):
+    """The key is dropped from every shard, so the agreement loop cannot catch
+    it as a mismatch: the merge must refuse it cleanly, naming the shard and
+    key, instead of dying on an uncaught KeyError (issue #143)."""
+    d = _copy(tiny[1], tmp_path)
+    for f in d.iterdir():
+        _drop(f, key)
+    assert ber_sweep.main(["--merge", str(d), "--out", str(tmp_path / "o.json")]) == 1
+    err = capsys.readouterr().err
+    assert key in err and ".json" in err
+    assert not (tmp_path / "o.json").exists()
+
+
+def test_merge_carries_a_falsy_shard_prng_through_verbatim(tiny, tmp_path):
+    """{} is falsy-but-present: the merge must not fall back to the merging
+    host's NumPy, which is the misattribution the prng record exists to prevent
+    (issue #143). The shard value is carried through as it stands."""
+    d = _copy(tiny[1], tmp_path)
+    for f in d.iterdir():
+        _rewrite(f, prng={})
+    out = tmp_path / "ber.json"
+    assert ber_sweep.main(["--merge", str(d), "--out", str(out)]) == 0
+    assert json.loads(out.read_text())["prng"] == {}
+
+
+def test_merge_refuses_a_null_shard_prng(tiny, tmp_path, capsys):
+    """JSON null is not a PRNG record: refused like a missing key, never
+    silently replaced by the merging host's NumPy."""
+    d = _copy(tiny[1], tmp_path)
+    for f in d.iterdir():
+        _rewrite(f, prng=None)
+    assert ber_sweep.main(["--merge", str(d), "--out", str(tmp_path / "o.json")]) == 1
+    assert "prng" in capsys.readouterr().err
+    assert not (tmp_path / "o.json").exists()
+
+
+def test_merge_refuses_prng_present_in_only_some_shards(tiny, tmp_path, capsys):
+    d = _copy(tiny[1], tmp_path)
+    _drop(d / "le1m_clock.json", "prng")
+    assert ber_sweep.main(["--merge", str(d), "--out", str(tmp_path / "o.json")]) == 1
+    assert "prng" in capsys.readouterr().err
+    assert not (tmp_path / "o.json").exists()
+
+
+def test_merge_refuses_a_partial_stop_rule(tiny, tmp_path, capsys):
+    """stop_rule present but missing min_errors: the merge reads the nested
+    caps, so a uniform partial stop rule must be refused cleanly, not crash on
+    the nested key (issue #143)."""
+    d = _copy(tiny[1], tmp_path)
+    for f in d.iterdir():
+        _rewrite(f, stop_rule={"packet_cap": 2, "max_length_packet_cap": 2})
+    assert ber_sweep.main(["--merge", str(d), "--out", str(tmp_path / "o.json")]) == 1
+    err = capsys.readouterr().err
+    assert "min_errors" in err and ".json" in err
     assert not (tmp_path / "o.json").exists()
 
 

@@ -272,7 +272,7 @@ def report_preamble(args, sha, sha_source=None, prng=None):
         "channel_model": CHANNEL_MODEL,
         "mode": "quick" if args.quick else "full",
         "sim_git_sha": sha,
-        "prng": prng or {"family": "PCG64", "numpy_version": np.__version__},
+        "prng": prng if prng is not None else {"family": "PCG64", "numpy_version": np.__version__},
         "base_seed": args.seed,
         "stop_rule": {"min_errors": args.min_errors, "packet_cap": args.packet_cap,
                       "max_length_packet_cap": args.max_length_packet_cap,
@@ -356,6 +356,10 @@ class MergeError(Exception):
     pass
 
 
+REQUIRED_SHARD_KEYS = ("base_seed", "stop_rule", "sim_git_sha", "prng", "points")
+STOP_RULE_KEYS = ("min_errors", "packet_cap", "max_length_packet_cap")
+
+
 def merge_shards(shard_dir, *, full_grid, build_report):
     """Assemble the full-grid report from per-row shard files in ``shard_dir``.
 
@@ -363,9 +367,11 @@ def merge_shards(shard_dir, *, full_grid, build_report):
     recomputes ``rows`` with that driver's own verdict rule.
 
     Refuses (MergeError naming the row where there is one) on a missing,
-    duplicate or partial row, on shards that disagree on seed / run index /
-    mode / stop rule / SHA / SHA provenance / NumPy, and on a dirty-SHA or
-    quick-mode shard."""
+    duplicate or partial row; on a shard missing a required field (``mode``,
+    ``base_seed``, ``stop_rule`` with its ``min_errors`` / ``packet_cap`` /
+    ``max_length_packet_cap``, ``sim_git_sha``, ``prng`` or ``points``); on
+    shards that disagree on seed / run index / stop rule / SHA / SHA
+    provenance / NumPy; and on a dirty-SHA or quick-mode shard."""
     names = sorted(n for n in os.listdir(shard_dir) if n.endswith(".json"))
     if not names:
         raise MergeError(f"no shard files in {shard_dir}")
@@ -377,13 +383,24 @@ def merge_shards(shard_dir, *, full_grid, build_report):
     for n, rep in shards:
         if rep.get("mode") != "full":
             raise MergeError(f"{n}: mode is {rep.get('mode')!r}, only full-mode shards merge")
-        if str(rep.get("sim_git_sha", "")).endswith("-dirty") or rep.get("sim_git_sha") == "unknown":
-            raise MergeError(f"{n}: sim_git_sha {rep.get('sim_git_sha')!r} is not a clean commit")
-        for key in ("base_seed", "stop_rule", "sim_git_sha", "mode", "sim_git_sha_source",
-                    "prng"):
-            if rep.get(key, SHA_DERIVED) != first.get(key, SHA_DERIVED):
-                raise MergeError(f"{n}: {key} {rep.get(key)!r} disagrees with "
-                                 f"{shards[0][0]} ({first.get(key)!r})")
+        for key in REQUIRED_SHARD_KEYS:
+            if rep.get(key) is None:
+                raise MergeError(f"{n}: missing {key}")
+        sr = rep["stop_rule"]
+        for key in STOP_RULE_KEYS:
+            if sr.get(key) is None:
+                raise MergeError(f"{n}: stop_rule missing {key}")
+        if str(rep["sim_git_sha"]).endswith("-dirty") or rep["sim_git_sha"] == "unknown":
+            raise MergeError(f"{n}: sim_git_sha {rep['sim_git_sha']!r} is not a clean commit")
+        for key in ("base_seed", "stop_rule", "sim_git_sha", "prng"):
+            if rep[key] != first[key]:
+                raise MergeError(f"{n}: {key} {rep[key]!r} disagrees with "
+                                 f"{shards[0][0]} ({first[key]!r})")
+        if (rep.get("sim_git_sha_source", SHA_DERIVED)
+                != first.get("sim_git_sha_source", SHA_DERIVED)):
+            raise MergeError(f"{n}: sim_git_sha_source {rep.get('sim_git_sha_source')!r} "
+                             f"disagrees with {shards[0][0]} "
+                             f"({first.get('sim_git_sha_source')!r})")
     runs = {p["run_index"] for _, rep in shards for p in rep["points"]}
     if len(runs) != 1:
         raise MergeError(f"shards disagree on run_index: {sorted(runs)}")
