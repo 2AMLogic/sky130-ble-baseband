@@ -3,6 +3,11 @@
 Chronological record of merged PRs and closed issues, maintained by the Guide
 triage role. Newest first.
 
+### 2026-11-19
+
+- **PR #177**: fix(top): retune LE_L_DIG_CYCLES to the group-delay-corrected air end (139 -> 74)
+- **Issue #145** (closed): Decide the LE air-end reference convention: LE_L_DIG_CYCLES=139 vs measured L_dig 69-78 clk
+
 ### 2026-11-18
 
 - **PR #195**: fix: refuse shards missing provenance fields instead of silent fallbacks
