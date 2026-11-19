@@ -199,7 +199,7 @@
         "role": "testbench",
         "path": "verification/top/test_top.py",
         "passed": true,
-        "content_hash": "sha256:b9e436bdbfe434dc4ed2ee0dc20068d45af57ee495fd0f3c220fa13404c5d709"
+        "content_hash": "sha256:7bc784e3613089e826c8a0198ee254fed1424abbe6d350f2c7635dc1cd73a4b6"
       },
       {
         "check": "present",

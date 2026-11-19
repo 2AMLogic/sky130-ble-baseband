@@ -51,13 +51,17 @@ None of these changes a ratified value; they are the integration decisions.
 
 ## L_DIG_CYCLES
 
-`make test-top` prints, at 32 MHz and simulated at RTL level, the end of the last
-packet sample to `rx_end` and to the first `tx_valid` word:
+`make test-top` prints, at 32 MHz and simulated at RTL level, the air end to
+`rx_end` and to the first `tx_valid` word. The air end is measured on the
+stimulus waveform, per PHY: 15.4 the first sample after the last frame word;
+LE 1M the group-delay-corrected end of the final bit (CM-A `packet_stop - 16`
+samples; the 33-tap Gaussian's 16-sample group delay, `sim/channel/cm_a.py`).
+Both top benches (`test_top.py`, `test_latency.py`) use the same reference:
 
-| PHY | end of packet to `rx_end` | `rx_end` to first word (derived) | `L_DIG_CYCLES` set to |
+| PHY | air end to `rx_end` (`L_rx`) | `rx_end` to first word (derived) | `L_DIG_CYCLES` set to |
 |---|---|---|---|
 | 15.4 | 34 clk | 7 clk | 41 |
-| LE 1M | 133 clk | 6 clk | 139 |
+| LE 1M | 68 clk | 6 clk | 74 |
 
 With these values the first word lands within 1 clk of the 192 us / 150 us
 deadline in the bench (it asserts +/-8 and +/-16 clk; the LE air end is known to
@@ -88,10 +92,12 @@ reading is the whole programmed turnaround on the timed paths and exceeds the
 `L_tx` bound by construction; the spread bound applies to spread(`L_dig`); the
 LE air-end reference is the group-delay-corrected end of the final bit
 (`packet_stop − 16` samples of the CM-A output, the 33-tap Gaussian's group
-delay), ~64 clk after the reference of the first table — which is why its
-`L_rx` (64–73) is ~64 clk smaller than the 133 above, and why the LE response
-lands 61–70 clk earlier than T_IFS referenced to the corrected end (the
-observation is recorded, nothing retuned: no section 3 bound is exceeded).
+delay) in both benches and in the table above (issue #145). `LE_L_DIG_CYCLES`
+= 74 is `make test-top`'s one-packet `L_dig` under that reference (68 + 6),
+inside this matrix's 69–78 window; the timer's residual across packets is
+`late = L_dig − 74`, bounded by spread(`L_dig`) = 9 clk (|74 − 69| = 5,
+|74 − 78| = 4), inside decision 0006's ratified ±64-cycle (±2 µs) LE T_IFS
+tolerance — no section 3 bound is exceeded.
 
 ## Not done
 

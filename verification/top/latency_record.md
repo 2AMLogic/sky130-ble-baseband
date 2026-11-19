@@ -107,6 +107,19 @@ measurement and must fail with `expected=` (negative control below).
   moves); a follow-up issue should decide whether the LE reference in
   `test_top.py` should move to the group-delay-corrected end and whether
   139 should be retuned to match.
+- 2026-11-16, resolved by issue #145 (simulated at RTL level, 32 MHz): the
+  LE air-end reference in `verification/top/test_top.py` moved to the
+  group-delay-corrected end (`packet_stop - 16`, the same index this bench
+  uses) and `LE_L_DIG_CYCLES` was retuned 139 → 74, the `make test-top`
+  one-packet `L_dig` under the new reference (68 `L_rx` + 6 `L_tx`),
+  inside the 69–78 window above. The relation is
+  `late = L_dig − LE_L_DIG_CYCLES`: the bench run prints the first response
+  word 4800 clk after the corrected air end, i.e. `late = 74 − 74 = 0`;
+  across this matrix `max|L_dig − 74| ≤ spread(L_dig) = 9 clk`
+  (|74 − 69| = 5, |74 − 78| = 4), inside decision 0006's ratified
+  ±64-cycle (±2 µs) LE T_IFS tolerance. The `rtl/top/README.md` table now
+  carries 68/6/74 and its prose no longer says "nothing retuned"; the
+  bullet above is left intact as the record of the pre-#145 state.
 - Spread is dominated by the strobe-grid phase, not by length: the LE
   `L_rx` range (64–73) spans the 4 short packets and the 257-octet maximum
   alike, and the 15.4 spread is 1 clk. This matches section 3's rationale
