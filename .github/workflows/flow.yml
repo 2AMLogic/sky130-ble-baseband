@@ -3,6 +3,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  merge_group:
 jobs:
   test-lint:
     runs-on: ubuntu-24.04

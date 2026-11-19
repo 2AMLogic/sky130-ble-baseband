@@ -13,7 +13,8 @@ here is **simulated** and says so.
 | `model/le1m_tx.py` | Integer LE 1M TX reference model (PDU to whitened, CRC'd, Gaussian-shaped `tx_dev` words); trace format in [model/trace_format.md](model/trace_format.md); `model/golden/tx_adv_ch37.trace` is a generated golden trace |
 | `channel/cm_a_oqpsk.py` | CM-A for 802.15.4: the TX model's O-QPSK waveform through the same offset, chip-clock and timing-phase (one chip), carrier-phase, AGC and 8-bit stages; AWGN set by SNR in a 2 MHz noise bandwidth |
 | `model/oqpsk_tx.py`, `model/oqpsk_rx.py` | Integer 802.15.4 TX and non-coherent RX reference models |
-| `sweep/per_sweep.py` | Seeded PER sweep (statistics and seeding imported from `ber_sweep.py`), writes `results/<date>-<sha>/per.json` |
+| `sweep/per_sweep.py` | Seeded PER sweep, writes `results/<date>-<sha>/per.json` |
+| `sweep/sweep_common.py` | One copy of what every sweep shares: the exact binomial interval, the seed derivation, the CLI and its packet-cap defaults, the grid-run loop, the point-record envelope, the per-row verdict, the report preamble and the shard/merge harness. Each driver keeps its own constants, grids, measurement loop and report sections; the two documented divergences (row-verdict inclusivity, which impairments can be out of spec) are parameters here, not branches |
 | `tests/` | pytest controls |
 
 ## Commands
@@ -57,8 +58,9 @@ After all five shards exist in one `shards/` directory, assemble the full file:
 python3 sim/sweep/ber_sweep.py --merge sim/results/<date>-<sha>/shards   # writes ../ber.json
 ```
 
-`--merge` recomputes `rows` with the same `row_summary` and orders points by grid
-index, so a merge equals a non-sharded run at the same caps. It exits non-zero,
+`--merge` recomputes `rows` with the same `row_summary` (the BER driver's verdict rule,
+passed into the shared merge in `sweep_common.py`) and orders points by grid index, so a
+merge equals a non-sharded run at the same caps. It exits non-zero,
 naming the row or file, on a missing, duplicate or partial row; on shards that
 disagree on seed, run index, mode, stop rule, SHA or SHA provenance; and on a
 `-dirty` SHA or a `--quick` shard, so run shards from a committed tree. Use the
@@ -81,8 +83,19 @@ id from its shards).
 **Reading `ber.json`.** Each point carries seed, errors, bits, 95 % Clopper-Pearson
 bounds, clip count, `stopped_by` and `bound_only`, and the label "simulated,
 CM-A". A `bound_only` point hit its packet cap and is an upper bound, not a
-measurement. `rows` reports, per row at 16 dB, the worst upper bound and whether it
-is ≤ 1e-3; that is a report for the evidence record, not a claim that the row is met.
+measurement. Bit errors are wrong decisions among the bits the receiver
+returned: a packet delivered with the wrong length (length field corrupted, or
+the demodulation exhausted the record) is counted in `undelivered_packets` and
+scored over the comparable prefix, never charged for bits it did not demodulate
+(decision [0009](../spec/decisions/0009-le-ber-undelivered-packet-accounting.md));
+`packet_loss` is the fraction of packets not delivered intact (sync miss or
+wrong-length delivery) and qualifies a BER row. A sync-missed packet counts as
+every PDU+CRC bit in error. `rows` reports, per row at 16 dB, the worst upper
+bound, the worst `packet_loss`, whether the bound is ≤ 1e-3, whether the loss
+is ≤ 1e-2 and `row_passes` — the conjunction of the two, since decision
+[0011](../spec/decisions/0011-le-packet-loss-bound.md) a row passes only if
+both hold; that is a report for the evidence record, not a claim that the row
+is met.
 `negative_control` and `out_of_spec` points are excluded from `rows`.
 
 ## The committed LE 1M sweep (`sim/results/2026-11-14-88245d69b74d/`)
@@ -153,7 +166,13 @@ its **zero-offset** point (BER 9.3e-03 at 16 dB), which is 160x worse than the
 the offset extremes, and BER is non-monotonic in Eb/N0 at several offsets. That
 pattern points at the receiver model rather than at the stop rule or the caps;
 it is a receiver finding, tracked separately, and nothing here was tuned to make
-a row pass. `le1m_drift` misses by about 1.7x on three points.
+a row pass. `le1m_drift` misses on three of its 16 dB points, by 1.38x, 1.63x
+and 1.69x of the 1e-3 target.
+
+**Superseded for LE BER readings** by the corrected-accounting record below:
+those two row misses were the error-accounting artifact of decision
+[0009](../spec/decisions/0009-le-ber-undelivered-packet-accounting.md), not a
+receiver property. This record stays as committed (append-only).
 
 **The negative control.** Point 92, 800 kHz offset at 16 dB, flagged
 `out_of_spec` and excluded from `rows`: BER 1.000 (336 of 336 bits, one sync
@@ -165,6 +184,61 @@ with the same tarball SHA-256) and the same NumPy, and `ber.json` is
 byte-identical except for the `<date>-<sha>` directory name. Verified by
 re-running the `le1m_uniform` shard as a second batch job on the same image: see
 the PR for #55. Cross-machine identity is not claimed (see "Determinism").
+
+## The corrected-accounting LE 1M sweep (`sim/results/2026-11-15-8bdc8843f6f8/`)
+
+**Simulated, CM-A.** The full sweep of issue #133 re-run under decision
+[0009](../spec/decisions/0009-le-ber-undelivered-packet-accounting.md)'s
+accounting: identical grid, seeds (`--seed 1`, `--run-index 0`), packet caps
+and NumPy 1.26.4 as the 2026-11-14 record, so every point replays the same
+packets and differs only in how they are scored. 93 points, produced from the
+tree of commit `8bdc8843f6f8` — the commit that fixed the scoring. Generated
+evidence, not hand-written; the shards are committed beside `ber.json`.
+
+| row | worst CP upper at 16 dB | ≤ 1e-3 | all points measured | worst packet loss |
+|---|---|---|---|---|
+| `le1m_cfo` | 5.102e-05 | **yes** | yes | 1.16e-03 |
+| `le1m_drift` | 2.939e-04 | **yes** | yes | 1.24e-03 |
+| `le1m_clock` | 3.852e-05 | yes | yes | 0 (no loss events) |
+| `le1m_uniform` | 3.920e-05 | yes | yes | 6.50e-04 |
+
+**Both formerly-missing rows now meet 1e-3, and the reason is stated, not
+smuggled.** `le1m_cfo`'s 2026-11-14 miss was one truncated packet charged as
+257 bit errors (16 dB / 0 Hz stopped after 82 packets); the same point under
+corrected scoring runs 10 735 packets and measures BER 2.77e-05, in family with
+its neighbouring offsets. `le1m_drift`'s miss was the same artifact. The
+receiver's packet-level behaviour is unchanged between the records — the
+point seeds are identical, so this comparison is the same noise draw scored
+two ways, not a kinder run. Loss figures sit beside every row above and every
+point in the file: a BER row is qualified by them, per decision 0009.
+
+**Where it ran.** Five per-row shards as `repo-script` Spot batch jobs
+(2AMLogic/2am#6381), heavy image `ami-08688417b66e0c74d`, one `m7i.4xlarge`
+each, no shard reclaimed (`retry_count` 0). The tree shipped as a `git
+archive` tarball of commit `8bdc8843f6f8e991f16c1ebfdb878fc253367cf1`, SHA-256
+`f364e3b87975aa21dba511c9e52513921f0b5e6cb14418ca8f63f924295ee7a1`. Two
+groups, because the fleet's heavy slice had room for three 16-vCPU instances,
+not five: `le1m_cfo` (568 s), `le1m_drift` (675 s) and `le1m_clock` (185 s)
+ran first; `le1m_uniform` (71 s) and `negative_control` (<1 s) were refused at
+launch (`BATCH_HEAVY_MAX_VCPU`) and resubmitted as a second group — the
+documented recovery, also seen on the 2026-11-14 run. Nothing was run locally
+and no cap was lowered.
+
+**The second error path, recorded.** The 2026-11-14 record's rare
+many-errors-per-packet events (the 18 dB packets charged 175 and 164) are *not*
+the truncation path: replay shows `len(got) = 443 > 336` — the length field
+read long from corrupted header bits, the demodulation exhausted the record,
+and ~52 % of the comparable prefix mismatched from bit 4/12 on, a whole-packet
+demodulation derangement. Corrected scoring charges them as they should be
+charged: wrong decisions among bits the receiver returned.
+
+**The negative control.** 800 kHz offset at 16 dB: BER 1.000, CP bounds
+[9.891e-01, 1.000] — fails the row by three orders of magnitude, as a working
+control must.
+
+**Reproducing it.** Same commands as the 2026-11-14 record with the shards
+split as above, at commit `8bdc8843f6f8` (or any tree with the same tarball
+SHA-256) and NumPy 1.26.4; `--sim-git-sha 8bdc8843f6f8` on every shard.
 
 ## PER sweep (802.15.4)
 

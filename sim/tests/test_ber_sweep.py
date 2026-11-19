@@ -1,7 +1,9 @@
-"""BER sweep harness: statistics, seeds, stop rule, JSON contract."""
+"""BER sweep driver: grids, stop rule, row verdict, shards and the JSON contract.
+
+The statistics, seeding and shared scaffolding these exercise through the driver
+are tested directly in test_sweep_common.py."""
 
 import json
-import math
 import os
 import pathlib
 import subprocess
@@ -15,43 +17,7 @@ SWEEP = os.path.join(HERE, "..", "sweep", "ber_sweep.py")
 sys.path[:0] = [os.path.join(HERE, "..", "sweep")]
 import ber_sweep  # noqa: E402
 import cm_a  # noqa: E402
-
-
-@pytest.mark.parametrize("k,n,lo,hi", [
-    (0, 10, 0.0, 0.3084971078187608),
-    (10, 10, 0.6915028921812392, 1.0),
-    (0, 3000, 0.0, 0.0012288708038255115),
-    (100, 1000, 0.08210533435558, 0.12028793651869264),
-    (100, 100000, 0.0008137116819701752, 0.001216136395647647),
-    (1, 33600, 7.535059061229095e-07, 0.00016581143942111533),
-    (5, 50, 0.03327509358902247, 0.21813536643420225),
-])
-def test_clopper_pearson_known_values(k, n, lo, hi):
-    """Reference values from the beta-quantile form of the exact interval."""
-    got_lo, got_hi = ber_sweep.clopper_pearson(k, n)
-    assert got_lo == pytest.approx(lo, rel=1e-6, abs=1e-12)
-    assert got_hi == pytest.approx(hi, rel=1e-6, abs=1e-12)
-
-
-def test_clopper_pearson_zero_errors_closed_form():
-    n = 5000
-    assert ber_sweep.clopper_pearson(0, n)[1] == pytest.approx(1 - 0.025 ** (1.0 / n), rel=1e-9)
-
-
-def test_clopper_pearson_rejects_bad_input():
-    for k, n in ((-1, 10), (11, 10), (0, 0)):
-        with pytest.raises(ValueError):
-            ber_sweep.clopper_pearson(k, n)
-
-
-def test_point_seed_is_stable_and_sensitive():
-    base = ber_sweep.point_seed("r", {"a": 1}, 3, 0, 1)
-    assert base == ber_sweep.point_seed("r", {"a": 1}, 3, 0, 1)
-    assert base == int.from_bytes(__import__("hashlib").sha256(
-        b'["r",{"a":1},3,0,1]').digest()[:8], "big")      # pinned: not Python's hash()
-    for other in (("s", {"a": 1}, 3, 0, 1), ("r", {"a": 2}, 3, 0, 1),
-                  ("r", {"a": 1}, 4, 0, 1), ("r", {"a": 1}, 3, 1, 1), ("r", {"a": 1}, 3, 0, 2)):
-        assert base != ber_sweep.point_seed(*other)
+import sweep_common  # noqa: E402
 
 
 def test_capped_point_is_an_upper_bound_and_measured_point_is_not():
@@ -127,6 +93,180 @@ def test_row_summary_reports_not_asserts():
     assert r["upper_bound_meets_target"] is False and r["all_points_measured"] is False
 
 
+def test_row_summary_worst_packet_loss_is_max_over_on_target_in_spec_points():
+    """Decision 0009's per-row view: ``worst_packet_loss`` is the max over the
+    row's on-target, in-spec, non-control points, and a point missing the key
+    counts as 0.0. Pins the field against silent drops (#192) — without this
+    test, deleting ``worst_fields=("packet_loss",)`` at the call site passes CI."""
+    good = {"row_id": "r", "ebn0_db": ber_sweep.TARGET_EBN0_DB, "cp_upper": 5e-4,
+            "bound_only": False, "negative_control": False, "out_of_spec": False}
+    pts = [dict(good, packet_loss=2e-2),
+           dict(good, cp_upper=6e-4),                          # no packet_loss key -> 0.0
+           dict(good, ebn0_db=12.0, packet_loss=0.5),          # off-target Eb/N0
+           dict(good, out_of_spec=True, packet_loss=0.5),
+           dict(good, negative_control=True, packet_loss=0.5)]
+    r = ber_sweep.row_summary(pts)["r"]
+    assert r["worst_packet_loss"] == 2e-2
+
+
+# --------------------------------- conjunctive LE row verdict (issue #156)
+
+def _graded(row_id="r", cp_upper=5e-4, packet_loss=1e-3, **kw):
+    p = {"row_id": row_id, "ebn0_db": ber_sweep.TARGET_EBN0_DB, "cp_upper": cp_upper,
+         "packet_loss": packet_loss, "bound_only": False,
+         "negative_control": False, "out_of_spec": False}
+    p.update(kw)
+    return p
+
+
+def test_row_passes_only_when_both_bounds_hold():
+    """Decision 0011: the row verdict is the conjunction of the BER upper bound
+    and the graded packet-loss ceiling. A row whose BER bound meets 1e-3 while
+    its loss exceeds the ceiling must fail — the failure mode the issue is
+    about: a receiver that delivers short records on a few percent of packets
+    passes every pre-0011 ratified LE row while losing those packets."""
+    r = ber_sweep.row_summary([_graded()])["r"]
+    assert r["target_ber"] == ber_sweep.TARGET_BER
+    assert r["target_packet_loss"] == ber_sweep.TARGET_PACKET_LOSS
+    assert r["row_passes"] is True
+
+    r = ber_sweep.row_summary([_graded(packet_loss=2e-2)])["r"]
+    assert r["upper_bound_meets_target"] is True
+    assert r["packet_loss_meets_target"] is False
+    assert r["row_passes"] is False
+
+    r = ber_sweep.row_summary([_graded(cp_upper=2e-3, packet_loss=1e-3)])["r"]
+    assert r["packet_loss_meets_target"] is True
+    assert r["row_passes"] is False
+
+    r = ber_sweep.row_summary([_graded(cp_upper=2e-3, packet_loss=2e-2)])["r"]
+    assert r["row_passes"] is False
+
+
+def test_row_loss_verdict_uses_graded_points_only():
+    """Only ratified-Eb/N0 in-spec points feed the loss aggregate. The committed
+    record carries le1m_drift packet_loss 6.17e-02 at 12 dB — below the ratified
+    Eb/N0, correctly excluded by row_summary()'s filter; letting it reach the
+    verdict would fail the row spuriously."""
+    pts = [_graded(packet_loss=1e-3),
+           _graded(cp_upper=9e-1, packet_loss=6.17e-2, ebn0_db=12.0),
+           _graded(packet_loss=1.0, negative_control=True),
+           _graded(packet_loss=1.0, out_of_spec=True)]
+    r = ber_sweep.row_summary(pts)["r"]
+    assert r["points"] == 1
+    assert r["worst_packet_loss"] == 1e-3
+    assert r["row_passes"] is True
+
+
+def test_row_loss_verdict_uses_packet_loss_as_emitted():
+    """Decision 0011 binds ``packet_loss`` as emitted — the fraction of packets
+    not delivered intact (sync miss or wrong-length delivery) — not a
+    recomputation from the per-class counters. The record says which quantity
+    it binds; the verdict applies that quantity as written."""
+    p = _graded(packet_loss=2e-2)
+    p["sync_misses"] = 0
+    p["undelivered_packets"] = 0
+    r = ber_sweep.row_summary([p])["r"]
+    assert r["packet_loss_meets_target"] is False and r["row_passes"] is False
+
+
+def test_row_summary_with_no_graded_points_has_no_rows():
+    """An empty or fully-ungraded sweep produces no row and no verdict — never
+    a silently passing one."""
+    only_nc = _graded(packet_loss=0.0, negative_control=True)
+    assert ber_sweep.row_summary([only_nc]) == {}
+
+
+def test_quick_run_prints_both_verdicts(tmp_path):
+    out = tmp_path / "ber.json"
+    proc = subprocess.run([sys.executable, SWEEP, "--quick", "--out", str(out)],
+                          check=True, capture_output=True, text=True)
+    row_lines = [ln for ln in proc.stdout.splitlines() if ln.startswith("row ")]
+    assert row_lines
+    for ln in row_lines:
+        assert "packet loss" in ln
+        assert "row passes" in ln
+        assert "reported, not asserted" in ln
+
+
+# ------------------------------------ undelivered-packet accounting (issue #133)
+
+def _noiseless():
+    """A channel no noise, offset or clock error can touch: charges come only
+    from the injected length-field flip."""
+    return cm_a.CmAParams(ebn0_db=float("inf"), cfo_hz=0.0, clock_ppm=0.0)
+
+
+def _flip_tx_length_bit(bit):
+    """Flip one bit of the on-air length octet (tx[48:56], LSB first): the
+    packet the receiver demodulates really does carry the corrupted field,
+    exactly as a noise hit delivers it. 37 with bit ``bit`` flipped."""
+    real = cm_a.generate_packet
+
+    def wrapper(tx, params, rng):
+        tx = list(tx)
+        tx[48 + bit] ^= 1
+        return real(tx, params, rng)
+
+    return wrapper
+
+
+def _force_sync_miss(rx):
+    rx["synced"] = False
+
+
+def _demodulate_wrapper(mutate):
+    real = ber_sweep.le1m_rx.demodulate
+
+    def wrapper(iq, flags=None, gain=None, **kw):
+        rx = real(iq, flags, gain, **kw)
+        mutate(rx)
+        return rx
+
+    return wrapper
+
+
+def test_length_flip_charges_only_demodulated_bits(monkeypatch):
+    """Issue #133: the receiver derives its output length from the received
+    length field. Bit 5 flipped (37 reads as 5, and the flip is inside the
+    delivered 80 bits) makes it return 80 of the 336 PDU+CRC bits; the 256
+    un-demodulated tail bits are not wrong decisions and must not be charged.
+    The no-flip control charges 0, so the assertion cannot pass vacuously."""
+    control = ber_sweep.run_point("t", 0, _noiseless(), 37, 1, 100, 1)
+    assert control["packets"] == 1
+    assert control["errors"] == 0 and control["bits"] == 336
+    assert control["undelivered_packets"] == 0 and control["crc_failures"] == 0
+
+    monkeypatch.setattr(cm_a, "generate_packet", _flip_tx_length_bit(5))
+    flipped = ber_sweep.run_point("t", 0, _noiseless(), 37, 1, 100, 1)
+    assert flipped["packets"] == 1 and flipped["errors"] == 1
+    assert flipped["bits"] == 16 + 8 * 5 + 24            # the delivered prefix only
+    assert flipped["undelivered_packets"] == 1 and flipped["crc_failures"] == 1
+
+
+def test_overlong_delivery_is_counted_undelivered_not_charged(monkeypatch):
+    """Bit 6 flipped (37 reads as 101) makes the receiver demodulate past the
+    packet end until the record exhausts; the surplus bits are handled
+    explicitly — the packet is counted undelivered and only the comparable
+    prefix is scored — never folded into a bit-error charge."""
+    monkeypatch.setattr(cm_a, "generate_packet", _flip_tx_length_bit(6))
+    pt = ber_sweep.run_point("t", 0, _noiseless(), 37, 1, 100, 1)
+    assert pt["packets"] == 1 and pt["errors"] == 1 and pt["bits"] == 336
+    assert pt["undelivered_packets"] == 1 and pt["crc_failures"] == 1
+
+
+def test_sync_miss_convention_is_unchanged(monkeypatch):
+    """A sync-missed packet still counts as every PDU+CRC bit in error — the
+    convention the committed record documents as ``missed_packet_counts_as``.
+    It has its own counter and is not an undelivered wrong-length delivery."""
+    monkeypatch.setattr(ber_sweep.le1m_rx, "demodulate",
+                        _demodulate_wrapper(_force_sync_miss))
+    missed = ber_sweep.run_point("t", 0, _noiseless(), 37, 1, 100, 1)
+    assert missed["sync_misses"] == 1
+    assert missed["errors"] == 336 and missed["bits"] == 336
+    assert missed["undelivered_packets"] == 0
+
+
 # ------------------------------------------------------------ shards and merge
 
 TINY = ["--packet-cap", "2", "--max-length-packet-cap", "2"]
@@ -140,6 +280,13 @@ def _rows():
 def _rewrite(path, **changes):
     rep = json.loads(path.read_text())
     rep.update(changes)
+    path.write_text(json.dumps(rep, indent=1, sort_keys=True) + "\n")
+
+
+def _drop(path, *keys):
+    rep = json.loads(path.read_text())
+    for k in keys:
+        del rep[k]
     path.write_text(json.dumps(rep, indent=1, sort_keys=True) + "\n")
 
 
@@ -177,8 +324,8 @@ def test_full_grid_appends_negative_control_last_without_moving_seeds():
 
 
 def test_single_row_shard_defaults_to_named_file(tmp_path, monkeypatch):
-    monkeypatch.setattr(ber_sweep, "SIM", str(tmp_path))
-    monkeypatch.setattr(ber_sweep, "git_sha", lambda: CLEAN_SHA)
+    monkeypatch.setattr(sweep_common, "SIM", str(tmp_path))
+    monkeypatch.setattr(sweep_common, "git_sha", lambda: CLEAN_SHA)
     assert ber_sweep.main(["--only", "le1m_uniform", *TINY]) == 0
     files = list(tmp_path.glob("results/*/shards/*.json"))
     assert [f.name for f in files] == ["le1m_uniform.json"]
@@ -241,8 +388,8 @@ def test_merge_refuses_dirty_and_quick_shards(tiny, tmp_path, capsys):
 
 def test_asserted_sha_is_recorded_as_asserted(tmp_path, monkeypatch):
     """A runner with no repo git root names the commit; the report says so."""
-    monkeypatch.setattr(ber_sweep, "SIM", str(tmp_path))
-    monkeypatch.setattr(ber_sweep, "git_sha",
+    monkeypatch.setattr(sweep_common, "SIM", str(tmp_path))
+    monkeypatch.setattr(sweep_common, "git_sha",
                         lambda: pytest.fail("git must not be consulted for an asserted sha"))
     assert ber_sweep.main(["--only", "le1m_uniform", "--sim-git-sha", CLEAN_SHA, *TINY]) == 0
     files = list(tmp_path.glob("results/*/shards/*.json"))
@@ -254,8 +401,8 @@ def test_asserted_sha_is_recorded_as_asserted(tmp_path, monkeypatch):
 
 
 def test_derived_sha_is_recorded_as_derived(tmp_path, monkeypatch):
-    monkeypatch.setattr(ber_sweep, "SIM", str(tmp_path))
-    monkeypatch.setattr(ber_sweep, "git_sha", lambda: CLEAN_SHA)
+    monkeypatch.setattr(sweep_common, "SIM", str(tmp_path))
+    monkeypatch.setattr(sweep_common, "git_sha", lambda: CLEAN_SHA)
     assert ber_sweep.main(["--only", "le1m_uniform", *TINY]) == 0
     rep = json.loads(next(tmp_path.glob("results/*/shards/*.json")).read_text())
     assert rep["sim_git_sha_source"] == ber_sweep.SHA_DERIVED
@@ -264,7 +411,7 @@ def test_derived_sha_is_recorded_as_derived(tmp_path, monkeypatch):
 @pytest.mark.parametrize("bad", ["", "0123456789AB", "0123", "0123456789ab-dirty",
                                  "unknown", "0123456789ab ", "z123456789ab"])
 def test_asserted_sha_must_be_a_bare_hex_commit_id(tmp_path, monkeypatch, bad):
-    monkeypatch.setattr(ber_sweep, "SIM", str(tmp_path))
+    monkeypatch.setattr(sweep_common, "SIM", str(tmp_path))
     with pytest.raises(SystemExit) as e:
         ber_sweep.main(["--only", "le1m_uniform", "--sim-git-sha", bad, *TINY])
     assert e.value.code == 2
@@ -320,6 +467,69 @@ def test_merge_refuses_mixed_numpy_versions(tiny, tmp_path, capsys):
     assert not (tmp_path / "o.json").exists()
 
 
+# ---------------------------------- shard-shape validation in the merge (#143)
+
+MISSING_KEY_CASES = ["prng", "stop_rule", "base_seed", "sim_git_sha", "points"]
+
+
+@pytest.mark.parametrize("key", MISSING_KEY_CASES)
+def test_merge_refuses_a_shard_missing_a_required_key(tiny, tmp_path, capsys, key):
+    """The key is dropped from every shard, so the agreement loop cannot catch
+    it as a mismatch: the merge must refuse it cleanly, naming the shard and
+    key, instead of dying on an uncaught KeyError (issue #143)."""
+    d = _copy(tiny[1], tmp_path)
+    for f in d.iterdir():
+        _drop(f, key)
+    assert ber_sweep.main(["--merge", str(d), "--out", str(tmp_path / "o.json")]) == 1
+    err = capsys.readouterr().err
+    assert key in err and ".json" in err
+    assert not (tmp_path / "o.json").exists()
+
+
+def test_merge_carries_a_falsy_shard_prng_through_verbatim(tiny, tmp_path):
+    """{} is falsy-but-present: the merge must not fall back to the merging
+    host's NumPy, which is the misattribution the prng record exists to prevent
+    (issue #143). The shard value is carried through as it stands."""
+    d = _copy(tiny[1], tmp_path)
+    for f in d.iterdir():
+        _rewrite(f, prng={})
+    out = tmp_path / "ber.json"
+    assert ber_sweep.main(["--merge", str(d), "--out", str(out)]) == 0
+    assert json.loads(out.read_text())["prng"] == {}
+
+
+def test_merge_refuses_a_null_shard_prng(tiny, tmp_path, capsys):
+    """JSON null is not a PRNG record: refused like a missing key, never
+    silently replaced by the merging host's NumPy."""
+    d = _copy(tiny[1], tmp_path)
+    for f in d.iterdir():
+        _rewrite(f, prng=None)
+    assert ber_sweep.main(["--merge", str(d), "--out", str(tmp_path / "o.json")]) == 1
+    assert "prng" in capsys.readouterr().err
+    assert not (tmp_path / "o.json").exists()
+
+
+def test_merge_refuses_prng_present_in_only_some_shards(tiny, tmp_path, capsys):
+    d = _copy(tiny[1], tmp_path)
+    _drop(d / "le1m_clock.json", "prng")
+    assert ber_sweep.main(["--merge", str(d), "--out", str(tmp_path / "o.json")]) == 1
+    assert "prng" in capsys.readouterr().err
+    assert not (tmp_path / "o.json").exists()
+
+
+def test_merge_refuses_a_partial_stop_rule(tiny, tmp_path, capsys):
+    """stop_rule present but missing min_errors: the merge reads the nested
+    caps, so a uniform partial stop rule must be refused cleanly, not crash on
+    the nested key (issue #143)."""
+    d = _copy(tiny[1], tmp_path)
+    for f in d.iterdir():
+        _rewrite(f, stop_rule={"packet_cap": 2, "max_length_packet_cap": 2})
+    assert ber_sweep.main(["--merge", str(d), "--out", str(tmp_path / "o.json")]) == 1
+    err = capsys.readouterr().err
+    assert "min_errors" in err and ".json" in err
+    assert not (tmp_path / "o.json").exists()
+
+
 # ------------------------------------------- the committed full-sweep evidence
 
 RESULTS = pathlib.Path(SWEEP).parents[1] / "results"
@@ -336,8 +546,8 @@ def test_committed_result_parses_and_its_negative_control_fails_the_row(path):
     deterministic negative control stays a visible failure. A capped point is
     never read as a measurement."""
     rep = json.loads(path.read_text())
-    assert rep["format"] == ber_sweep.FORMAT
-    assert rep["mode"] == "full" and rep["label"] == ber_sweep.LABEL
+    assert rep["format"] == sweep_common.FORMAT
+    assert rep["mode"] == "full" and rep["label"] == sweep_common.LABEL
     assert not str(rep["sim_git_sha"]).endswith("-dirty")
     assert rep["prng"]["numpy_version"] and rep["prng"]["family"] == "PCG64"
 
@@ -355,6 +565,26 @@ def test_committed_result_parses_and_its_negative_control_fails_the_row(path):
         # a row verdict is only reported as met when no point behind it was capped
         if r["upper_bound_meets_target"]:
             assert r["all_points_measured"], f"{row_id}: a capped point cannot meet the target"
+        if r.get("packet_loss_meets_target"):
+            assert r["all_points_measured"], f"{row_id}: a capped point cannot meet the loss ceiling"
+        if r.get("row_passes") is not None:
+            assert r["row_passes"] == (r["upper_bound_meets_target"]
+                                       and r["packet_loss_meets_target"]), row_id
     for p in rep["points"]:
         assert p["bound_only"] == (p["stopped_by"] == "packet_cap")
         assert p["cp_lower"] <= p["cp_upper"]
+
+
+def test_committed_corrected_accounting_record_passes_conjunctive_rule():
+    """Decision 0011 must not retroactively fail recorded evidence: the report
+    path re-run over the committed corrected-accounting record passes all four
+    LE rows — worst graded loss 1.24e-03 against the 1e-2 ceiling."""
+    path = RESULTS / "2026-11-15-8bdc8843f6f8" / "ber.json"
+    if not path.exists():
+        pytest.skip("committed corrected-accounting record not present")
+    rep = json.loads(path.read_text())
+    rows = ber_sweep.row_summary(rep["points"])
+    assert set(rows) == {"le1m_cfo", "le1m_drift", "le1m_clock", "le1m_uniform"}
+    for row_id, r in rows.items():
+        assert r["packet_loss_meets_target"] is True, row_id
+        assert r["row_passes"] is True, row_id
