@@ -9,7 +9,11 @@ designed by AI agents driving
 open-source digital flow: cocotb + Icarus for verification, Yosys for
 synthesis, OpenROAD for place-and-route.
 
-**Status: specification ratified (revision 1); LE 1M reference models (receiver, transmitter) and a seeded BER sweep harness exist in `sim/`; RTL exists for every sub-block and is integrated in `rtl/top/baseband_top.v` (simulated; the synthesis script exists but a full flat run has not completed, see `flow/synth/README.md`; no place-and-route, timing closure or error-rate claim yet).**
+**In CM-A link-level simulation, all four graded LE 1M rows meet the BER
+and packet-loss targets at 16 dB Eb/N0. The 802.15.4 receiver misses the
+PER target at 5 dB SNR.** The full sweeps are recorded in the
+[LE 1M results](sim/results/2026-11-15-8bdc8843f6f8/ber.json) and the
+[802.15.4 results](sim/results/2026-11-14-1564a0ec0cfb/per.json).
 
 **Built agent-native.** Every specification, decision record, testbench, and
 line of documentation here is produced by AI agents working from a ratified
@@ -56,8 +60,8 @@ meet with no software in the loop.
 |---|---|---|---|
 | PHYs | LE 1M GFSK + 802.15.4 O-QPSK | LE 1M only | LE 2M |
 | RX input | 8 Msps complex I/Q, ≤ 8-bit | 4 Msps | — |
-| LE 1M demod | BER ≤ 1e-3 at a ratified Eb/N0 in AWGN, with frequency offset | — | coded PHY |
-| 802.15.4 demod | PER < 1 % (20-octet PSDU) at a ratified SNR | — | — |
+| LE 1M demod | BER ≤ 1e-3 and packet loss ≤ 1 % at Eb/N0 ≤ 16 dB | Same limits at ≤ 18 dB | Same limits at ≤ 14 dB |
+| 802.15.4 demod | PER < 1 % (20-octet PSDU) at SNR ≤ 5 dB in 2 MHz | Same limit at ≤ 7 dB | Same limit at ≤ 3 dB |
 | Turnaround | meets LE T_IFS and 802.15.4 turnaround with margin, in hardware | — | — |
 | Clock (all sky130_fd_sc_hd corners) | 32 MHz | 16 MHz | — |
 | Signoff | DRC + LVS clean | — | — |
@@ -68,7 +72,14 @@ simulated.
 Maturity ladder: spec ratified → reference receiver meets error-rate targets
 in link-level simulation → RTL bit-exact against the reference → turnaround
 timing verified → layout DRC/LVS-clean → timing closed across corners →
-shuttle seat → measured silicon. **Current position: spec ratified (revision 1); the fixed-point reference receiver and transmitter models and the seeded sweep harness have landed, and the full error-rate sweep has not been run, so the receiver is not yet shown to meet the error-rate targets; RTL exists for every sub-block and is integrated in `rtl/top/baseband_top.v`, with the modem blocks bit-exact against the reference model in simulation (decision 0007) and the MAC, host interface and top-level integration covered by cocotb testbenches; no netlist, layout or timing result.**
+shuttle seat → measured silicon.
+
+The integrated RTL passes the modem trace-replay benches and the MAC, host
+interface and top-level cocotb benches. The turnaround bench records
+digital latency in simulated clock cycles at 32 MHz. Physical timing
+closure and layout still depend on synthesis producing the top-level netlist.
+See the [latency record](verification/top/latency_record.md) and
+[synthesis status](flow/synth/README.md).
 
 ## Repo layout
 
@@ -97,11 +108,10 @@ Yosys on `PATH`; details and pinned versions in
 | Synthesis and netlist freshness check (netlist not yet committed) | `make synth`, `make synth-check` | [flow/synth/README.md](flow/synth/README.md) |
 | Reference-model tests (channel, LE 1M RX, LE 1M TX) | `make sim-test` | [sim/README.md](sim/README.md) |
 | TX model tests with CRC negative control | `make model-test` | [sim/README.md](sim/README.md) |
-| BER sweep harness, quick mode (simulated; proves the harness, not the spec row) | `make sim-quick` | [sim/README.md](sim/README.md) |
+| BER and PER sweep harnesses, quick checks | `make sim-quick` | [sim/README.md](sim/README.md) |
+| Full LE 1M BER and packet-loss sweep (simulated) | `.venv/bin/python sim/sweep/ber_sweep.py` | [Run parameters and results](sim/README.md) |
+| Full 802.15.4 PER sweep (simulated) | `.venv/bin/python sim/sweep/per_sweep.py` | [Run parameters and results](sim/README.md) |
 | Tier verdict and hygiene attestation | see [manifests/README.md](manifests/README.md) | [manifests/README.md](manifests/README.md) |
-
-No full error-rate sweep result is recorded yet; there is nothing further
-to reproduce until one lands.
 
 ## License
 
