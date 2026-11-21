@@ -1,0 +1,25 @@
+{
+  "schema": "klt.functional_verification.request/1",
+  "engine": "icarus",
+  "sources": [
+    "../../../rtl/le1m_rx/le1m_rx_fir.v",
+    "../../../rtl/le1m_rx/le1m_rx_disc.v",
+    "../../../rtl/le1m_rx/le1m_rx_cordic.v",
+    "../../../rtl/le1m_rx/rx_moving_sum.v",
+    "../../../rtl/le1m_rx/le1m_rx_sync.v",
+    "../../../rtl/le1m_rx/le1m_rx_pkt.v",
+    "../../../rtl/le1m_rx/le1m_rx.v"
+  ],
+  "hdl_toplevel": "le1m_rx",
+  "testbench": {
+    "module": "bench_le1m_rx",
+    "search_path": "../../../verification/fv"
+  },
+  "options": {
+    "timescale": [
+      "1ns",
+      "1ps"
+    ],
+    "random_seed": 202
+  }
+}

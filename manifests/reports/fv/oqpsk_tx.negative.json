@@ -1,0 +1,57 @@
+{
+  "schema_version": 2,
+  "engine": "icarus",
+  "hdl_toplevel": "oqpsk_tx",
+  "testbench": "bench_oqpsk_tx",
+  "status": "fail",
+  "test_count": 2,
+  "passed_count": 1,
+  "failed_count": 1,
+  "skipped_count": 0,
+  "tests": [
+    {
+      "name": "replay_matches_model",
+      "status": "failed",
+      "sim_time_ns": 82270.0,
+      "real_time_s": 0.5516045093536377,
+      "error_type": "AssertionError",
+      "error_message": "payload0: first mismatch at record group 1 (sample 0, field txdev): rtl=['0'] expected=['40'] (rtl 2054 records, model 2054)"
+    },
+    {
+      "name": "refuses_bad_start",
+      "status": "passed",
+      "sim_time_ns": 184780.0,
+      "real_time_s": 1.237034559249878
+    }
+  ],
+  "coverage": null,
+  "trace": null,
+  "environment": {
+    "engine": "icarus",
+    "engine_version": "13.0",
+    "tools": [],
+    "cocotb_version": "2.0.1",
+    "results_xml": {
+      "path": "flow/build/fv/oqpsk_tx.negative/results_icarus.xml",
+      "scope": "repo",
+      "sha256": "sha256:8893202690368248aefdb0bce8253f5c151d9a2e2c9d53daa429622917e85d27"
+    },
+    "test_log": {
+      "path": "flow/build/fv/oqpsk_tx.negative/test_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:513fd8657393dacb6eeeaeca9201fefc6fdf28b370f1def96cb76a52afdcce5b"
+    },
+    "build_log": {
+      "path": "flow/build/fv/oqpsk_tx.negative/build_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "random_seed": 202,
+    "source_defines": {},
+    "env": {
+      "OQPSK_NEGATIVE": "1"
+    },
+    "initial_state": null,
+    "sdf": null
+  }
+}

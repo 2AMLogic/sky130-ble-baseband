@@ -1,0 +1,58 @@
+{
+  "schema_version": 2,
+  "engine": "icarus",
+  "hdl_toplevel": "baseband_top",
+  "testbench": "test_latency",
+  "status": "fail",
+  "test_count": 2,
+  "passed_count": 1,
+  "failed_count": 1,
+  "skipped_count": 0,
+  "tests": [
+    {
+      "name": "latency_le1m",
+      "status": "failed",
+      "sim_time_ns": 1594585.0,
+      "real_time_s": 24.30521321296692,
+      "error_type": "AssertionError",
+      "error_message": "le1m L_dig max: got=78 expected=<=68"
+    },
+    {
+      "name": "latency_oqpsk",
+      "status": "passed",
+      "sim_time_ns": 3701985.0,
+      "real_time_s": 88.00029683113098
+    }
+  ],
+  "coverage": null,
+  "trace": null,
+  "environment": {
+    "engine": "icarus",
+    "engine_version": "13.0",
+    "tools": [],
+    "cocotb_version": "2.0.1",
+    "results_xml": {
+      "path": "flow/build/fv/top_latency.negative/results_icarus.xml",
+      "scope": "repo",
+      "sha256": "sha256:f464144d9ed8a2466d8d2ee95c2025f199fa51cc091461dd293df6de50741fbe"
+    },
+    "test_log": {
+      "path": "flow/build/fv/top_latency.negative/test_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:5d8bdffc26146511c6203689ea5a38f03deb8d259c45590e8c0c9a62bb40fb8d"
+    },
+    "build_log": {
+      "path": "flow/build/fv/top_latency.negative/build_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "random_seed": 202,
+    "source_defines": {},
+    "env": {
+      "LATENCY_JSON": "latency.json",
+      "LATENCY_NEGATIVE": "1"
+    },
+    "initial_state": null,
+    "sdf": null
+  }
+}

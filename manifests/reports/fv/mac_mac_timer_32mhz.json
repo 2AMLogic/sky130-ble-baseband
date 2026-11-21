@@ -1,0 +1,73 @@
+{
+  "schema_version": 2,
+  "engine": "icarus",
+  "hdl_toplevel": "mac_timer",
+  "testbench": "test_mac_timer",
+  "status": "pass",
+  "test_count": 5,
+  "passed_count": 5,
+  "failed_count": 0,
+  "skipped_count": 0,
+  "tests": [
+    {
+      "name": "latency_is_exactly_n",
+      "status": "passed",
+      "sim_time_ns": 405.0,
+      "real_time_s": 0.001561880111694336
+    },
+    {
+      "name": "cancel_before_expiry",
+      "status": "passed",
+      "sim_time_ns": 215.0,
+      "real_time_s": 0.000972747802734375
+    },
+    {
+      "name": "cancel_on_expiry_edge_wins",
+      "status": "passed",
+      "sim_time_ns": 175.0,
+      "real_time_s": 0.0006334781646728516
+    },
+    {
+      "name": "rearm_same_edge_as_expiry",
+      "status": "passed",
+      "sim_time_ns": 195.0,
+      "real_time_s": 0.00067901611328125
+    },
+    {
+      "name": "restart_midway_reloads",
+      "status": "passed",
+      "sim_time_ns": 164.9999999999999,
+      "real_time_s": 0.0006213188171386719
+    }
+  ],
+  "coverage": null,
+  "trace": null,
+  "environment": {
+    "engine": "icarus",
+    "engine_version": "13.0",
+    "tools": [],
+    "cocotb_version": "2.0.1",
+    "results_xml": {
+      "path": "flow/build/fv/mac_mac_timer_32mhz/results_icarus.xml",
+      "scope": "repo",
+      "sha256": "sha256:060a2f765248da1dded13e4ca9c510986cc9cde270158e1c1c64c27aec5763aa"
+    },
+    "test_log": {
+      "path": "flow/build/fv/mac_mac_timer_32mhz/test_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:c565b48742999f8673aa9ab145e565e4bc37b969ae4d23166e6cff419ee05820"
+    },
+    "build_log": {
+      "path": "flow/build/fv/mac_mac_timer_32mhz/build_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "random_seed": 202,
+    "source_defines": {},
+    "env": {
+      "MAC_CLK_MHZ": "32"
+    },
+    "initial_state": null,
+    "sdf": null
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "schema_version": 2,
+  "engine": "icarus",
+  "hdl_toplevel": "mac_le_resp",
+  "testbench": "test_mac_le_resp",
+  "status": "fail",
+  "test_count": 6,
+  "passed_count": 5,
+  "failed_count": 1,
+  "skipped_count": 0,
+  "tests": [
+    {
+      "name": "tifs_lands_on_150us_count",
+      "status": "failed",
+      "sim_time_ns": 371685.0,
+      "real_time_s": 1.067397117614746,
+      "error_type": "AssertionError",
+      "error_message": "T_IFS [4800, 4800, 4800, 4800] expected=4801"
+    },
+    {
+      "name": "crc_fail_suppresses_response",
+      "status": "passed",
+      "sim_time_ns": 93365.0,
+      "real_time_s": 0.2678380012512207
+    },
+    {
+      "name": "filter_reject_and_disable",
+      "status": "passed",
+      "sim_time_ns": 97065.0,
+      "real_time_s": 0.28713202476501465
+    },
+    {
+      "name": "abort_and_disable_during_ifs",
+      "status": "passed",
+      "sim_time_ns": 141875.0,
+      "real_time_s": 0.40036511421203613
+    },
+    {
+      "name": "own_tx_end_gives_ifs_after_tx",
+      "status": "passed",
+      "sim_time_ns": 89665.0,
+      "real_time_s": 0.25781726837158203
+    },
+    {
+      "name": "back_to_back_and_rearm_at_expiry",
+      "status": "passed",
+      "sim_time_ns": 224115.0,
+      "real_time_s": 0.636038064956665
+    }
+  ],
+  "coverage": null,
+  "trace": null,
+  "environment": {
+    "engine": "icarus",
+    "engine_version": "13.0",
+    "tools": [],
+    "cocotb_version": "2.0.1",
+    "results_xml": {
+      "path": "flow/build/fv/mac_mac_le_resp_32mhz.negative/results_icarus.xml",
+      "scope": "repo",
+      "sha256": "sha256:2c1d6ac05b6a63290573db92a0c1d421326cebf572d530527d7b9881f6d55e84"
+    },
+    "test_log": {
+      "path": "flow/build/fv/mac_mac_le_resp_32mhz.negative/test_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:39df4cac697d4b6a0b620cdbb6cae7a019a85857a68264172a64d69b9f361946"
+    },
+    "build_log": {
+      "path": "flow/build/fv/mac_mac_le_resp_32mhz.negative/build_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "random_seed": 202,
+    "source_defines": {},
+    "env": {
+      "MAC_CLK_MHZ": "32",
+      "MAC_NEGATIVE": "1"
+    },
+    "initial_state": null,
+    "sdf": null
+  }
+}

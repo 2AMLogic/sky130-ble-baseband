@@ -1,0 +1,32 @@
+{
+  "schema": "klt.functional_verification.request/1",
+  "engine": "icarus",
+  "sources": [
+    "../../../rtl/host/host_fifo.v",
+    "../../../rtl/host/host_desc_fifo.v",
+    "../../../rtl/host/host_irq.v",
+    "../../../rtl/host/host_timestamp.v",
+    "../../../rtl/host/host_regs.v",
+    "../../../rtl/host/host_top.v"
+  ],
+  "hdl_toplevel": "host_top",
+  "testbench": {
+    "module": "test_host",
+    "search_path": "../../../verification/host"
+  },
+  "options": {
+    "timescale": [
+      "1ns",
+      "1ps"
+    ],
+    "random_seed": 202
+  },
+  "parameters": {
+    "FIFO_DEPTH": 5,
+    "CLK_PER_US": 16
+  },
+  "env": {
+    "HOST_FIFO_DEPTH": "5",
+    "HOST_CLK_PER_US": "16"
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "schema_version": 2,
+  "engine": "icarus",
+  "hdl_toplevel": "mac_le_resp",
+  "testbench": "test_mac_le_resp",
+  "status": "pass",
+  "test_count": 6,
+  "passed_count": 6,
+  "failed_count": 0,
+  "skipped_count": 0,
+  "tests": [
+    {
+      "name": "tifs_lands_on_150us_count",
+      "status": "passed",
+      "sim_time_ns": 186085.0,
+      "real_time_s": 0.5904643535614014
+    },
+    {
+      "name": "crc_fail_suppresses_response",
+      "status": "passed",
+      "sim_time_ns": 46965.0,
+      "real_time_s": 0.1445624828338623
+    },
+    {
+      "name": "filter_reject_and_disable",
+      "status": "passed",
+      "sim_time_ns": 49064.99999999997,
+      "real_time_s": 0.14972686767578125
+    },
+    {
+      "name": "abort_and_disable_during_ifs",
+      "status": "passed",
+      "sim_time_ns": 71475.0,
+      "real_time_s": 0.22191071510314941
+    },
+    {
+      "name": "own_tx_end_gives_ifs_after_tx",
+      "status": "passed",
+      "sim_time_ns": 44865.0,
+      "real_time_s": 0.13435125350952148
+    },
+    {
+      "name": "back_to_back_and_rearm_at_expiry",
+      "status": "passed",
+      "sim_time_ns": 112115.0,
+      "real_time_s": 0.34475135803222656
+    }
+  ],
+  "coverage": null,
+  "trace": null,
+  "environment": {
+    "engine": "icarus",
+    "engine_version": "13.0",
+    "tools": [],
+    "cocotb_version": "2.0.1",
+    "results_xml": {
+      "path": "flow/build/fv/mac_mac_le_resp_16mhz/results_icarus.xml",
+      "scope": "repo",
+      "sha256": "sha256:d861627c26a2840137c60bffad15874960bb5e3abba6b60b726edbe9ee23eb89"
+    },
+    "test_log": {
+      "path": "flow/build/fv/mac_mac_le_resp_16mhz/test_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:562e5ca8b5fbf30dbc4ad1e0b5c9eef3df3a7e605e65c389b710f3019722b23f"
+    },
+    "build_log": {
+      "path": "flow/build/fv/mac_mac_le_resp_16mhz/build_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "random_seed": 202,
+    "source_defines": {},
+    "env": {
+      "MAC_CLK_MHZ": "16"
+    },
+    "initial_state": null,
+    "sdf": null
+  }
+}
