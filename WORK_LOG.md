@@ -3,6 +3,10 @@
 Chronological record of merged PRs and closed issues, maintained by the Guide
 triage role. Newest first.
 
+### 2026-11-20
+
+- **Issue #38** (closed): T1 item 9 (testbenches shipped): 0007 trace-replay cocotb benches (RTL vs model, bit-exact) and a testbench inventory attested with klt signoff --attest 9
+
 ### 2026-11-19
 
 - **PR #177**: fix(top): retune LE_L_DIG_CYCLES to the group-delay-corrected air end (139 -> 74)
