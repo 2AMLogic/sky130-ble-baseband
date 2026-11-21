@@ -1,0 +1,13 @@
+{
+  "tool": "Yosys 0.68+ (git sha1 a5af9d690, Release, GNU /usr/bin/c++ 13.3.0) [github.com/The-OpenROAD-Project/yosys at HEAD]",
+  "command": "synth -top <module> -abc9",
+  "timeout_s": 300,
+  "noabc": false,
+  "route": "noabc_abc9",
+  "liberty": "flow/build/synth-batch-lib/sky130_fd_sc_hd__tt_025C_1v80.lib",
+  "note": "cells/flops are totals over the module and everything it instantiates; parent rows include their children",
+  "rows": [
+    {"module": "oqpsk_rx_corr", "status": "error", "wall_s": 1.9, "peak_rss_kb": 179068, "cells": null, "flops": null, "noabc": false, "route": "noabc_abc9", "timeout_s": 300},
+    {"module": "le1m_rx_sync", "status": "error", "wall_s": 1.8, "peak_rss_kb": 178588, "cells": null, "flops": null, "noabc": false, "route": "noabc_abc9", "timeout_s": 300}
+  ]
+}

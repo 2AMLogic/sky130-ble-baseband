@@ -46,6 +46,14 @@ none. Peak RSS is recorded for timed-out rows too, because `/usr/bin/time` wraps
 `timeout` rather than the reverse — the earlier `2026-11-06` records have a 0-byte
 `.time` and `"peak_rss_kb": null` for exactly that reason.
 
+Two more shapes, both added for issue 201 (see the section below): `-r ROUTE`
+runs a liberty mapping route (`noabc_map`, `noabc_mapfast`, `noabc_abc9`,
+`noabc_minmap`; `-n` is `-r noabc`), and `-d` runs the ABC-stall diagnostics
+instead of a synth variant (env probe, kept ABC temp dir, standalone
+`yosys-abc` per-command timing), writing `diag.json` + `diag/<module>/`.
+`routes-batch.sh` runs the whole matrix sequentially inside one `repo-script`
+batch shard, off-worker (issue 201 / operator ruling of 2026-10-29).
+
 `SYNTH_MODE=hier` (unset or `flat`: the flat commands are unchanged) runs
 `synth -top` without `-flatten`, then `dfflibmap` and `abc -liberty` per module
 (`SYNTH_ABC_FAST=1` switches to `abc -fast -liberty`).
@@ -157,3 +165,70 @@ half the no-ABC run, i.e. the leaf itself is cheap once ABC is skipped. Only
 item-1 artifact, and `synth.tcl` / `make synth` are unchanged here. Whether
 `SYNTH_MODE=hier`, a restructured leaf, or something else closes #72 is that
 issue's call; this record is its input.
+
+## Where the ABC stall is, and a mapping route that finishes (issue 201)
+
+Recorded in `records/2026-11-21-routes/`. Not run on a worker: one `repo-script`
+Spot batch shard (`rs-20261121T000212Z-0f3552e8-s00`, `m7i.4xlarge`, wall
+2052 s, no reclaim), operator ruling of 2026-10-29 via #72; provenance in
+`run-meta.txt` (job id, instance, image, source tarball and liberty sha256s).
+**Caveat: that image's Yosys is `0.68+` (OpenROAD fork `a5af9d690`), not the
+repo pin `0.67`** — the rows are wall-time evidence for "does a route finish
+at all", not reproducible pin-flow numbers. Per-run cap 300 s, one `yosys` at
+a time, produced by `routes-batch.sh` + `profile.sh -d` / `-r` (this issue).
+Cell counts are not timing claims.
+
+### The stall is real `&fraig -x` work, not extraction and not the handshake
+
+The diagnostics (`diag.json`, `diag/<leaf>/`) separate the three candidates:
+
+- **Not the yosys/ABC handshake deadlock** (klayout-tools#5877 shape): with
+  `COLUMNS=1000 TMPDIR=/tmp stdbuf` (case A) the plain flow still spends the
+  same ~200 s inside ABC before finishing — `oqpsk_rx_corr` **completes in
+  199.4 s** where the 2026-11-14 record "hung", i.e. that earlier stall was
+  the 120 s kill, not a deadlock.
+- **Not Yosys extraction**: the kept-temp run (case B, `abc -nocleanup
+  -showtmp` after `synth -noabc`) shows `input.blif` written promptly
+  (4,051,560 B for `oqpsk_rx_corr`, 4,743,384 B for `le1m_rx_sync`; sha256
+  tails in `diag.json`) — the last log line before silence names extraction
+  only because **ABC's output stays in the pipe until the child exits** (all
+  `ABC:` lines of a finishing run share one timestamp, `caseB.log` line
+  2820+): a quiet log is not an idle process.
+- **ABC itself, specifically the default script's fraig sweep**: standalone
+  `yosys-abc` on the kept `input.blif`, one script command per invocation
+  (case C), pins it — `&get -n; &fraig -x; &put` is 189.8 s of the 190.2 s
+  total on `oqpsk_rx_corr` and exceeds the 299 s budget on `le1m_rx_sync`;
+  every other command (`strash`, `scorr`, `dc2`, `&dch -f; &nf`) is ≤ 0.2 s.
+  (Case C's split steps after `scorr` are invalid — `dc2` needs in-session
+  network state the BLIF round-trip loses, so those `Cannot open input file`
+  lines are a harness artifact, recorded as such; steps 1–3 are the
+  measurement.)
+
+### Trial routes (step 2), both leaves, 300 s cap
+
+| route (`profile.sh -r`) | `oqpsk_rx_corr` | `le1m_rx_sync` |
+|---|---|---|
+| `noabc_map` — `synth -noabc; dfflibmap; abc -liberty` (default ABC script) | ok, 176.7 s, 36,560 cells | **timeout** at 300 s |
+| `noabc_mapfast` — same with `abc -fast` | error (3.6 s): the image's 0.68+ `abc` rejects `-fast` (`abc -fast` exists on pin 0.67) | error (33.9 s), same cause |
+| `noabc_abc9` — `read_liberty -lib; synth -abc9` | error (1.9 s): `ABC9 flow only supported for FPGA synthesis (using '-lut' option)` — abc9 has no liberty standard-cell mode on 0.67 or 0.68+ | error (1.8 s), same |
+| `noabc_minmap` — `synth -noabc; dfflibmap; abc -liberty -script {+strash;,map}` | **ok, 6.8 s**, 45,399 cells, 5,956 flops | **ok, 38.4 s**, 50,965 cells, 9,256 flops |
+
+Flop totals cross-check the `2026-11-14-noabc` generic counts exactly (5,956 /
+9,256). The `noabc_minmap` rows were corrected after collection from the
+recorded `.stat` files — the batch's flop parser missed the enable-flop
+`edfxtp` family (see `run-meta.txt`); the fix is in `profile.sh`.
+
+### Conclusion
+
+**`SYNTH_MODE=minmap` finishes on both leaves** (6.8 s / 38.4 s under the
+300 s cap) and is selectable in `synth.tcl` (`SYNTH_MODE=minmap`): `synth
+-noabc`, `dfflibmap`, then `abc -liberty` with the minimal `strash; map`
+script — the route drops exactly the `&fraig -x` sweep measured above. The
+default (`flat`) and `hier` modes are unchanged; `SYNTH_MODE` unset still
+means `flat`. The mapped cell counts (45 k / 51 k) are higher than the
+default script's (36.5 k where it finishes) because fraig-based sweeping is
+also what shrinks the network — that trade is a cell-count observation, not
+an area or timing claim. The batch runner wiring (`run-batch.sh`) lives on
+`feature/issue-72`, not `main`; selecting the mode there is #72's to wire.
+No `baseband_top` run was made here; the full-top run stays with #72, which
+can now take `SYNTH_MODE=minmap` as its route.
