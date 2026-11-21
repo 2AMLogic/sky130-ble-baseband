@@ -1,0 +1,26 @@
+date_utc: 2026-11-21T00:04:16Z
+host: Linux ip-172-31-70-86 7.0.0-1014-aws #14~24.04.1-Ubuntu SMP PREEMPT Fri Sep 18 21:24:59 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux
+yosys: Yosys 0.68+ (git sha1 a5af9d690, Release, GNU /usr/bin/c++ 13.3.0) [github.com/The-OpenROAD-Project/yosys at HEAD]
+yosys-abc: UC Berkeley, ABC 1.01 (compiled Nov 10 2026 22:40:01)
+stdbuf: /usr/bin/stdbuf
+/usr/bin/time: present
+liberty: flow/build/synth-batch-lib/sky130_fd_sc_hd__tt_025C_1v80.lib
+8e78e14442062dba34d414fca6490b2f6b96038d4510d1438ca44fee31487135  flow/build/synth-batch-lib/sky130_fd_sc_hd__tt_025C_1v80.lib
+rs_commit: 0f3552e8f8caadeb7db8a8364ed6c14c4c4971fd
+rs_source_commit: 0f3552e8f8caadeb7db8a8364ed6c14c4c4971fd
+rs_src_sha256: 54c2c9b4052032f21ae365c4a436560250d1dda4004420b24e320802239b5c78
+batch_group: rs-20261121T000212Z-0f3552e8
+batch_job: rs-20261121T000212Z-0f3552e8-s00
+batch_state: done
+batch_exit_code: 0
+batch_wall_s: 2052
+batch_instance: m7i.4xlarge
+batch_image: ami-08688417b66e0c74d
+batch_retries: 0
+source_tarball: git archive of rs_commit + the pinned liberty staged at flow/build/synth-batch-lib/ (sha above; not a repo file, flow/build/ is gitignored)
+flops_correction: the batch ran profile.sh whose flop parser matched only
+  <lib>__df*/dl* cells; dfflibmap emits enable flops as edfxtp, so the
+  collected rows undercounted flops (e.g. le1m_rx_sync/noabc_minmap said 80).
+  The ok rows' flops were re-derived on 2026-11-21 from the recorded .stat
+  files with the fixed pattern <lib>__(e|s)?(df|dl) (commit that carries it);
+  the .stat files and all logs are as collected, unmodified.

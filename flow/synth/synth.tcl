@@ -6,7 +6,11 @@
 #   SYNTH_OUT   run directory for the reports
 #   SYNTH_NETLIST  path of the netlist to write
 #   SYNTH_MODE  optional: `flat` (default, unset = flat) or `hier` (no -flatten,
-#               per-module ABC; experimental, see flow/synth/README.md)
+#               per-module ABC; experimental, see flow/synth/README.md) or
+#               `minmap` (synth -noabc; dfflibmap; abc -liberty -script
+#               +strash;,map -- skips ABC's fraig sweep, which is where the
+#               default script stalls on oqpsk_rx_corr and le1m_rx_sync; both
+#               leaves finish under it, records/2026-11-21-routes/)
 #   SYNTH_ABC_FAST  optional, hier only: `1` uses `abc -fast -liberty`
 # Cell counts / area from this step are not timing claims (item 42 owns those).
 set top  $::env(SYNTH_TOP)
@@ -36,8 +40,16 @@ if {$mode eq "flat"} {
     } else {
         yosys abc -liberty $lib
     }
+} elseif {$mode eq "minmap"} {
+    # No -flatten: like hier, but the ABC call uses a minimal script
+    # (`strash; map`; the brace keeps Tcl from splitting on the `;`, and
+    # inside yosys the comma in a +script becomes a blank -- the ABC call
+    # is equivalent to `abc -script 'strash; map'`)
+    yosys synth -top $top -noabc
+    yosys dfflibmap -liberty $lib
+    yosys abc -liberty $lib -script {+strash;,map}
 } else {
-    error "SYNTH_MODE must be flat or hier, got '$mode'"
+    error "SYNTH_MODE must be flat, hier or minmap, got '$mode'"
 }
 yosys opt_clean -purge
 yosys tee -o $out/cell_count.rpt stat -liberty $lib

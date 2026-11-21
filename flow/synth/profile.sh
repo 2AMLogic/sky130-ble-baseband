@@ -31,7 +31,8 @@
 #                  split the -p string instead)
 # The `noabc_*` routes need the pinned liberty: resolved like the Makefile
 # (flow/versions.mk + CIEL_HOME/PDK_ROOT), or named with -L. Rows carry the
-# route name; flop counting recognizes liberty flop cells (`<lib>__df*/dl*`)
+# route name; flop counting recognizes liberty flop cells (`<lib>__(e|s)?df*/
+# dl*`, covering the enable (edf*) and scan (sdf*) families beside plain df*)
 # for the mapped routes.
 #
 # `-d` runs the issue-201 stall diagnostics per named module instead of a synth
@@ -170,7 +171,7 @@ parse_stat() { # stat file -> "cells flops" (generic $_DFF or liberty flops)
     /=== design hierarchy ===/ {c=""; f=0; inh=1}
     /^ +[0-9]+ +cells$/ {c=$1}
     $1 ~ /^[0-9]+$/ && $2 ~ /^\$_.*(DFF|DLATCH)/ {f+=$1}
-    pfx != "" && $1 ~ /^[0-9]+$/ && $2 ~ "^" pfx "__(df|dl)" {f+=$1}
+    pfx != "" && $1 ~ /^[0-9]+$/ && $2 ~ "^" pfx "__(e|s)?(df|dl)" {f+=$1}
     END {print (c==""?"null":c), f+0}'
 }
 
