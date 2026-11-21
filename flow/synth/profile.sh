@@ -21,9 +21,14 @@
 #   noabc          synth -top <m> -noabc
 #   noabc_map      synth -top <m> -noabc; dfflibmap -liberty L; abc -liberty L
 #   noabc_mapfast  synth -top <m> -noabc; dfflibmap -liberty L; abc -fast -liberty L
-#   noabc_abc9     read_liberty -lib L; synth -top <m> -noabc; abc9
+#   noabc_abc9     read_liberty -lib L; synth -top <m> -abc9   (probed on the
+#                  pinned 0.67: `abc9` standalone and `abc9 -liberty` do not
+#                  exist for standard cells -- abc9 is LUT/FPGA-only, so this
+#                  route is expected to record an error row naming that)
 #   noabc_minmap   synth -top <m> -noabc; dfflibmap -liberty L;
-#                  abc -liberty L -script +strash;map
+#                  abc -liberty L -script +strash;,map  (ABC sees `strash; map`;
+#                  commas in a +script become blanks, a literal `;` would
+#                  split the -p string instead)
 # The `noabc_*` routes need the pinned liberty: resolved like the Makefile
 # (flow/versions.mk + CIEL_HOME/PDK_ROOT), or named with -L. Rows carry the
 # route name; flop counting recognizes liberty flop cells (`<lib>__df*/dl*`)
@@ -102,8 +107,8 @@ case "$ROUTE" in
   noabc)        MAP_CMD='synth -top <m> -noabc' ;;
   noabc_map)    MAP_CMD='synth -top <m> -noabc; dfflibmap -liberty <LIB>; abc -liberty <LIB>' ;;
   noabc_mapfast) MAP_CMD='synth -top <m> -noabc; dfflibmap -liberty <LIB>; abc -fast -liberty <LIB>' ;;
-  noabc_abc9)   MAP_CMD='synth -top <m> -noabc; abc9' ;;
-  noabc_minmap) MAP_CMD='synth -top <m> -noabc; dfflibmap -liberty <LIB>; abc -liberty <LIB> -script +strash;map' ;;
+  noabc_abc9)   MAP_CMD='synth -top <m> -abc9' ;;
+  noabc_minmap) MAP_CMD='synth -top <m> -noabc; dfflibmap -liberty <LIB>; abc -liberty <LIB> -script +strash;,map' ;;
 esac
 if [ "$ROUTE" = noabc_abc9 ]; then
   PRE_READ="read_verilog -sv <files>; read_liberty -lib <LIB>; hierarchy -check -top <m>; "
@@ -294,7 +299,7 @@ done
   echo "  \"command\": \"$(case $ROUTE in
     plain) echo 'synth -top <module> (generic, no -flatten, no liberty)' ;;
     noabc) echo 'synth -top <module> -noabc (generic, no -flatten, no liberty)' ;;
-    *) echo "$MAP_CMD" | sed 's/<m>/<module>/g; s/<LIB>/<liberty>/' ;;
+    *) echo "$MAP_CMD" | sed 's/<m>/<module>/g; s/<LIB>/<liberty>/g' ;;
   esac)\","
   echo "  \"timeout_s\": $TMO,"
   echo "  \"noabc\": $([ "$ROUTE" = noabc ] && echo true || echo false),"
