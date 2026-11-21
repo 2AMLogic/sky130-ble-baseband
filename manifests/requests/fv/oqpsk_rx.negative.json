@@ -1,0 +1,29 @@
+{
+  "schema": "klt.functional_verification.request/1",
+  "engine": "icarus",
+  "sources": [
+    "../../../rtl/oqpsk/oqpsk_rx_fir.v",
+    "../../../rtl/le1m_rx/le1m_rx_disc.v",
+    "../../../rtl/le1m_rx/le1m_rx_cordic.v",
+    "../../../rtl/le1m_rx/rx_moving_sum.v",
+    "../../../rtl/oqpsk/oqpsk_rx_corr.v",
+    "../../../rtl/oqpsk/oqpsk_rx_sync.v",
+    "../../../rtl/oqpsk/oqpsk_rx_pkt.v",
+    "../../../rtl/oqpsk/oqpsk_rx.v"
+  ],
+  "hdl_toplevel": "oqpsk_rx",
+  "testbench": {
+    "module": "bench_oqpsk_rx",
+    "search_path": "../../../verification/fv"
+  },
+  "options": {
+    "timescale": [
+      "1ns",
+      "1ps"
+    ],
+    "random_seed": 202
+  },
+  "env": {
+    "OQPSK_NEGATIVE": "1"
+  }
+}

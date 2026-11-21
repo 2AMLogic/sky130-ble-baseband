@@ -1,0 +1,32 @@
+{
+  "schema": "klt.functional_verification.request/1",
+  "engine": "icarus",
+  "sources": [
+    "../../../rtl/mac/mac_timer.v",
+    "../../../rtl/mac/mac_trigger.v",
+    "../../../rtl/mac/mac_ack_ctrl.v",
+    "../../../rtl/mac/mac_ackwait.v",
+    "../../../rtl/mac/mac_le_resp.v",
+    "../../../rtl/mac/mac_addr_filter_154.v",
+    "../../../rtl/mac/mac_le_filter.v"
+  ],
+  "hdl_toplevel": "mac_le_resp",
+  "testbench": {
+    "module": "test_mac_le_resp",
+    "search_path": "../../../verification/mac"
+  },
+  "options": {
+    "timescale": [
+      "1ns",
+      "1ps"
+    ],
+    "random_seed": 202
+  },
+  "parameters": {
+    "TIFS_CYCLES": 2400,
+    "L_DIG_CYCLES": 160
+  },
+  "env": {
+    "MAC_CLK_MHZ": "16"
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "schema_version": 2,
+  "engine": "icarus",
+  "hdl_toplevel": "host_top",
+  "testbench": "test_host",
+  "status": "pass",
+  "test_count": 11,
+  "passed_count": 11,
+  "failed_count": 0,
+  "skipped_count": 0,
+  "tests": [
+    {
+      "name": "reset_and_id",
+      "status": "passed",
+      "sim_time_ns": 471.0,
+      "real_time_s": 0.004424571990966797
+    },
+    {
+      "name": "pslverr_and_strobes",
+      "status": "passed",
+      "sim_time_ns": 981.0,
+      "real_time_s": 0.0061321258544921875
+    },
+    {
+      "name": "config_registers",
+      "status": "passed",
+      "sim_time_ns": 441.0,
+      "real_time_s": 0.0029082298278808594
+    },
+    {
+      "name": "command_pulses",
+      "status": "passed",
+      "sim_time_ns": 160.00000000000023,
+      "real_time_s": 0.0008561611175537109
+    },
+    {
+      "name": "tx_fifo",
+      "status": "passed",
+      "sim_time_ns": 23341.0,
+      "real_time_s": 0.14313054084777832
+    },
+    {
+      "name": "rx_fifo_and_overflow",
+      "status": "passed",
+      "sim_time_ns": 12090.999999999996,
+      "real_time_s": 0.07204079627990723
+    },
+    {
+      "name": "rx_fifo_rollback",
+      "status": "passed",
+      "sim_time_ns": 12031.0,
+      "real_time_s": 0.08098363876342773
+    },
+    {
+      "name": "rx_fifo_rollback_near_full",
+      "status": "passed",
+      "sim_time_ns": 8971.0,
+      "real_time_s": 0.056139230728149414
+    },
+    {
+      "name": "descriptor_fifo",
+      "status": "passed",
+      "sim_time_ns": 1271.0,
+      "real_time_s": 0.006994724273681641
+    },
+    {
+      "name": "interrupts",
+      "status": "passed",
+      "sim_time_ns": 1431.0,
+      "real_time_s": 0.008841514587402344
+    },
+    {
+      "name": "timestamps",
+      "status": "passed",
+      "sim_time_ns": 4091.0,
+      "real_time_s": 0.01540064811706543
+    }
+  ],
+  "coverage": null,
+  "trace": null,
+  "environment": {
+    "engine": "icarus",
+    "engine_version": "13.0",
+    "tools": [],
+    "cocotb_version": "2.0.1",
+    "results_xml": {
+      "path": "flow/build/fv/host_d288_c32/results_icarus.xml",
+      "scope": "repo",
+      "sha256": "sha256:a7e5af24af8f9f54d216092d72d8c26e502a658173bb631d3b892a150edab2ca"
+    },
+    "test_log": {
+      "path": "flow/build/fv/host_d288_c32/test_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:76d0f8891b7afdaab9568158c4d7842316f085a6e16d26eaa2a5e4268aaf71e8"
+    },
+    "build_log": {
+      "path": "flow/build/fv/host_d288_c32/build_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "random_seed": 202,
+    "source_defines": {},
+    "env": {
+      "HOST_FIFO_DEPTH": "288",
+      "HOST_CLK_PER_US": "32"
+    },
+    "initial_state": null,
+    "sdf": null
+  }
+}

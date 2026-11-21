@@ -1,0 +1,57 @@
+{
+  "schema_version": 2,
+  "engine": "icarus",
+  "hdl_toplevel": "le1m_rx",
+  "testbench": "bench_le1m_rx",
+  "status": "fail",
+  "test_count": 2,
+  "passed_count": 1,
+  "failed_count": 1,
+  "skipped_count": 0,
+  "tests": [
+    {
+      "name": "replay_matches_model",
+      "status": "failed",
+      "sim_time_ns": 168520.0,
+      "real_time_s": 2.088372230529785,
+      "error_type": "AssertionError",
+      "error_message": "nominal_noiseless: first mismatch at record group 2 (sample 852, field bit): rtl=['0'] expected=['1'] (rtl 390 records, model 390)"
+    },
+    {
+      "name": "dewhitening_recovers_the_pdu",
+      "status": "passed",
+      "sim_time_ns": 352680.0,
+      "real_time_s": 4.371322870254517
+    }
+  ],
+  "coverage": null,
+  "trace": null,
+  "environment": {
+    "engine": "icarus",
+    "engine_version": "13.0",
+    "tools": [],
+    "cocotb_version": "2.0.1",
+    "results_xml": {
+      "path": "flow/build/fv/le1m_rx.negative/results_icarus.xml",
+      "scope": "repo",
+      "sha256": "sha256:509e153cb4892db7c9c540aaa167c854fc006c5243cba36c0421ec275dda30b7"
+    },
+    "test_log": {
+      "path": "flow/build/fv/le1m_rx.negative/test_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:4a6fceff0e1722638807b1a55eba63c0e5c34f40122fda4c6dad8f313b679579"
+    },
+    "build_log": {
+      "path": "flow/build/fv/le1m_rx.negative/build_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "random_seed": 202,
+    "source_defines": {},
+    "env": {
+      "LE1M_RX_NEGATIVE": "1"
+    },
+    "initial_state": null,
+    "sdf": null
+  }
+}

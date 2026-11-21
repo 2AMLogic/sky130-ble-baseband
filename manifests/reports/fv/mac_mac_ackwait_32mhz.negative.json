@@ -1,0 +1,76 @@
+{
+  "schema_version": 2,
+  "engine": "icarus",
+  "hdl_toplevel": "mac_ackwait",
+  "testbench": "test_mac_ackwait",
+  "status": "fail",
+  "test_count": 5,
+  "passed_count": 4,
+  "failed_count": 1,
+  "skipped_count": 0,
+  "tests": [
+    {
+      "name": "timeout_when_no_ack",
+      "status": "failed",
+      "sim_time_ns": 276535.0,
+      "real_time_s": 0.8030350208282471,
+      "error_type": "AssertionError",
+      "error_message": "timeout at 27648 expected=27649"
+    },
+    {
+      "name": "cancelled_by_ack",
+      "status": "passed",
+      "sim_time_ns": 286745.00000000006,
+      "real_time_s": 0.8407704830169678
+    },
+    {
+      "name": "ack_on_expiry_edge_wins",
+      "status": "passed",
+      "sim_time_ns": 276735.0,
+      "real_time_s": 0.7851834297180176
+    },
+    {
+      "name": "no_wait_unless_ack_expected_and_abort",
+      "status": "passed",
+      "sim_time_ns": 277265.0,
+      "real_time_s": 0.7892255783081055
+    },
+    {
+      "name": "back_to_back_tx_restarts_wait",
+      "status": "passed",
+      "sim_time_ns": 326545.0,
+      "real_time_s": 0.9301142692565918
+    }
+  ],
+  "coverage": null,
+  "trace": null,
+  "environment": {
+    "engine": "icarus",
+    "engine_version": "13.0",
+    "tools": [],
+    "cocotb_version": "2.0.1",
+    "results_xml": {
+      "path": "flow/build/fv/mac_mac_ackwait_32mhz.negative/results_icarus.xml",
+      "scope": "repo",
+      "sha256": "sha256:5545e3b89d347a859bead37ef598e0cc206e2246cdee0e47e3c355edfdb4df32"
+    },
+    "test_log": {
+      "path": "flow/build/fv/mac_mac_ackwait_32mhz.negative/test_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:f130303218e0889a839fe3a65f4eb70ceebc251086c7e916bde115af4ed59c70"
+    },
+    "build_log": {
+      "path": "flow/build/fv/mac_mac_ackwait_32mhz.negative/build_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "random_seed": 202,
+    "source_defines": {},
+    "env": {
+      "MAC_CLK_MHZ": "32",
+      "MAC_NEGATIVE": "1"
+    },
+    "initial_state": null,
+    "sdf": null
+  }
+}

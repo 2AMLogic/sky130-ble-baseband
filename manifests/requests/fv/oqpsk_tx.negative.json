@@ -1,0 +1,22 @@
+{
+  "schema": "klt.functional_verification.request/1",
+  "engine": "icarus",
+  "sources": [
+    "../../../rtl/oqpsk/oqpsk_tx.v"
+  ],
+  "hdl_toplevel": "oqpsk_tx",
+  "testbench": {
+    "module": "bench_oqpsk_tx",
+    "search_path": "../../../verification/fv"
+  },
+  "options": {
+    "timescale": [
+      "1ns",
+      "1ps"
+    ],
+    "random_seed": 202
+  },
+  "env": {
+    "OQPSK_NEGATIVE": "1"
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "schema_version": 2,
+  "engine": "icarus",
+  "hdl_toplevel": "mac_ackwait",
+  "testbench": "test_mac_ackwait",
+  "status": "pass",
+  "test_count": 5,
+  "passed_count": 5,
+  "failed_count": 0,
+  "skipped_count": 0,
+  "tests": [
+    {
+      "name": "timeout_when_no_ack",
+      "status": "passed",
+      "sim_time_ns": 138305.0,
+      "real_time_s": 0.4306342601776123
+    },
+    {
+      "name": "cancelled_by_ack",
+      "status": "passed",
+      "sim_time_ns": 148505.0,
+      "real_time_s": 0.44086146354675293
+    },
+    {
+      "name": "ack_on_expiry_edge_wins",
+      "status": "passed",
+      "sim_time_ns": 138495.0,
+      "real_time_s": 0.40662646293640137
+    },
+    {
+      "name": "no_wait_unless_ack_expected_and_abort",
+      "status": "passed",
+      "sim_time_ns": 139025.0,
+      "real_time_s": 0.4269421100616455
+    },
+    {
+      "name": "back_to_back_tx_restarts_wait",
+      "status": "passed",
+      "sim_time_ns": 188305.0,
+      "real_time_s": 0.5412828922271729
+    }
+  ],
+  "coverage": null,
+  "trace": null,
+  "environment": {
+    "engine": "icarus",
+    "engine_version": "13.0",
+    "tools": [],
+    "cocotb_version": "2.0.1",
+    "results_xml": {
+      "path": "flow/build/fv/mac_mac_ackwait_16mhz/results_icarus.xml",
+      "scope": "repo",
+      "sha256": "sha256:50017b8ec2700fb7d3a0c1b347ef279dd885664e8cb6b7cfec3ecb2ff704e623"
+    },
+    "test_log": {
+      "path": "flow/build/fv/mac_mac_ackwait_16mhz/test_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:d48bbd46e75d71c41def57a7f645adab88aafe53209aeb0bdd743b907341055e"
+    },
+    "build_log": {
+      "path": "flow/build/fv/mac_mac_ackwait_16mhz/build_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "random_seed": 202,
+    "source_defines": {},
+    "env": {
+      "MAC_CLK_MHZ": "16"
+    },
+    "initial_state": null,
+    "sdf": null
+  }
+}

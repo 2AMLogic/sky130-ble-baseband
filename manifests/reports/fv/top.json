@@ -1,0 +1,83 @@
+{
+  "schema_version": 2,
+  "engine": "icarus",
+  "hdl_toplevel": "baseband_top",
+  "testbench": "test_top",
+  "status": "pass",
+  "test_count": 7,
+  "passed_count": 7,
+  "failed_count": 0,
+  "skipped_count": 0,
+  "tests": [
+    {
+      "name": "top_le1m_tx",
+      "status": "passed",
+      "sim_time_ns": 51125.0,
+      "real_time_s": 0.7725491523742676
+    },
+    {
+      "name": "top_oqpsk_tx",
+      "status": "passed",
+      "sim_time_ns": 268025.0,
+      "real_time_s": 3.6476516723632812
+    },
+    {
+      "name": "top_le1m_rx",
+      "status": "passed",
+      "sim_time_ns": 120135.0,
+      "real_time_s": 2.1486237049102783
+    },
+    {
+      "name": "top_oqpsk_rx",
+      "status": "passed",
+      "sim_time_ns": 281125.0,
+      "real_time_s": 11.589012145996094
+    },
+    {
+      "name": "top_oqpsk_auto_ack",
+      "status": "passed",
+      "sim_time_ns": 402185.0,
+      "real_time_s": 12.989259958267212
+    },
+    {
+      "name": "top_oqpsk_filter_reject_dropped",
+      "status": "passed",
+      "sim_time_ns": 532845.0,
+      "real_time_s": 18.727287769317627
+    },
+    {
+      "name": "top_le1m_response",
+      "status": "passed",
+      "sim_time_ns": 168985.0,
+      "real_time_s": 2.8265492916107178
+    }
+  ],
+  "coverage": null,
+  "trace": null,
+  "environment": {
+    "engine": "icarus",
+    "engine_version": "13.0",
+    "tools": [],
+    "cocotb_version": "2.0.1",
+    "results_xml": {
+      "path": "flow/build/fv/top/results_icarus.xml",
+      "scope": "repo",
+      "sha256": "sha256:819a953222a23390a869c8e11fc318643739cfcd0c881458c70ebcaade96da4b"
+    },
+    "test_log": {
+      "path": "flow/build/fv/top/test_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:1d917fe38248442187d72d06aa381721b733dcd22d813e2bdd51ed256e22405e"
+    },
+    "build_log": {
+      "path": "flow/build/fv/top/build_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "random_seed": 202,
+    "source_defines": {},
+    "env": {},
+    "initial_state": null,
+    "sdf": null
+  }
+}

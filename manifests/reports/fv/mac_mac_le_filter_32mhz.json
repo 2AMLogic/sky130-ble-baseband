@@ -1,0 +1,49 @@
+{
+  "schema_version": 2,
+  "engine": "icarus",
+  "hdl_toplevel": "mac_le_filter",
+  "testbench": "test_mac_le_filter",
+  "status": "pass",
+  "test_count": 1,
+  "passed_count": 1,
+  "failed_count": 0,
+  "skipped_count": 0,
+  "tests": [
+    {
+      "name": "truth_table",
+      "status": "passed",
+      "sim_time_ns": 1024.0,
+      "real_time_s": 0.03473067283630371
+    }
+  ],
+  "coverage": null,
+  "trace": null,
+  "environment": {
+    "engine": "icarus",
+    "engine_version": "13.0",
+    "tools": [],
+    "cocotb_version": "2.0.1",
+    "results_xml": {
+      "path": "flow/build/fv/mac_mac_le_filter_32mhz/results_icarus.xml",
+      "scope": "repo",
+      "sha256": "sha256:bef8ce010fa8e3bf5f6bb18a9c1d7b2e1a01cfbc0a23a6275eb2c1cbcdc7c81d"
+    },
+    "test_log": {
+      "path": "flow/build/fv/mac_mac_le_filter_32mhz/test_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:4d112488b090f74374cbdf55ee892383e1026f6f59a7869783880efb45b1a2b2"
+    },
+    "build_log": {
+      "path": "flow/build/fv/mac_mac_le_filter_32mhz/build_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "random_seed": 202,
+    "source_defines": {},
+    "env": {
+      "MAC_CLK_MHZ": "32"
+    },
+    "initial_state": null,
+    "sdf": null
+  }
+}
