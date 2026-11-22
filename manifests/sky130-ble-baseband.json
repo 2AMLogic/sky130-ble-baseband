@@ -9,6 +9,96 @@
     "10": {
       "file": "manifests/item10-attestation.json",
       "content_hash": "sha256:0a151f626ac45cd99b5fe85c96f4f123adb138bc59845d8bafec089ed8650278"
-    }
+    },
+    "5": [
+      {
+        "file": "manifests/reports/fv/host_d288_c32.json",
+        "content_hash": "sha256:ddd7f9908c57e0f21db0a1656a64c84015c4d0f241e9d7142a9f75433091974d"
+      },
+      {
+        "file": "manifests/reports/fv/host_d5_c16.json",
+        "content_hash": "sha256:ef9517a042a43b87703ac5674e1d2a72b05bb22ff6874c0bb1419ec9fa3eb87f"
+      },
+      {
+        "file": "manifests/reports/fv/le1m_tx.json",
+        "content_hash": "sha256:d8b579a7b28cac5a64d35a84a7b881bea1b9a307a35c481a3b35609ada78c478"
+      },
+      {
+        "file": "manifests/reports/fv/le1m_rx.json",
+        "content_hash": "sha256:99b9895d5d782bc6789413c08dac34dedcc0f51ebdccb2fd20931dd62862eeec"
+      },
+      {
+        "file": "manifests/reports/fv/oqpsk_tx.json",
+        "content_hash": "sha256:8a93c63d19a4ae63f28915465d019d6a88e71d8b6e4a36a1e0675c9ba78d26cc"
+      },
+      {
+        "file": "manifests/reports/fv/oqpsk_rx.json",
+        "content_hash": "sha256:9a3fd3ee731db0462d9a6150301dbdd66f49776ca047094c466eb2dd039a0864"
+      },
+      {
+        "file": "manifests/reports/fv/mac_mac_timer_32mhz.json",
+        "content_hash": "sha256:ffff0a030e0546bf02f8af4bda6e0e18a1df337f60d57b251d689e88b3ac0817"
+      },
+      {
+        "file": "manifests/reports/fv/mac_mac_trigger_32mhz.json",
+        "content_hash": "sha256:24c519dd8d44264af24c0bcaba69615a0a108960381370e6a3beca306e543020"
+      },
+      {
+        "file": "manifests/reports/fv/mac_mac_ack_ctrl_32mhz.json",
+        "content_hash": "sha256:d7868cec24f0e1ff407718bcffeddd1d544d9f1635b38c9c8e921803c1d7b768"
+      },
+      {
+        "file": "manifests/reports/fv/mac_mac_ackwait_32mhz.json",
+        "content_hash": "sha256:4ff2a2471b552b92bc52c13be2b73a3b6790a4f4cbb5cb67a236e27a911337f7"
+      },
+      {
+        "file": "manifests/reports/fv/mac_mac_le_resp_32mhz.json",
+        "content_hash": "sha256:da2cd94273d07614f283585caa98bc33f8b8695160337abe2ee12c6de5f65820"
+      },
+      {
+        "file": "manifests/reports/fv/mac_mac_addr_filter_154_32mhz.json",
+        "content_hash": "sha256:c7fcb2f07959c0d53ac6bad0789005192412e09c95032b22a7a5bc97fe6aa139"
+      },
+      {
+        "file": "manifests/reports/fv/mac_mac_le_filter_32mhz.json",
+        "content_hash": "sha256:341a8b3bfbd35043bc53fa46680e937b8a09cb7df9b008a08138be4a6fbc868b"
+      },
+      {
+        "file": "manifests/reports/fv/mac_mac_timer_16mhz.json",
+        "content_hash": "sha256:a395b5295a6961aa312405553347a06a04d3af8540c53d309802f62660369983"
+      },
+      {
+        "file": "manifests/reports/fv/mac_mac_trigger_16mhz.json",
+        "content_hash": "sha256:0ae2fc199569dd7bad82dd94185c9b4636de62c0bc2faa922131870ce32d8406"
+      },
+      {
+        "file": "manifests/reports/fv/mac_mac_ack_ctrl_16mhz.json",
+        "content_hash": "sha256:d3d029a2cec96d76669d230be734a1a18a3d5ab24d21e97fbcb5ded45bc10714"
+      },
+      {
+        "file": "manifests/reports/fv/mac_mac_ackwait_16mhz.json",
+        "content_hash": "sha256:abfec937c20ceb1ad5d92ecfdfb6a7548d5d2b4c8114dce5adb322c49d7afca3"
+      },
+      {
+        "file": "manifests/reports/fv/mac_mac_le_resp_16mhz.json",
+        "content_hash": "sha256:31ab80a827d1c80f798ab1e1d95d3158e6445a69142fbd9c016a83433cdfa59e"
+      },
+      {
+        "file": "manifests/reports/fv/mac_mac_addr_filter_154_16mhz.json",
+        "content_hash": "sha256:bdb55072215a2fd04832c78f756880a83bd1416582a58027008eff20e697ed8a"
+      },
+      {
+        "file": "manifests/reports/fv/mac_mac_le_filter_16mhz.json",
+        "content_hash": "sha256:99ecf6170390b7dc71deb8bed602d4fc858df52024f6fed3506084359bd4cb50"
+      },
+      {
+        "file": "manifests/reports/fv/top.json",
+        "content_hash": "sha256:e8c0718fb2d211bdad632a07c28a5d14f651a4c91064c139cfe0fd5c1590523e"
+      },
+      {
+        "file": "manifests/reports/fv/top_latency.json",
+        "content_hash": "sha256:f04dee1707ff00bd880c8b232bab0f97a0d65bff897593c2f5274b366c945bf1"
+      }
+    ]
   }
 }

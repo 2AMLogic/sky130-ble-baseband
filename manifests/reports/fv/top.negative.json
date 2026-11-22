@@ -1,0 +1,99 @@
+{
+  "schema_version": 2,
+  "engine": "icarus",
+  "hdl_toplevel": "baseband_top",
+  "testbench": "test_top",
+  "status": "fail",
+  "test_count": 7,
+  "passed_count": 0,
+  "failed_count": 7,
+  "skipped_count": 0,
+  "tests": [
+    {
+      "name": "top_le1m_tx",
+      "status": "failed",
+      "sim_time_ns": 51035.0,
+      "real_time_s": 0.8076229095458984,
+      "error_type": "AssertionError",
+      "error_message": "tx_dev word 100: got=29 expected=30"
+    },
+    {
+      "name": "top_oqpsk_tx",
+      "status": "failed",
+      "sim_time_ns": 267965.0,
+      "real_time_s": 5.276479482650757,
+      "error_type": "AssertionError",
+      "error_message": "tx_dev word 100: got=64 expected=65"
+    },
+    {
+      "name": "top_le1m_rx",
+      "status": "failed",
+      "sim_time_ns": 120075.0,
+      "real_time_s": 2.344999313354492,
+      "error_type": "AssertionError",
+      "error_message": "le1m: RX_DATA octets: got='42148b4ae5f1a94106a0956a26afbccdafe562f90a94' expected='43148b4ae5f1a94106a0956a26afbccdafe562f90a94'"
+    },
+    {
+      "name": "top_oqpsk_rx",
+      "status": "failed",
+      "sim_time_ns": 281065.0,
+      "real_time_s": 9.679001569747925,
+      "error_type": "AssertionError",
+      "error_message": "oqpsk: RX_DATA octets: got='0102030405060708090a0b0c0d0e0f101112' expected='0002030405060708090a0b0c0d0e0f101112'"
+    },
+    {
+      "name": "top_oqpsk_auto_ack",
+      "status": "failed",
+      "sim_time_ns": 402125.0,
+      "real_time_s": 10.071079969406128,
+      "error_type": "AssertionError",
+      "error_message": "ACK tx_dev word 200: got=64 expected=65"
+    },
+    {
+      "name": "top_oqpsk_filter_reject_dropped",
+      "status": "failed",
+      "sim_time_ns": 532845.0,
+      "real_time_s": 17.30907654762268,
+      "error_type": "AssertionError",
+      "error_message": "accept: RX_DATA octets: got='618822341242000100666f72206d65' expected='608822341242000100666f72206d65'"
+    },
+    {
+      "name": "top_le1m_response",
+      "status": "failed",
+      "sim_time_ns": 168705.0,
+      "real_time_s": 2.427643299102783,
+      "error_type": "AssertionError",
+      "error_message": "response tx_dev word 100: got=29 expected=30"
+    }
+  ],
+  "coverage": null,
+  "trace": null,
+  "environment": {
+    "engine": "icarus",
+    "engine_version": "13.0",
+    "tools": [],
+    "cocotb_version": "2.0.1",
+    "results_xml": {
+      "path": "flow/build/fv/top.negative/results_icarus.xml",
+      "scope": "repo",
+      "sha256": "sha256:37b6d190e08bbedfdeb87e25037d09a566da78b61e4f0c4789be0bcae71cf50b"
+    },
+    "test_log": {
+      "path": "flow/build/fv/top.negative/test_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:5bd4365f49d24cc301fa8415f18e66398de4921a1b7ad2bc8218c7087958421d"
+    },
+    "build_log": {
+      "path": "flow/build/fv/top.negative/build_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "random_seed": 202,
+    "source_defines": {},
+    "env": {
+      "TOP_NEGATIVE": "1"
+    },
+    "initial_state": null,
+    "sdf": null
+  }
+}

@@ -28,15 +28,25 @@ jobs:
           python-version: "3.10"
 
       - name: Install pinned klt
-        run: pip install klayout-tools==0.8.0
+        run: pip install klayout-tools==0.9.2
 
       - name: Assert every envelope records the installed klt version
-        # Each committed evidence envelope names the klt build that produced
-        # it (provenance.klt_version). It must match the pinned release this
-        # job just installed, or the envelope was re-attested off-pin and the
-        # evidence provenance is broken. The expected version is read from
-        # the installed tool, and the envelope list from the block manifest,
-        # so neither can go stale here. See manifests/README.md.
+        # Each committed evidence envelope that carries a provenance block
+        # names the klt build that produced it (provenance.klt_version). It
+        # must match the pinned release this job just installed, or the
+        # envelope was re-attested off-pin and the evidence provenance is
+        # broken. The expected version is read from the installed tool, and
+        # the envelope list from the block manifest, so neither can go stale
+        # here. See manifests/README.md.
+        #
+        # One kind is exempt by contract, not by leniency: a klt
+        # functional-verification report carries NO provenance block at all
+        # (its verdict depends on no PDK and no rule deck -- klt
+        # docs/cli/functional-verification.md at the pin; upstream
+        # 2AMLogic/klayout-tools#5550's fix is unreleased). Such an envelope
+        # is instead shape-checked here (status/counts/tests, the same
+        # envelope shape klt signoff itself validates), and its staleness is
+        # pinned by the manifest's content_hash over the report's own bytes.
         run: |
           set -uo pipefail
           want="$(klt --version | awk '{print $2}')"
@@ -46,10 +56,16 @@ jobs:
           # raising Python into an empty list, a zero-iteration loop and a
           # green step. -e stays off so the loop below can still report
           # every offender in one run.
-          envelopes="$(python3 -c 'import json; print("\n".join(e["file"] for _, e in sorted(json.load(open("manifests/sky130-ble-baseband.json")).get("evidence", {}).items())))')" || { echo "::error::could not derive the evidence envelope list from manifests/sky130-ble-baseband.json (manifest moved, unreadable, or evidence schema drifted)"; exit 1; }
+          envelopes="$(python3 -c 'import json; print("\n".join(e["file"] for _, e in sorted(json.load(open("manifests/sky130-ble-baseband.json")).get("evidence", {}).items()) for e in (e if isinstance(e, list) else [e])))')" || { echo "::error::could not derive the evidence envelope list from manifests/sky130-ble-baseband.json (manifest moved, unreadable, or evidence schema drifted)"; exit 1; }
           [ -n "$envelopes" ] || { echo "::error::the block manifest manifests/sky130-ble-baseband.json cites no evidence envelopes"; exit 1; }
           rc=0
           for f in $envelopes; do
+            kind="$(python3 -c 'import json, sys; d = json.load(open(sys.argv[1])); print("functional-verification" if "tests" in d and "test_count" in d else "other")' "$f" 2>/dev/null)" || { echo "::error file=$f::unreadable as JSON"; rc=1; continue; }
+            if [ "$kind" = "functional-verification" ]; then
+              python3 -c 'import json, sys; d = json.load(open(sys.argv[1])); assert d["status"] in ("pass", "fail") and isinstance(d["test_count"], int) and isinstance(d["tests"], list) and d["passed_count"] + d["failed_count"] + d["skipped_count"] == d["test_count"] == len(d["tests"])' "$f" \
+                || { echo "::error file=$f::not a well-formed klt functional-verification envelope (status/counts/tests)"; rc=1; }
+              continue
+            fi
             if got="$(python3 -c 'import json, sys; v = json.load(open(sys.argv[1])).get("provenance", {}).get("klt_version"); print(v) if v else sys.exit(3)' "$f" 2>/dev/null)"; then
               if [ "$got" != "$want" ]; then
                 echo "::error file=$f::provenance.klt_version is '$got' but this job installed klt '$want' - re-attest with the pinned release"

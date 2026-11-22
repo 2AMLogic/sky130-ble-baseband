@@ -1,0 +1,79 @@
+{
+  "schema_version": 2,
+  "engine": "icarus",
+  "hdl_toplevel": "mac_ack_ctrl",
+  "testbench": "test_mac_ack_ctrl",
+  "status": "pass",
+  "test_count": 6,
+  "passed_count": 6,
+  "failed_count": 0,
+  "skipped_count": 0,
+  "tests": [
+    {
+      "name": "turnaround_lands_on_deadline",
+      "status": "passed",
+      "sim_time_ns": 339505.0,
+      "real_time_s": 1.031707763671875
+    },
+    {
+      "name": "ack_suppressed_cases",
+      "status": "passed",
+      "sim_time_ns": 156195.0,
+      "real_time_s": 0.4974799156188965
+    },
+    {
+      "name": "frame_pending_from_register",
+      "status": "passed",
+      "sim_time_ns": 77025.0,
+      "real_time_s": 0.23604512214660645
+    },
+    {
+      "name": "abort_during_turnaround",
+      "status": "passed",
+      "sim_time_ns": 46645.0,
+      "real_time_s": 0.17206954956054688
+    },
+    {
+      "name": "ack_enable_cleared_during_turnaround",
+      "status": "passed",
+      "sim_time_ns": 32275.0,
+      "real_time_s": 0.10254693031311035
+    },
+    {
+      "name": "back_to_back_frames",
+      "status": "passed",
+      "sim_time_ns": 167995.0,
+      "real_time_s": 0.487637996673584
+    }
+  ],
+  "coverage": null,
+  "trace": null,
+  "environment": {
+    "engine": "icarus",
+    "engine_version": "13.0",
+    "tools": [],
+    "cocotb_version": "2.0.1",
+    "results_xml": {
+      "path": "flow/build/fv/mac_mac_ack_ctrl_16mhz/results_icarus.xml",
+      "scope": "repo",
+      "sha256": "sha256:41a49b095c98bcdc7920418d219cdef4dc6717f1caadc56d7b1f4de21e25aa67"
+    },
+    "test_log": {
+      "path": "flow/build/fv/mac_mac_ack_ctrl_16mhz/test_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:0680ba08f7d75be44229b76c4536ff4cb30b2e0991dad2e30a5573b8d704c0e8"
+    },
+    "build_log": {
+      "path": "flow/build/fv/mac_mac_ack_ctrl_16mhz/build_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "random_seed": 202,
+    "source_defines": {},
+    "env": {
+      "MAC_CLK_MHZ": "16"
+    },
+    "initial_state": null,
+    "sdf": null
+  }
+}

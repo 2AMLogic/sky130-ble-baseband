@@ -1,0 +1,23 @@
+{
+  "schema": "klt.functional_verification.request/1",
+  "engine": "icarus",
+  "sources": [
+    "../../../rtl/le1m_tx/le1m_whiten.v",
+    "../../../rtl/le1m_tx/le1m_crc24.v",
+    "../../../rtl/le1m_tx/le1m_frame.v",
+    "../../../rtl/le1m_tx/le1m_gauss.v",
+    "../../../rtl/le1m_tx/le1m_tx.v"
+  ],
+  "hdl_toplevel": "le1m_tx",
+  "testbench": {
+    "module": "bench_le1m_tx",
+    "search_path": "../../../verification/fv"
+  },
+  "options": {
+    "timescale": [
+      "1ns",
+      "1ps"
+    ],
+    "random_seed": 202
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "schema_version": 2,
+  "engine": "icarus",
+  "hdl_toplevel": "le1m_rx",
+  "testbench": "bench_le1m_rx",
+  "status": "pass",
+  "test_count": 2,
+  "passed_count": 2,
+  "failed_count": 0,
+  "skipped_count": 0,
+  "tests": [
+    {
+      "name": "replay_matches_model",
+      "status": "passed",
+      "sim_time_ns": 3637470.0,
+      "real_time_s": 46.09599709510803
+    },
+    {
+      "name": "dewhitening_recovers_the_pdu",
+      "status": "passed",
+      "sim_time_ns": 352680.0,
+      "real_time_s": 4.341041088104248
+    }
+  ],
+  "coverage": null,
+  "trace": null,
+  "environment": {
+    "engine": "icarus",
+    "engine_version": "13.0",
+    "tools": [],
+    "cocotb_version": "2.0.1",
+    "results_xml": {
+      "path": "flow/build/fv/le1m_rx/results_icarus.xml",
+      "scope": "repo",
+      "sha256": "sha256:c6c1cfbf9e413f9848657ee452b1a878dbea52257e5facedcd411c4ec249c9a1"
+    },
+    "test_log": {
+      "path": "flow/build/fv/le1m_rx/test_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:85fd5027f58cc2c3d70a586d1ee231aae37beb50a891d1bf4a464ee543abb13a"
+    },
+    "build_log": {
+      "path": "flow/build/fv/le1m_rx/build_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "random_seed": 202,
+    "source_defines": {},
+    "env": {},
+    "initial_state": null,
+    "sdf": null
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "schema_version": 2,
+  "engine": "icarus",
+  "hdl_toplevel": "mac_ack_ctrl",
+  "testbench": "test_mac_ack_ctrl",
+  "status": "fail",
+  "test_count": 6,
+  "passed_count": 5,
+  "failed_count": 1,
+  "skipped_count": 0,
+  "tests": [
+    {
+      "name": "turnaround_lands_on_deadline",
+      "status": "failed",
+      "sim_time_ns": 677425.0,
+      "real_time_s": 1.9763834476470947,
+      "error_type": "AssertionError",
+      "error_message": "turnaround [6144, 6144, 6144, 6144, 6144, 6144] != expected=6145"
+    },
+    {
+      "name": "ack_suppressed_cases",
+      "status": "passed",
+      "sim_time_ns": 309795.0,
+      "real_time_s": 0.9449989795684814
+    },
+    {
+      "name": "frame_pending_from_register",
+      "status": "passed",
+      "sim_time_ns": 153825.00000000012,
+      "real_time_s": 0.567730188369751
+    },
+    {
+      "name": "abort_during_turnaround",
+      "status": "passed",
+      "sim_time_ns": 92725.0,
+      "real_time_s": 0.3186817169189453
+    },
+    {
+      "name": "ack_enable_cleared_during_turnaround",
+      "status": "passed",
+      "sim_time_ns": 62995.0,
+      "real_time_s": 0.21718978881835938
+    },
+    {
+      "name": "back_to_back_frames",
+      "status": "passed",
+      "sim_time_ns": 331835.0,
+      "real_time_s": 1.6823458671569824
+    }
+  ],
+  "coverage": null,
+  "trace": null,
+  "environment": {
+    "engine": "icarus",
+    "engine_version": "13.0",
+    "tools": [],
+    "cocotb_version": "2.0.1",
+    "results_xml": {
+      "path": "flow/build/fv/mac_mac_ack_ctrl_32mhz.negative/results_icarus.xml",
+      "scope": "repo",
+      "sha256": "sha256:ce9005a90bfc13f3eb06e0d51c3dda5c6bc713740719efb20f1dacedae31fc5f"
+    },
+    "test_log": {
+      "path": "flow/build/fv/mac_mac_ack_ctrl_32mhz.negative/test_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:e8c3d62897bfcea0dac46509a0bc07d4cfd7a4ab944685c227859d9d63a1ad52"
+    },
+    "build_log": {
+      "path": "flow/build/fv/mac_mac_ack_ctrl_32mhz.negative/build_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "random_seed": 202,
+    "source_defines": {},
+    "env": {
+      "MAC_CLK_MHZ": "32",
+      "MAC_NEGATIVE": "1"
+    },
+    "initial_state": null,
+    "sdf": null
+  }
+}

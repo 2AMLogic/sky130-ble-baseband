@@ -1,0 +1,73 @@
+{
+  "schema_version": 2,
+  "engine": "icarus",
+  "hdl_toplevel": "mac_trigger",
+  "testbench": "test_mac_trigger",
+  "status": "pass",
+  "test_count": 5,
+  "passed_count": 5,
+  "failed_count": 0,
+  "skipped_count": 0,
+  "tests": [
+    {
+      "name": "fire_offset_constant_across_compare_values",
+      "status": "passed",
+      "sim_time_ns": 52975.0,
+      "real_time_s": 0.33737921714782715
+    },
+    {
+      "name": "tick_is_one_microsecond",
+      "status": "passed",
+      "sim_time_ns": 1635.0,
+      "real_time_s": 0.004632711410522461
+    },
+    {
+      "name": "tx_and_rx_modes_and_disarm",
+      "status": "passed",
+      "sim_time_ns": 5210.0,
+      "real_time_s": 0.018178224563598633
+    },
+    {
+      "name": "cancel_wins_and_no_fire",
+      "status": "passed",
+      "sim_time_ns": 3895.0,
+      "real_time_s": 0.011262178421020508
+    },
+    {
+      "name": "random_compares",
+      "status": "passed",
+      "sim_time_ns": 60335.0,
+      "real_time_s": 0.3122990131378174
+    }
+  ],
+  "coverage": null,
+  "trace": null,
+  "environment": {
+    "engine": "icarus",
+    "engine_version": "13.0",
+    "tools": [],
+    "cocotb_version": "2.0.1",
+    "results_xml": {
+      "path": "flow/build/fv/mac_mac_trigger_32mhz/results_icarus.xml",
+      "scope": "repo",
+      "sha256": "sha256:b1969780facec9ea181ad4f12ff10de097ea79913f82e8aa00919893378fe8b3"
+    },
+    "test_log": {
+      "path": "flow/build/fv/mac_mac_trigger_32mhz/test_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:6aeeba570b2f0ad3dc90f3be58bfd58978282f40948cf7beadd276888e49f474"
+    },
+    "build_log": {
+      "path": "flow/build/fv/mac_mac_trigger_32mhz/build_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "random_seed": 202,
+    "source_defines": {},
+    "env": {
+      "MAC_CLK_MHZ": "32"
+    },
+    "initial_state": null,
+    "sdf": null
+  }
+}
