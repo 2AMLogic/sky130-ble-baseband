@@ -17,14 +17,13 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 BENCH = HERE.parent / "le1m_rx"
-SCRATCH = HERE.parents[1] / "flow" / "build" / "fv" / "le1m_rx"
 
 sys.path[:0] = [str(BENCH), str(HERE.parent)]
 import cases  # noqa: E402
 
-VEC = SCRATCH / "vectors"
+VEC = Path("vectors")
 MANIFEST = cases.write_vectors(VEC, None)
-os.environ["LE1M_RX_VECTORS"] = str(VEC)
+os.environ["LE1M_RX_VECTORS"] = VEC.as_posix()
 os.environ["LE1M_RX_CASES"] = ",".join(MANIFEST)
 
 from test_le1m_rx import *  # noqa: E402,F401,F403

@@ -13,14 +13,13 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 BENCH = HERE.parent / "oqpsk"
-SCRATCH = HERE.parents[1] / "flow" / "build" / "fv" / "oqpsk_tx"
 
 sys.path[:0] = [str(BENCH), str(HERE.parent)]
 import cases  # noqa: E402
 
-VEC = SCRATCH / "vectors"
+VEC = Path("vectors")
 MANIFEST = cases.write_vectors(VEC, "tx", None)
-os.environ["OQPSK_VECTORS"] = str(VEC)
+os.environ["OQPSK_VECTORS"] = VEC.as_posix()
 os.environ["OQPSK_CASES"] = ",".join(MANIFEST)
 
 from test_oqpsk_tx import *  # noqa: E402,F401,F403

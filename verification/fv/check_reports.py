@@ -10,9 +10,10 @@ Checks every report the suite declares, against the bench table in suite.py:
 - every negative control: report exists, `status` is `"fail"`, at least one
   test failed, and some failure's `error_message` matches the right-reason
   pattern -- the same rule `make test-*-negative` greps the bench log for;
-- no string anywhere in a report is an absolute host path (issues #5784 /
-  #6005 track the remaining klt fields): committed evidence must not name
-  the machine that produced it.
+- no string anywhere in a report is or embeds an absolute host path
+  (2AMLogic/klayout-tools#6005 tracks the remaining open klt fields; #5784
+  is closed): committed evidence must not name the machine that produced it;
+- no extra undeclared `*.json` report sits in the reports directory.
 
 Pure Python (stdlib only) and read-only, so `make lint` can run it in CI.
 """
@@ -27,16 +28,27 @@ sys.path[:0] = [str(HERE)]
 
 import suite  # noqa: E402
 
+# Match any leading POSIX path, any embedded multi-segment POSIX path or known
+# host root (e.g. inside an assertion message), file:/// URIs, or Windows drive
+# paths, while ignoring relative paths like `flow/build/fv/...` or `replay/case=0`.
+_ABS_HOST_PATH_RE = re.compile(
+    r"(?:^/"
+    r"|(?<![A-Za-z0-9_./-])/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+"
+    r"|(?<![A-Za-z0-9_./-])/(?:home|Users|tmp|var|opt|root|etc|usr|srv|mnt|media|private|workspace|runner|github)(?:/|\b)"
+    r"|file:///"
+    r"|(?<![A-Za-z0-9_])[A-Za-z]:[/\\])"
+)
 
-def _walk_strings(node):
+
+def _walk_strings(node, field=""):
     if isinstance(node, str):
-        yield node
+        yield field, node
     elif isinstance(node, dict):
-        for v in node.values():
-            yield from _walk_strings(v)
+        for k, v in node.items():
+            yield from _walk_strings(v, f"{field}.{k}" if field else k)
     elif isinstance(node, list):
-        for v in node:
-            yield from _walk_strings(v)
+        for i, v in enumerate(node):
+            yield from _walk_strings(v, f"{field}[{i}]")
 
 
 def _load(path, problems, expect):
@@ -49,10 +61,9 @@ def _load(path, problems, expect):
 
 
 def _check_common(path, rep, bench, problems):
-    for s in _walk_strings(rep):
-        if s.startswith("/"):
-            problems.append(f"{path}: absolute host path in report: {s!r}")
-            break
+    for field, s in _walk_strings(rep):
+        if _ABS_HOST_PATH_RE.search(s):
+            problems.append(f"{path}: absolute host path at {field}: {s!r}")
     if rep.get("hdl_toplevel") != bench["hdl_toplevel"]:
         problems.append(f"{path}: hdl_toplevel is {rep.get('hdl_toplevel')!r}, "
                         f"expected {bench['hdl_toplevel']!r}")
@@ -115,6 +126,12 @@ def main(argv):
         elif not any(re.search(neg["reason"], m) for m in failures):
             problems.append(f"{path}: failed for the wrong reason; no "
                             f"error_message matches {neg['reason']!r}")
+    expected = ({f"{b['name']}.json" for b in suite.POSITIVE}
+                | {f"{n['name']}.json" for n in suite.NEGATIVE})
+    if reports.is_dir():
+        for extra in sorted(p.name for p in reports.glob("*.json") if p.name not in expected):
+            problems.append(f"{reports / extra}: committed report not declared in suite.py; "
+                            f"delete it (suite changed)")
     if problems:
         for p in problems:
             print(f"ERROR: {p}", file=sys.stderr)
