@@ -1,0 +1,247 @@
+[00000.000000] 
+[00000.000013]  /----------------------------------------------------------------------------\
+[00000.000014]  |  yosys -- Yosys Open SYnthesis Suite                                       |
+[00000.000014]  |  Copyright (C) 2012 - 2026  Claire Xenia Wolf <claire@yosyshq.com>         |
+[00000.000015]  |  Distributed under an ISC-like license, type "license" to see terms        |
+[00000.000015]  \----------------------------------------------------------------------------/
+[00000.000016]  Yosys 0.68+ (git sha1 a5af9d690, Release, GNU /usr/bin/c++ 13.3.0) [github.com/The-OpenROAD-Project/yosys at HEAD]
+[00000.000281] 
+[00000.000286] -- Running command ` read_verilog -sv rtl/host/host_fifo.v;  read_verilog -sv rtl/host/host_desc_fifo.v;  read_verilog -sv rtl/host/host_irq.v;  read_verilog -sv rtl/host/host_timestamp.v;  read_verilog -sv rtl/host/host_regs.v;  read_verilog -sv rtl/host/host_top.v;  read_verilog -sv rtl/le1m_tx/le1m_whiten.v;  read_verilog -sv rtl/le1m_tx/le1m_crc24.v;  read_verilog -sv rtl/le1m_tx/le1m_frame.v;  read_verilog -sv rtl/le1m_tx/le1m_gauss.v;  read_verilog -sv rtl/le1m_tx/le1m_tx.v;  read_verilog -sv rtl/le1m_rx/le1m_rx_fir.v;  read_verilog -sv rtl/le1m_rx/le1m_rx_disc.v;  read_verilog -sv rtl/le1m_rx/le1m_rx_cordic.v;  read_verilog -sv rtl/le1m_rx/rx_moving_sum.v;  read_verilog -sv rtl/le1m_rx/le1m_rx_sync.v;  read_verilog -sv rtl/le1m_rx/le1m_rx_pkt.v;  read_verilog -sv rtl/le1m_rx/le1m_rx.v;  read_verilog -sv rtl/oqpsk/oqpsk_tx.v;  read_verilog -sv rtl/oqpsk/oqpsk_rx_fir.v;  read_verilog -sv rtl/oqpsk/oqpsk_rx_corr.v;  read_verilog -sv rtl/oqpsk/oqpsk_rx_sync.v;  read_verilog -sv rtl/oqpsk/oqpsk_rx_pkt.v;  read_verilog -sv rtl/oqpsk/oqpsk_rx.v;  read_verilog -sv rtl/mac/mac_timer.v;  read_verilog -sv rtl/mac/mac_trigger.v;  read_verilog -sv rtl/mac/mac_ack_ctrl.v;  read_verilog -sv rtl/mac/mac_ackwait.v;  read_verilog -sv rtl/mac/mac_le_resp.v;  read_verilog -sv rtl/mac/mac_addr_filter_154.v;  read_verilog -sv rtl/mac/mac_le_filter.v;  read_verilog -sv rtl/top/bb_timing_regs.v;  read_verilog -sv rtl/top/bb_rx_adapt.v;  read_verilog -sv rtl/top/bb_tx_path.v;  read_verilog -sv rtl/top/bb_ctrl.v;  read_verilog -sv rtl/top/baseband_top.v; read_liberty -lib flow/build/synth-batch-lib/sky130_fd_sc_hd__tt_025C_1v80.lib; hierarchy -check -top le1m_rx_sync; synth -top le1m_rx_sync -abc9; tee -o flow/synth/records/2026-11-21-routes/routes/noabc_abc9/logs/le1m_rx_sync.stat stat' --
+[00000.000321] 
+[00000.000323] 1. Executing Verilog-2005 frontend: rtl/host/host_fifo.v
+[00000.000334] Parsing SystemVerilog input from `rtl/host/host_fifo.v' to AST representation.
+[00000.000846] Generating RTLIL representation for module `\host_fifo'.
+[00000.001470] Warning: Replacing memory \mem with list of registers. See rtl/host/host_fifo.v:76
+Successfully finished Verilog frontend.
+[00000.019516] 
+[00000.019519] 2. Executing Verilog-2005 frontend: rtl/host/host_desc_fifo.v
+[00000.019527] Parsing SystemVerilog input from `rtl/host/host_desc_fifo.v' to AST representation.
+[00000.019839] Generating RTLIL representation for module `\host_desc_fifo'.
+[00000.020184] Warning: Replacing memory \mem with list of registers. See rtl/host/host_desc_fifo.v:43
+Successfully finished Verilog frontend.
+[00000.021249] 
+[00000.021250] 3. Executing Verilog-2005 frontend: rtl/host/host_irq.v
+[00000.021255] Parsing SystemVerilog input from `rtl/host/host_irq.v' to AST representation.
+[00000.021482] Generating RTLIL representation for module `\host_irq'.
+[00000.021817] Successfully finished Verilog frontend.
+[00000.021837] 
+[00000.021838] 4. Executing Verilog-2005 frontend: rtl/host/host_timestamp.v
+[00000.021841] Parsing SystemVerilog input from `rtl/host/host_timestamp.v' to AST representation.
+[00000.022112] Generating RTLIL representation for module `\host_timestamp'.
+[00000.022632] Successfully finished Verilog frontend.
+[00000.022652] 
+[00000.022653] 5. Executing Verilog-2005 frontend: rtl/host/host_regs.v
+[00000.022658] Parsing SystemVerilog input from `rtl/host/host_regs.v' to AST representation.
+[00000.024124] Generating RTLIL representation for module `\host_regs'.
+[00000.028027] Successfully finished Verilog frontend.
+[00000.028077] 
+[00000.028079] 6. Executing Verilog-2005 frontend: rtl/host/host_top.v
+[00000.028091] Parsing SystemVerilog input from `rtl/host/host_top.v' to AST representation.
+[00000.028969] Generating RTLIL representation for module `\host_top'.
+[00000.030162] Successfully finished Verilog frontend.
+[00000.030196] 
+[00000.030197] 7. Executing Verilog-2005 frontend: rtl/le1m_tx/le1m_whiten.v
+[00000.030202] Parsing SystemVerilog input from `rtl/le1m_tx/le1m_whiten.v' to AST representation.
+[00000.030337] Generating RTLIL representation for module `\le1m_whiten'.
+[00000.030501] Successfully finished Verilog frontend.
+[00000.030518] 
+[00000.030519] 8. Executing Verilog-2005 frontend: rtl/le1m_tx/le1m_crc24.v
+[00000.030522] Parsing SystemVerilog input from `rtl/le1m_tx/le1m_crc24.v' to AST representation.
+[00000.030654] Generating RTLIL representation for module `\le1m_crc24'.
+[00000.030865] Successfully finished Verilog frontend.
+[00000.030881] 
+[00000.030882] 9. Executing Verilog-2005 frontend: rtl/le1m_tx/le1m_frame.v
+[00000.030884] Parsing SystemVerilog input from `rtl/le1m_tx/le1m_frame.v' to AST representation.
+[00000.031471] Generating RTLIL representation for module `\le1m_frame'.
+[00000.032744] Successfully finished Verilog frontend.
+[00000.032771] 
+[00000.032772] 10. Executing Verilog-2005 frontend: rtl/le1m_tx/le1m_gauss.v
+[00000.032777] Parsing SystemVerilog input from `rtl/le1m_tx/le1m_gauss.v' to AST representation.
+[00000.033143] Generating RTLIL representation for module `\le1m_gauss'.
+[00000.041297] Successfully finished Verilog frontend.
+[00000.041343] 
+[00000.041345] 11. Executing Verilog-2005 frontend: rtl/le1m_tx/le1m_tx.v
+[00000.041351] Parsing SystemVerilog input from `rtl/le1m_tx/le1m_tx.v' to AST representation.
+[00000.041864] Generating RTLIL representation for module `\le1m_tx'.
+[00000.042843] Successfully finished Verilog frontend.
+[00000.042874] 
+[00000.042875] 12. Executing Verilog-2005 frontend: rtl/le1m_rx/le1m_rx_fir.v
+[00000.042880] Parsing SystemVerilog input from `rtl/le1m_rx/le1m_rx_fir.v' to AST representation.
+[00000.043313] Generating RTLIL representation for module `\le1m_rx_fir'.
+[00000.044555] Successfully finished Verilog frontend.
+[00000.044583] 
+[00000.044585] 13. Executing Verilog-2005 frontend: rtl/le1m_rx/le1m_rx_disc.v
+[00000.044591] Parsing SystemVerilog input from `rtl/le1m_rx/le1m_rx_disc.v' to AST representation.
+[00000.044759] Generating RTLIL representation for module `\le1m_rx_disc'.
+[00000.045035] Successfully finished Verilog frontend.
+[00000.045052] 
+[00000.045053] 14. Executing Verilog-2005 frontend: rtl/le1m_rx/le1m_rx_cordic.v
+[00000.045056] Parsing SystemVerilog input from `rtl/le1m_rx/le1m_rx_cordic.v' to AST representation.
+[00000.045540] Generating RTLIL representation for module `\le1m_rx_cordic'.
+[00000.049538] Warning: Replacing memory \ss with list of registers. See rtl/le1m_rx/le1m_rx_cordic.v:58
+Warning: Replacing memory \sz with list of registers. See rtl/le1m_rx/le1m_rx_cordic.v:57
+Warning: Replacing memory \sa with list of registers. See rtl/le1m_rx/le1m_rx_cordic.v:56
+Warning: Replacing memory \sy with list of registers. See rtl/le1m_rx/le1m_rx_cordic.v:55
+Warning: Replacing memory \sx with list of registers. See rtl/le1m_rx/le1m_rx_cordic.v:54
+Warning: Replacing memory \sv with list of registers. See rtl/le1m_rx/le1m_rx_cordic.v:51
+Successfully finished Verilog frontend.
+[00000.052591] 
+[00000.052594] 15. Executing Verilog-2005 frontend: rtl/le1m_rx/rx_moving_sum.v
+[00000.052599] Parsing SystemVerilog input from `rtl/le1m_rx/rx_moving_sum.v' to AST representation.
+[00000.052876] Generating RTLIL representation for module `\rx_moving_sum'.
+[00000.053411] Warning: Replacing memory \fh with list of registers. See rtl/le1m_rx/rx_moving_sum.v:31
+Successfully finished Verilog frontend.
+[00000.053991] 
+[00000.053993] 16. Executing Verilog-2005 frontend: rtl/le1m_rx/le1m_rx_sync.v
+[00000.053996] Parsing SystemVerilog input from `rtl/le1m_rx/le1m_rx_sync.v' to AST representation.
+[00000.054911] Generating RTLIL representation for module `\le1m_rx_sync'.
+[00001.495821] Successfully finished Verilog frontend.
+[00001.496062] 
+[00001.496064] 17. Executing Verilog-2005 frontend: rtl/le1m_rx/le1m_rx_pkt.v
+[00001.496093] Parsing SystemVerilog input from `rtl/le1m_rx/le1m_rx_pkt.v' to AST representation.
+[00001.498002] Generating RTLIL representation for module `\le1m_rx_pkt'.
+[00001.509987] Successfully finished Verilog frontend.
+[00001.510076] 
+[00001.510077] 18. Executing Verilog-2005 frontend: rtl/le1m_rx/le1m_rx.v
+[00001.510085] Parsing SystemVerilog input from `rtl/le1m_rx/le1m_rx.v' to AST representation.
+[00001.510640] Generating RTLIL representation for module `\le1m_rx'.
+[00001.511208] Successfully finished Verilog frontend.
+[00001.511235] 
+[00001.511236] 19. Executing Verilog-2005 frontend: rtl/oqpsk/oqpsk_tx.v
+[00001.511241] Parsing SystemVerilog input from `rtl/oqpsk/oqpsk_tx.v' to AST representation.
+[00001.512060] Generating RTLIL representation for module `\oqpsk_tx'.
+[00001.514458] Successfully finished Verilog frontend.
+[00001.514503] 
+[00001.514505] 20. Executing Verilog-2005 frontend: rtl/oqpsk/oqpsk_rx_fir.v
+[00001.514512] Parsing SystemVerilog input from `rtl/oqpsk/oqpsk_rx_fir.v' to AST representation.
+[00001.514866] Generating RTLIL representation for module `\oqpsk_rx_fir'.
+[00001.515582] Successfully finished Verilog frontend.
+[00001.515608] 
+[00001.515609] 21. Executing Verilog-2005 frontend: rtl/oqpsk/oqpsk_rx_corr.v
+[00001.515614] Parsing SystemVerilog input from `rtl/oqpsk/oqpsk_rx_corr.v' to AST representation.
+[00001.516514] Generating RTLIL representation for module `\oqpsk_rx_corr'.
+[00001.744081] Warning: Replacing memory \tap with list of registers. See rtl/oqpsk/oqpsk_rx_corr.v:86, rtl/oqpsk/oqpsk_rx_corr.v:82
+Successfully finished Verilog frontend.
+[00001.765055] 
+[00001.765058] 22. Executing Verilog-2005 frontend: rtl/oqpsk/oqpsk_rx_sync.v
+[00001.765065] Parsing SystemVerilog input from `rtl/oqpsk/oqpsk_rx_sync.v' to AST representation.
+[00001.765571] Generating RTLIL representation for module `\oqpsk_rx_sync'.
+[00001.766819] Successfully finished Verilog frontend.
+[00001.766849] 
+[00001.766850] 23. Executing Verilog-2005 frontend: rtl/oqpsk/oqpsk_rx_pkt.v
+[00001.766856] Parsing SystemVerilog input from `rtl/oqpsk/oqpsk_rx_pkt.v' to AST representation.
+[00001.768028] Generating RTLIL representation for module `\oqpsk_rx_pkt'.
+[00001.772172] Successfully finished Verilog frontend.
+[00001.772227] 
+[00001.772229] 24. Executing Verilog-2005 frontend: rtl/oqpsk/oqpsk_rx.v
+[00001.772236] Parsing SystemVerilog input from `rtl/oqpsk/oqpsk_rx.v' to AST representation.
+[00001.772754] Generating RTLIL representation for module `\oqpsk_rx'.
+[00001.773277] Successfully finished Verilog frontend.
+[00001.773302] 
+[00001.773303] 25. Executing Verilog-2005 frontend: rtl/mac/mac_timer.v
+[00001.773308] Parsing SystemVerilog input from `rtl/mac/mac_timer.v' to AST representation.
+[00001.773503] Generating RTLIL representation for module `\mac_timer'.
+[00001.773766] Successfully finished Verilog frontend.
+[00001.773787] 
+[00001.773788] 26. Executing Verilog-2005 frontend: rtl/mac/mac_trigger.v
+[00001.773790] Parsing SystemVerilog input from `rtl/mac/mac_trigger.v' to AST representation.
+[00001.774046] Generating RTLIL representation for module `\mac_trigger'.
+[00001.774493] Successfully finished Verilog frontend.
+[00001.774511] 
+[00001.774512] 27. Executing Verilog-2005 frontend: rtl/mac/mac_ack_ctrl.v
+[00001.774517] Parsing SystemVerilog input from `rtl/mac/mac_ack_ctrl.v' to AST representation.
+[00001.774719] Generating RTLIL representation for module `\mac_ack_ctrl'.
+[00001.774971] Successfully finished Verilog frontend.
+[00001.774989] 
+[00001.774990] 28. Executing Verilog-2005 frontend: rtl/mac/mac_ackwait.v
+[00001.774993] Parsing SystemVerilog input from `rtl/mac/mac_ackwait.v' to AST representation.
+[00001.775093] Generating RTLIL representation for module `\mac_ackwait'.
+[00001.775168] Successfully finished Verilog frontend.
+[00001.775181] 
+[00001.775182] 29. Executing Verilog-2005 frontend: rtl/mac/mac_le_resp.v
+[00001.775199] Parsing SystemVerilog input from `rtl/mac/mac_le_resp.v' to AST representation.
+[00001.775384] Generating RTLIL representation for module `\mac_le_resp'.
+[00001.775637] Successfully finished Verilog frontend.
+[00001.775653] 
+[00001.775654] 30. Executing Verilog-2005 frontend: rtl/mac/mac_addr_filter_154.v
+[00001.775656] Parsing SystemVerilog input from `rtl/mac/mac_addr_filter_154.v' to AST representation.
+[00001.775853] Generating RTLIL representation for module `\mac_addr_filter_154'.
+[00001.776114] Successfully finished Verilog frontend.
+[00001.776129] 
+[00001.776130] 31. Executing Verilog-2005 frontend: rtl/mac/mac_le_filter.v
+[00001.776134] Parsing SystemVerilog input from `rtl/mac/mac_le_filter.v' to AST representation.
+[00001.776262] Generating RTLIL representation for module `\mac_le_filter'.
+[00001.776379] Successfully finished Verilog frontend.
+[00001.776394] 
+[00001.776394] 32. Executing Verilog-2005 frontend: rtl/top/bb_timing_regs.v
+[00001.776396] Parsing SystemVerilog input from `rtl/top/bb_timing_regs.v' to AST representation.
+[00001.776713] Generating RTLIL representation for module `\bb_timing_regs'.
+[00001.777399] Successfully finished Verilog frontend.
+[00001.777421] 
+[00001.777422] 33. Executing Verilog-2005 frontend: rtl/top/bb_rx_adapt.v
+[00001.777425] Parsing SystemVerilog input from `rtl/top/bb_rx_adapt.v' to AST representation.
+[00001.778402] Generating RTLIL representation for module `\bb_rx_adapt'.
+[00001.781636] Successfully finished Verilog frontend.
+[00001.781681] 
+[00001.781683] 34. Executing Verilog-2005 frontend: rtl/top/bb_tx_path.v
+[00001.781690] Parsing SystemVerilog input from `rtl/top/bb_tx_path.v' to AST representation.
+[00001.782347] Generating RTLIL representation for module `\bb_tx_path'.
+[00001.784020] Successfully finished Verilog frontend.
+[00001.784052] 
+[00001.784053] 35. Executing Verilog-2005 frontend: rtl/top/bb_ctrl.v
+[00001.784058] Parsing SystemVerilog input from `rtl/top/bb_ctrl.v' to AST representation.
+[00001.784816] Generating RTLIL representation for module `\bb_ctrl'.
+[00001.786772] Successfully finished Verilog frontend.
+[00001.786814] 
+[00001.786815] 36. Executing Verilog-2005 frontend: rtl/top/baseband_top.v
+[00001.786821] Parsing SystemVerilog input from `rtl/top/baseband_top.v' to AST representation.
+[00001.788283] Generating RTLIL representation for module `\baseband_top'.
+[00001.790875] Successfully finished Verilog frontend.
+[00001.790930] 
+[00001.790931] 37. Executing Liberty frontend: flow/build/synth-batch-lib/sky130_fd_sc_hd__tt_025C_1v80.lib
+[00001.823601] Imported 428 cell types from liberty file.
+[00001.828282] 
+[00001.828285] 38. Executing HIERARCHY pass (managing design hierarchy).
+[00001.828314] 
+[00001.828315] 38.1. Analyzing design hierarchy..
+[00001.828321] Top module:  \le1m_rx_sync
+[00001.828414] 
+[00001.828414] 38.2. Analyzing design hierarchy..
+[00001.828416] Top module:  \le1m_rx_sync
+[00001.834426] Removing unused module `\baseband_top'.
+[00001.834512] Removing unused module `\bb_ctrl'.
+[00001.834571] Removing unused module `\bb_tx_path'.
+[00001.834617] Removing unused module `\bb_rx_adapt'.
+[00001.834697] Removing unused module `\bb_timing_regs'.
+[00001.834722] Removing unused module `\mac_le_filter'.
+[00001.834733] Removing unused module `\mac_addr_filter_154'.
+[00001.834750] Removing unused module `\mac_le_resp'.
+[00001.834766] Removing unused module `\mac_ackwait'.
+[00001.834774] Removing unused module `\mac_ack_ctrl'.
+[00001.834790] Removing unused module `\mac_trigger'.
+[00001.834814] Removing unused module `\mac_timer'.
+[00001.834833] Removing unused module `\oqpsk_rx'.
+[00001.834868] Removing unused module `\oqpsk_rx_pkt'.
+[00001.834988] Removing unused module `\oqpsk_rx_sync'.
+[00001.835036] Removing unused module `\oqpsk_rx_corr'.
+[00001.835791] Removing unused module `\oqpsk_rx_fir'.
+[00001.835863] Removing unused module `\oqpsk_tx'.
+[00001.835992] Removing unused module `\le1m_rx'.
+[00001.836052] Removing unused module `\le1m_rx_pkt'.
+[00001.836338] Removing unused module `\rx_moving_sum'.
+[00001.836399] Removing unused module `\le1m_rx_cordic'.
+[00001.836584] Removing unused module `\le1m_rx_disc'.
+[00001.836621] Removing unused module `\le1m_rx_fir'.
+[00001.836713] Removing unused module `\le1m_tx'.
+[00001.837138] Removing unused module `\le1m_gauss'.
+[00001.837247] Removing unused module `\le1m_frame'.
+[00001.837323] Removing unused module `\le1m_crc24'.
+[00001.837346] Removing unused module `\le1m_whiten'.
+[00001.837369] Removing unused module `\host_top'.
+[00001.837448] Removing unused module `\host_regs'.
+[00001.837707] Removing unused module `\host_timestamp'.
+[00001.837741] Removing unused module `\host_irq'.
+[00001.837781] Removing unused module `\host_desc_fifo'.
+[00001.838077] Removing unused module `\host_fifo'.
+[00001.838326] Removed 35 unused modules.
+[00001.839105] ERROR: ABC9 flow only supported for FPGA synthesis (using '-lut' option)
