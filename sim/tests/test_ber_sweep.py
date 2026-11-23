@@ -530,6 +530,29 @@ def test_merge_refuses_a_partial_stop_rule(tiny, tmp_path, capsys):
     assert not (tmp_path / "o.json").exists()
 
 
+@pytest.mark.parametrize("text", ["42", "[1, 2]", "null"])
+def test_merge_refuses_a_non_object_shard(tiny, tmp_path, capsys, text):
+    """A shard that is valid JSON but not an object is refused with a
+    MergeError naming the file, not an uncaught AttributeError (issue #219)."""
+    d = _copy(tiny[1], tmp_path)
+    (d / "le1m_clock.json").write_text(text)
+    assert ber_sweep.main(["--merge", str(d), "--out", str(tmp_path / "o.json")]) == 1
+    err = capsys.readouterr().err
+    assert "le1m_clock.json" in err and "not an object" in err
+    assert not (tmp_path / "o.json").exists()
+
+
+@pytest.mark.parametrize("value", [42, [1, 2], True])
+def test_merge_refuses_a_non_object_stop_rule(tiny, tmp_path, capsys, value):
+    d = _copy(tiny[1], tmp_path)
+    for f in d.iterdir():
+        _rewrite(f, stop_rule=value)
+    assert ber_sweep.main(["--merge", str(d), "--out", str(tmp_path / "o.json")]) == 1
+    err = capsys.readouterr().err
+    assert ".json" in err and "stop_rule" in err and "not an object" in err
+    assert not (tmp_path / "o.json").exists()
+
+
 # ------------------------------------------- the committed full-sweep evidence
 
 RESULTS = pathlib.Path(SWEEP).parents[1] / "results"
