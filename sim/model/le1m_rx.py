@@ -18,12 +18,13 @@ import sys
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import le1m_tx  # noqa: E402
 import traces  # noqa: E402
 
-SPS = 8
-DEFAULT_ACCESS_ADDRESS = 0x8E89BED6
-DEFAULT_CRC_INIT = 0x555555
-CRC_POLY = 0x00065B
+SPS = le1m_tx.SPS
+DEFAULT_ACCESS_ADDRESS = le1m_tx.DEFAULT_ACCESS_ADDRESS
+DEFAULT_CRC_INIT = le1m_tx.DEFAULT_CRC_INIT
+CRC_POLY = le1m_tx.CRC_POLY
 
 # --- registers / constants (README.md "Width table") ---
 FIR_TAPS = (1, 4, 9, 16, 22, 24, 22, 16, 9, 4, 1)   # symmetric, sum = 2**FIR_SHIFT
@@ -49,26 +50,15 @@ _ATAN_TABLE = tuple(
 )
 
 
-def _bits_of(octets):
-    return [(b >> i) & 1 for b in octets for i in range(8)]
-
-
 def sync_pattern(access_address=DEFAULT_ACCESS_ADDRESS):
     """Preamble + access address, on-air order, as +1/-1 (bit 1 = +frequency)."""
-    preamble = 0x55 if access_address & 1 else 0xAA
-    bits = _bits_of([preamble]) + _bits_of(access_address.to_bytes(4, "little"))
+    bits = le1m_tx.preamble_aa_bits(access_address)
     return np.array([1 if b else -1 for b in bits], dtype=np.int64)
 
 
-def crc24(bits, init=DEFAULT_CRC_INIT):
-    """Bit-serial CRC-24 register over ``bits`` (Vol 6 Part B 3.1.1)."""
-    state = init & 0xFFFFFF
-    for bit in bits:
-        fb = ((state >> 23) & 1) ^ bit
-        state = (state << 1) & 0xFFFFFF
-        if fb:
-            state ^= CRC_POLY
-    return state
+# Bit-serial CRC-24 register over ``bits`` (Vol 6 Part B 3.1.1), shared with
+# the TX model; independent polynomial-division cross-check in sim/channel/packet.py.
+crc24 = le1m_tx.crc24_bits
 
 
 def saturate(x, bits):
@@ -112,11 +102,12 @@ def discriminate(i, q):
     return out
 
 
-def integrate(f):
-    """8-sample moving sum, s[n] = f[n-7] + ... + f[n]."""
+def integrate(f, n=SPS):
+    """n-sample moving sum, s[k] = f[k-(n-1)] + ... + f[k]. LE 1M symbols use
+    n=SPS; the 802.15.4 chip integrator reuses this at n=SPS_CHIP."""
     c = np.cumsum(f)
     s = c.copy()
-    s[SPS:] -= c[:-SPS]
+    s[n:] -= c[:-n]
     return s
 
 
@@ -158,10 +149,7 @@ def demodulate(iq, flags=None, gain=None, access_address=DEFAULT_ACCESS_ADDRESS,
     f = discriminate(i, q)
     s = integrate(f)
 
-    records = []
-    if flags is not None and gain is not None:
-        for n in np.flatnonzero(np.asarray(flags) & 2):
-            records.append((int(n), "gain", int(gain[n])))
+    records = gain_records(flags, gain)
 
     result = {"synced": False, "bits": np.zeros(0, dtype=np.uint8), "crc_ok": False,
               "sync_index": None, "pdu_bits": 0, "trace": records, "timing_steps": 0,
@@ -229,6 +217,13 @@ def demodulate(iq, flags=None, gain=None, access_address=DEFAULT_ACCESS_ADDRESS,
 
 def _clip_signed(v, bits):
     return int(max(-(1 << (bits - 1)), min((1 << (bits - 1)) - 1, v)))
+
+
+def gain_records(flags, gain):
+    """Stimulus gain-reply records (flag bit 1), shared by both demodulators."""
+    if flags is None or gain is None:
+        return []
+    return [(int(n), "gain", int(gain[n])) for n in np.flatnonzero(np.asarray(flags) & 2)]
 
 
 def _rssi(i, q, end):
