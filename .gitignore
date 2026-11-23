@@ -95,6 +95,10 @@ results.xml
 /.loom-local/
 # <<< loom-managed <<<
 
+# loom-daemon token-pool ranking state (.loom/docs/token-pool.md `--ranking`
+# output); repo-owned rule until the upstream managed template covers it (#211)
+/.loom/account-ranking.codex
+
 # Repo Skills machine-local install metadata (absolute source path + timestamp)
 .claude/skills/repo/.install-local.json
 
