@@ -8,9 +8,10 @@
 #   SYNTH_MODE  optional: `flat` (default, unset = flat) or `hier` (no -flatten,
 #               per-module ABC; experimental, see flow/synth/README.md) or
 #               `minmap` (synth -noabc; dfflibmap; abc -liberty -script
-#               +strash;,map -- skips ABC's fraig sweep, which is where the
-#               default script stalls on oqpsk_rx_corr and le1m_rx_sync; both
-#               leaves finish under it, records/2026-11-21-routes/)
+#               +strash;,map -- omits the default ABC optimization sequence
+#               including &fraig -x, scorr, dc2, dretime, &dch -f and maps
+#               with `map` instead of `&nf`; both leaves finish under it,
+#               records/2026-11-21-routes/)
 #   SYNTH_ABC_FAST  optional, hier only: `1` uses `abc -fast -liberty`
 # Cell counts / area from this step are not timing claims (item 42 owns those).
 set top  $::env(SYNTH_TOP)

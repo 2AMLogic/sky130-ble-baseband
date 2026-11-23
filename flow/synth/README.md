@@ -50,7 +50,11 @@ Two more shapes, both added for issue 201 (see the section below): `-r ROUTE`
 runs a liberty mapping route (`noabc_map`, `noabc_mapfast`, `noabc_abc9`,
 `noabc_minmap`; `-n` is `-r noabc`), and `-d` runs the ABC-stall diagnostics
 instead of a synth variant (env probe, kept ABC temp dir, standalone
-`yosys-abc` per-command timing), writing `diag.json` + `diag/<module>/`.
+`yosys-abc` single-session per-command timing with `stdcells.genlib` and
+completion verification), writing `diag.json` + `diag/<module>/`. Both `-d`
+and `-r noabc_*` default to the two leaves (`oqpsk_rx_corr le1m_rx_sync`) and
+a 300 s cap (override with `-t` and explicit module names); plain profiling
+and `-n` / `-r noabc` preserve the legacy defaults (600 s, full filelist).
 `routes-batch.sh` runs the whole matrix sequentially inside one `repo-script`
 batch shard, off-worker (issue 201 / operator ruling of 2026-10-29).
 
@@ -178,57 +182,90 @@ at all", not reproducible pin-flow numbers. Per-run cap 300 s, one `yosys` at
 a time, produced by `routes-batch.sh` + `profile.sh -d` / `-r` (this issue).
 Cell counts are not timing claims.
 
-### The stall is real `&fraig -x` work, not extraction and not the handshake
+### Stall diagnostics (step 1): observed timings, BLIF sizes and caveats
 
-The diagnostics (`diag.json`, `diag/<leaf>/`) separate the three candidates:
+The diagnostics (`diag.json`, `diag/<leaf>/`) recorded the following on the
+batch image (Yosys `0.68+` OpenROAD fork, 300 s cap):
 
-- **Not the yosys/ABC handshake deadlock** (klayout-tools#5877 shape): with
-  `COLUMNS=1000 TMPDIR=/tmp stdbuf` (case A) the plain flow still spends the
-  same ~200 s inside ABC before finishing — `oqpsk_rx_corr` **completes in
-  199.4 s** where the 2026-11-14 record "hung", i.e. that earlier stall was
-  the 120 s kill, not a deadlock.
-- **Not Yosys extraction**: the kept-temp run (case B, `abc -nocleanup
-  -showtmp` after `synth -noabc`) shows `input.blif` written promptly
-  (4,051,560 B for `oqpsk_rx_corr`, 4,743,384 B for `le1m_rx_sync`; sha256
-  tails in `diag.json`) — the last log line before silence names extraction
-  only because **ABC's output stays in the pipe until the child exits** (all
-  `ABC:` lines of a finishing run share one timestamp, `caseB.log` line
-  2820+): a quiet log is not an idle process.
-- **ABC itself, specifically the default script's fraig sweep**: standalone
-  `yosys-abc` on the kept `input.blif`, one script command per invocation
-  (case C), pins it — `&get -n; &fraig -x; &put` is 189.8 s of the 190.2 s
-  total on `oqpsk_rx_corr` and exceeds the 299 s budget on `le1m_rx_sync`;
-  every other command (`strash`, `scorr`, `dc2`, `&dch -f; &nf`) is ≤ 0.2 s.
-  (Case C's split steps after `scorr` are invalid — `dc2` needs in-session
-  network state the BLIF round-trip loses, so those `Cannot open input file`
-  lines are a harness artifact, recorded as such; steps 1–3 are the
-  measurement.)
+- **Case A (env probe: `COLUMNS=1000 TMPDIR=/tmp stdbuf`)**: `oqpsk_rx_corr`
+  finished in **199.4 s** (`ok`, peak RSS 214,956 kB); `le1m_rx_sync` hit the
+  cap at **300.0 s** (`timeout`, peak RSS 397,552 kB). This establishes that
+  `oqpsk_rx_corr` completes in 199.4 s in the batch fork under the probe
+  environment, whereas the older `2026-11-14` pinned-`0.67+post` run ended at
+  its 120 s timeout with the extraction banner as its last log line. Because
+  Case A changed the Yosys binary (`0.68+` fork vs pinned `0.67+post`), the
+  environment, and the cap (300 s vs 120 s) together, it does not isolate
+  those variables for the older pinned run; it is consistent with the 120 s
+  cap interrupting active ABC work on `oqpsk_rx_corr`, while `le1m_rx_sync`
+  still exceeded 300 s under the probe environment.
+- **Case B (kept ABC temp dir: `synth -noabc; abc -nocleanup -showtmp`)**:
+  after Yosys exited or timed out, `input.blif` was present on disk for both
+  leaves — **4,051,560 B** for `oqpsk_rx_corr` (`ok`, 198.4 s wall, peak RSS
+  186,512 kB; sha256 prefix `4f4c08bccb891cb8`) and **4,743,384 B** for
+  `le1m_rx_sync` (`timeout`, 300.0 s wall, peak RSS 396,844 kB; sha256 prefix
+  `364cddca6f5024d4`). Because `profile.sh` checks `input.blif` only after
+  Yosys exits or times out, the exact timestamp when `input.blif` was created
+  is not directly measured; what is established is that extraction produced
+  both BLIFs before exit/kill. In the finishing `oqpsk_rx_corr` log
+  (`caseB.log` lines 2815–2840), the extraction banner is stamped
+  `00003.551663` and every `ABC:` line shares `00198.1249xx`, showing ABC's
+  output stayed pipe-buffered until child exit — so a killed log ending at
+  the extraction banner does not by itself show Yosys stalled in extraction.
+- **Case C (standalone `yosys-abc` on the kept `input.blif`)**:
+  - `oqpsk_rx_corr`: `strash` took **0.2 s** (`ok`), `&get -n; &fraig -x; &put`
+    took **189.8 s** (`ok`), and `scorr` took **0.1 s** (`ok`, combinational
+    network warning). Steps 4–7 (`dc2`, `dretime`, `strash`,
+    `&get -n; &dch -f; &nf; &put`) **failed** in the recorded `2026-11-21`
+    run (`diag.json` corrected on 2026-11-23 from `ok` to `error`; raw
+    `diag/oqpsk_rx_corr/caseC.log:5–12` unmodified): the pre-fix harness
+    reloaded a BLIF per invocation, which lost ABC's strashed network state
+    so `dc2` errored and steps 5–7 could not open their missing input BLIFs,
+    while `yosys-abc` still exited 0. Those four later commands were **not**
+    validly measured in the `2026-11-21` Case C run (for coarse context only,
+    full in-session `caseB` took 198.4 s total vs 3.55 s before ABC and
+    189.8 s for standalone `&fraig -x`, leaving ~5 s combined for extraction,
+    the remaining ABC commands, and re-integration).
+  - `le1m_rx_sync`: `strash` took **0.2 s** (`ok`) and
+    `&get -n; &fraig -x; &put` hit the budget at **299.0 s** (`timeout`,
+    overall 299.2 s `timeout`). That timeout in the fraig group is valid
+    evidence; its later commands were never reached.
+  - `profile.sh -d` has since been updated to keep the default ABC script and
+    `stdcells.genlib` in a single `yosys-abc` session and verify completion
+    before recording `ok`, for any future off-worker rerun.
 
 ### Trial routes (step 2), both leaves, 300 s cap
 
 | route (`profile.sh -r`) | `oqpsk_rx_corr` | `le1m_rx_sync` |
 |---|---|---|
-| `noabc_map` — `synth -noabc; dfflibmap; abc -liberty` (default ABC script) | ok, 176.7 s, 36,560 cells | **timeout** at 300 s |
+| `noabc_map` — `synth -noabc; dfflibmap; abc -liberty` (default ABC script) | ok, 176.7 s, 36,560 cells, 5,956 flops | **timeout** at 300 s |
 | `noabc_mapfast` — same with `abc -fast` | error (3.6 s): the image's 0.68+ `abc` rejects `-fast` (`abc -fast` exists on pin 0.67) | error (33.9 s), same cause |
 | `noabc_abc9` — `read_liberty -lib; synth -abc9` | error (1.9 s): `ABC9 flow only supported for FPGA synthesis (using '-lut' option)` — abc9 has no liberty standard-cell mode on 0.67 or 0.68+ | error (1.8 s), same |
 | `noabc_minmap` — `synth -noabc; dfflibmap; abc -liberty -script {+strash;,map}` | **ok, 6.8 s**, 45,399 cells, 5,956 flops | **ok, 38.4 s**, 50,965 cells, 9,256 flops |
 
 Flop totals cross-check the `2026-11-14-noabc` generic counts exactly (5,956 /
-9,256). The `noabc_minmap` rows were corrected after collection from the
-recorded `.stat` files — the batch's flop parser missed the enable-flop
-`edfxtp` family (see `run-meta.txt`); the fix is in `profile.sh`.
+9,256). The `noabc_minmap` and `noabc_map` rows' flops were corrected after
+collection from the recorded `.stat` files — the batch's flop parser missed
+the enable-flop `edfxtp` family (see `run-meta.txt`); the fix is in
+`profile.sh`.
 
 ### Conclusion
 
-**`SYNTH_MODE=minmap` finishes on both leaves** (6.8 s / 38.4 s under the
-300 s cap) and is selectable in `synth.tcl` (`SYNTH_MODE=minmap`): `synth
--noabc`, `dfflibmap`, then `abc -liberty` with the minimal `strash; map`
-script — the route drops exactly the `&fraig -x` sweep measured above. The
-default (`flat`) and `hier` modes are unchanged; `SYNTH_MODE` unset still
-means `flat`. The mapped cell counts (45 k / 51 k) are higher than the
-default script's (36.5 k where it finishes) because fraig-based sweeping is
-also what shrinks the network — that trade is a cell-count observation, not
-an area or timing claim. The batch runner wiring (`run-batch.sh`) lives on
-`feature/issue-72`, not `main`; selecting the mode there is #72's to wire.
-No `baseband_top` run was made here; the full-top run stays with #72, which
-can now take `SYNTH_MODE=minmap` as its route.
+**`SYNTH_MODE=minmap` finishes on both leaves** (6.8 s, 45,399 cells, 5,956
+flops on `oqpsk_rx_corr`; 38.4 s, 50,965 cells, 9,256 flops on `le1m_rx_sync`,
+300 s cap on the batch image's Yosys `0.68+`) and is selectable in `synth.tcl`
+(`SYNTH_MODE=minmap`): `synth -noabc`, `dfflibmap`, then `abc -liberty` with
+the minimal `strash; map` script. The default (`flat`) and `hier` modes are
+unchanged; `SYNTH_MODE` unset still means `flat`. Compared to the default
+`noabc_map` script recorded in `routes/noabc_map/logs/oqpsk_rx_corr.log:2864–2876`
+(`strash; &get -n; &fraig -x; &put; scorr; dc2; dretime; strash; &get -n; &dch -f; &nf; &put`,
+which finished `oqpsk_rx_corr` in 176.7 s at 36,560 cells / 5,956 flops and
+timed out on `le1m_rx_sync`), `noabc_minmap` (`routes/noabc_minmap/logs/oqpsk_rx_corr.log:2865–2866`,
+`strash; map`) omits the entire optimization sequence (`&fraig -x`, `scorr`,
+`dc2`, `dretime`, `&dch -f`) and maps with `map` instead of `&nf`. The higher
+cell count on `oqpsk_rx_corr` (45,399 vs 36,560 cells; flops unchanged at
+5,956) therefore reflects dropping that whole pipeline and changing the mapper
+rather than the isolated contribution of `&fraig -x`, and is a cell-count
+observation rather than an area or timing claim. The batch runner wiring
+(`run-batch.sh`) lives on `feature/issue-72`, not `main`; selecting the mode
+there is #72's to wire. No `baseband_top` run was made here; the full-top run
+stays with #72, which can now take `SYNTH_MODE=minmap` as its route.

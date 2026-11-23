@@ -24,3 +24,14 @@ flops_correction: the batch ran profile.sh whose flop parser matched only
   The ok rows' flops were re-derived on 2026-11-21 from the recorded .stat
   files with the fixed pattern <lib>__(e|s)?(df|dl) (commit that carries it);
   the .stat files and all logs are as collected, unmodified.
+caseC_correction: on 2026-11-23, diag.json was corrected for oqpsk_rx_corr
+  case C (status ok -> error, steps 4-7 ok -> error with wall_s null). The
+  batch ran the pre-fix split-session case C harness that reloaded BLIF per
+  step (losing ABC's strashed network state) and checked only exit code
+  (yosys-abc returns 0 on errors); in diag/oqpsk_rx_corr/caseC.log:5-12, dc2
+  rejected the network and steps 5-7 failed to open their missing input BLIFs.
+  Steps 1-3 completed (189.8 s in &fraig -x); le1m_rx_sync case C's timeout
+  in &get -n; &fraig -x; &put (299.0 s) remains valid evidence (later commands
+  were never reached). profile.sh -d now keeps the default script and
+  stdcells.genlib in one yosys-abc session and verifies completion. All logs
+  are preserved unmodified.

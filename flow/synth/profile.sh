@@ -5,7 +5,11 @@
 #                         [-d] [module ...]
 #
 # Runs `synth -top <m>` (no -flatten) on every module in rtl/baseband.f, one at a
-# time (sequential on purpose: shared worker), each under a hard `timeout`.
+# time (sequential on purpose: shared worker), each under a hard `timeout`
+# (default 600 s for plain and -n/-r noabc). Issue-201 modes (-d and -r noabc_*)
+# default to the two expensive leaves (`oqpsk_rx_corr le1m_rx_sync`) and a 300 s
+# cap so a bare invocation never sweeps the full design at 600 s; pass -t and/or
+# explicit module names to override.
 # Writes OUTDIR/profile.json (default flow/synth/records/<date>/, suffixed
 # `-noabc` under -n so the two variants do not overwrite each other). Never runs
 # the flat flow. A row is status ok | timeout | error; cell/flop counts are
@@ -47,9 +51,11 @@
 #   case C  only if case B produced input.blif: the plain default ABC script
 #          (`strash; &get -n; &fraig -x; &put; scorr; dc2; dretime; strash;
 #           &get -n; &dch -f; &nf; &put`, yosys 0.67 `help abc`, {D} empty)
-#           run through yosys-abc standalone, one command group per
-#           invocation (the &-space commands must not round-trip through BLIF
-#           individually), each timed under the same per-run budget.
+#           plus case B's stdcells.genlib run in ONE yosys-abc session so
+#           strashed network state and the library persist across commands.
+#           Per-step timings come from ABC's `time`; completion is verified via
+#           markers, non-empty output BLIF, and absence of ABC error lines
+#           (yosys-abc exits 0 even on command errors).
 #
 # Yosys runs with `-t` and `-d`, so the per-module log under OUTDIR/logs/ is
 # usable for locating a stall:
@@ -73,6 +79,7 @@
 set -u
 cd "$(dirname "$0")/../.."
 TMO=600
+TMO_SET=0
 OUT=
 NOABC=0
 ROUTE=plain
@@ -80,7 +87,7 @@ LIB=
 DIAG=0
 while getopts "t:o:nr:L:d" o; do
   case $o in
-    t) TMO=$OPTARG ;;
+    t) TMO=$OPTARG; TMO_SET=1 ;;
     o) OUT=$OPTARG ;;
     n) NOABC=1 ;;
     r) ROUTE=$OPTARG ;;
@@ -119,6 +126,12 @@ fi
 # overridable) unless -L named it. Only the noabc_* mapping routes need it.
 needs_lib=0
 case "$ROUTE" in noabc_map|noabc_mapfast|noabc_abc9|noabc_minmap) needs_lib=1 ;; esac
+# Issue-201 modes (-d and -r noabc_*) default to the two expensive leaves and
+# the 300 s trial limit; plain profiling and -n/-r noabc keep legacy defaults
+# (600 s and the full rtl/baseband.f filelist).
+issue201_mode=0
+if [ "$DIAG" -eq 1 ] || [ "$needs_lib" -eq 1 ]; then issue201_mode=1; fi
+if [ "$issue201_mode" -eq 1 ] && [ "$TMO_SET" -eq 0 ]; then TMO=300; fi
 if [ "$DIAG" -eq 0 ] && [ "$needs_lib" -eq 1 ]; then
   if [ -z "$LIB" ]; then
     mk=flow/versions.mk
@@ -145,7 +158,13 @@ TIMEV=/usr/bin/time
 
 files=$(grep -v '^[[:space:]]*\(#\|$\)' "$LIST")
 # module name = file basename (verified by `hierarchy` in each run)
-if [ $# -gt 0 ]; then mods="$*"; else mods=$(for f in $files; do basename "$f" .v; done); fi
+if [ $# -gt 0 ]; then
+  mods="$*"
+elif [ "$issue201_mode" -eq 1 ]; then
+  mods="oqpsk_rx_corr le1m_rx_sync"
+else
+  mods=$(for f in $files; do basename "$f" .v; done)
+fi
 
 read_cmd() { # <module> -> full yosys -p string for the selected route
   local m=$1 pre=$PRE_READ map=$MAP_CMD
@@ -224,34 +243,106 @@ if [ "$DIAG" -eq 1 ]; then
     fi
     diag_rows+=("    {\"module\": \"$m\", \"case\": \"B-keeptmp\", \"status\": \"$status\", \"wall_s\": $wall, \"peak_rss_kb\": $rss, \"abc_tmpdir\": \"${tmpdir:-null}\", \"input_blif_exists\": $blif_exists, \"input_blif_bytes\": $blif_bytes, \"input_blif_sha256_16\": \"$blif_sha\"}")
 
-    # case C: standalone yosys-abc on the kept input.blif, one script command
-    # per invocation, each timed, whole case under the same budget
+    # case C: standalone yosys-abc on the kept input.blif + stdcells.genlib,
+    # running the full default ABC script in ONE session so strashed network
+    # state and the library persist across commands. Completion is verified via
+    # markers, non-empty output BLIF, and absence of ABC error lines (yosys-abc
+    # returns exit 0 even when a command fails).
     crow="    {\"module\": \"$m\", \"case\": \"C-abc-standalone\", \"status\": \"skipped\", \"wall_s\": null, \"commands\": []}"
     if [ "$blif_exists" = true ]; then
-      # The plain default script, split so that each invocation round-trips
-      # through BLIF safely: the &-space commands must run as one group
-      # (write_blif serializes the regular network, not the &-network).
       abc_cmds=("strash" "&get -n; &fraig -x; &put" "scorr" "dc2" "dretime" "strash" "&get -n; &dch -f; &nf; &put")
-      cstart=$(date +%s.%N); budget=$TMO; cstatus=ok; crows=(); cur="$blif"
+      genlib=""
+      if [ -n "$tmpdir" ] && [ -f "$tmpdir/abc.script" ]; then
+        genlib=$(sed -n 's/^read_library[[:space:]]\{1,\}"\{0,1\}\([^";]*\)"\{0,1\};.*/\1/p' "$tmpdir/abc.script" | head -1)
+      fi
+      if [ -z "$genlib" ] || [ ! -f "$genlib" ]; then
+        genlib=$(find "$d" -maxdepth 2 -name 'stdcells.genlib' -print -quit 2>/dev/null)
+      fi
+      cscript="$d/caseC.script"
+      cout="$d/caseC-out.blif"
+      rm -f "$cscript" "$cout"
       : > "$d/caseC.log"
-      i=0
-      for c in "${abc_cmds[@]}"; do
-        i=$((i+1)); nxt="$d/caseC-step$i.blif"
-        s0=$(date +%s.%N)
-        stdbuf -oL -eL timeout -k 5 "$budget" yosys-abc -c "read_blif $cur; $c; write_blif $nxt" >>"$d/caseC.log" 2>&1
+      if [ -z "$genlib" ] || [ ! -f "$genlib" ]; then
+        echo "profile: case C: stdcells.genlib not found for $m" >>"$d/caseC.log"
+        crow="    {\"module\": \"$m\", \"case\": \"C-abc-standalone\", \"status\": \"error\", \"wall_s\": 0.0, \"commands\": [        {\"cmd\": \"read_library\", \"wall_s\": null, \"status\": \"error\"}]}"
+      else
+        {
+          echo "echo __CASEC_BEGIN__"
+          echo "read_blif \"$blif\""
+          echo "read_library \"$genlib\""
+          echo "time"
+          i=0
+          for c in "${abc_cmds[@]}"; do
+            i=$((i+1))
+            echo "echo __CASEC_STEP_START__ $i"
+            printf '%s\n' "$c" | tr ';' '\n' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//; /^$/d'
+            echo "time"
+            echo "echo __CASEC_STEP_END__ $i"
+          done
+          echo "write_blif \"$cout\""
+          echo "echo __CASEC_DONE__"
+        } > "$cscript"
+        cstart=$(date +%s.%N)
+        timeout -k 5 "$TMO" stdbuf -oL -eL yosys-abc -c "source \"$cscript\"" >"$d/caseC.log" 2>&1
         crc=$?
-        cw=$(awk -v a="$s0" -v b="$(date +%s.%N)" 'BEGIN{printf "%.1f", b-a}')
-        budget=$(awk -v b="$budget" -v w="$cw" 'BEGIN{printf "%d", b-w}')
-        if [ $crc -eq 124 ] || [ $crc -eq 137 ]; then cs=timeout; elif [ $crc -eq 0 ]; then cs=ok; else cs=error; fi
-        crows+=("        {\"cmd\": \"$c\", \"wall_s\": $cw, \"status\": \"$cs\"}")
-        cur=$nxt
-        if [ "$cs" != ok ]; then cstatus=$cs; break; fi
-        if [ "$budget" -le 0 ]; then cstatus=timeout; crows+=("        {\"cmd\": \"(budget exhausted)\", \"wall_s\": null, \"status\": \"timeout\"}"); break; fi
-      done
-      cwall=$(awk -v a="$cstart" -v b="$(date +%s.%N)" 'BEGIN{printf "%.1f", b-a}')
-      cjson=$(printf '%s,\n' "${crows[@]}" | sed '$ s/,$//' | tr -d '\n')
-      crow="    {\"module\": \"$m\", \"case\": \"C-abc-standalone\", \"status\": \"$cstatus\", \"wall_s\": $cwall, \"commands\": [$cjson]}"
-      rm -f "$d"/caseC-step*.blif
+        cwall=$(awk -v a="$cstart" -v b="$(date +%s.%N)" 'BEGIN{printf "%.1f", b-a}')
+        timed_out=0
+        if [ $crc -eq 124 ] || [ $crc -eq 137 ]; then timed_out=1; fi
+        err_re='^(\*\* cmd error:|Error:|Cannot open input file |Unknown command )'
+        has_err=0; grep -Eq "$err_re" "$d/caseC.log" && has_err=1
+        has_done=0; grep -Eq '^__CASEC_DONE__([[:space:]]|$)' "$d/caseC.log" && has_done=1
+        has_out=0; [ -s "$cout" ] && has_out=1
+
+        init_t=$(awk '
+          /^__CASEC_BEGIN__([[:space:]]|$)/ {in_b=1; next}
+          in_b && /^__CASEC_STEP_START__ 1([[:space:]]|$)/ {exit}
+          in_b {print}
+        ' "$d/caseC.log" | sed -n 's/^elapse:[[:space:]]*\([0-9][0-9.]*\)[[:space:]]*seconds.*/\1/p' | tail -1)
+        sum_step_s=${init_t:-0.0}
+        crows=()
+        cstatus=ok
+        i=0
+        for c in "${abc_cmds[@]}"; do
+          i=$((i+1))
+          has_start=0; has_end=0; step_err=0; step_t=""
+          grep -Eq "^__CASEC_STEP_START__ $i([[:space:]]|$)" "$d/caseC.log" && has_start=1
+          grep -Eq "^__CASEC_STEP_END__ $i([[:space:]]|$)" "$d/caseC.log" && has_end=1
+          if [ "$has_start" -eq 0 ]; then break; fi
+          slice=$(awk -v s="^__CASEC_STEP_START__ $i([[:space:]]|$)" -v e="^__CASEC_STEP_END__ $i([[:space:]]|$)" '
+            $0 ~ s {in_s=1; next}
+            in_s && $0 ~ e {exit}
+            in_s {print}
+          ' "$d/caseC.log")
+          printf '%s\n' "$slice" | grep -Eq "$err_re" && step_err=1
+          step_t=$(printf '%s\n' "$slice" | sed -n 's/^elapse:[[:space:]]*\([0-9][0-9.]*\)[[:space:]]*seconds.*/\1/p' | tail -1)
+          if [ "$has_end" -eq 1 ] && [ "$step_err" -eq 0 ] && [ -n "$step_t" ]; then
+            cw=$(awk -v t="$step_t" 'BEGIN{printf "%.1f", t}')
+            sum_step_s=$(awk -v a="$sum_step_s" -v b="$step_t" 'BEGIN{printf "%.3f", a+b}')
+            crows+=("        {\"cmd\": \"$c\", \"wall_s\": $cw, \"status\": \"ok\"}")
+          elif [ "$timed_out" -eq 1 ] && [ "$has_end" -eq 0 ] && [ "$step_err" -eq 0 ]; then
+            rem=$(awk -v w="$cwall" -v s="$sum_step_s" 'BEGIN{d=w-s; if (d<0) d=0; printf "%.1f", d}')
+            crows+=("        {\"cmd\": \"$c\", \"wall_s\": $rem, \"status\": \"timeout\"}")
+            cstatus=timeout
+            break
+          else
+            crows+=("        {\"cmd\": \"$c\", \"wall_s\": null, \"status\": \"error\"}")
+            cstatus=error
+            break
+          fi
+        done
+        if [ "$timed_out" -eq 1 ]; then
+          cstatus=timeout
+        elif [ "$crc" -ne 0 ] || [ "$has_err" -eq 1 ] || [ "$has_done" -eq 0 ] || [ "$has_out" -eq 0 ] || [ "${#crows[@]}" -ne "${#abc_cmds[@]}" ]; then
+          cstatus=error
+        fi
+        if [ "${#crows[@]}" -gt 0 ]; then
+          cjson=$(printf '%s,\n' "${crows[@]}" | sed '$ s/,$//' | tr -d '\n')
+        else
+          cjson=""
+        fi
+        crow="    {\"module\": \"$m\", \"case\": \"C-abc-standalone\", \"status\": \"$cstatus\", \"wall_s\": $cwall, \"commands\": [$cjson]}"
+        rm -f "$cscript" "$cout"
+      fi
     fi
     diag_rows+=("$crow")
     # remove the kept ABC temp dir from the repo root now that size and sha
@@ -263,7 +354,7 @@ if [ "$DIAG" -eq 1 ]; then
     echo "{"
     echo "  \"tool\": \"$(yosys -V)\","
     echo "  \"timeout_s\": $TMO,"
-    echo "  \"note\": \"issue-201 stall diagnostics: A handshake env probe (COLUMNS/TMPDIR, stdbuf), B explicit abc -nocleanup -showtmp after synth -noabc (input.blif evidence), C yosys-abc standalone, plain default script per command\"",
+    echo "  \"note\": \"issue-201 stall diagnostics: A handshake env probe (COLUMNS/TMPDIR, stdbuf), B explicit abc -nocleanup -showtmp after synth -noabc (input.blif existence/size checked after exit/timeout), C yosys-abc standalone in one session with stdcells.genlib and verified completion\"",
     echo "  \"cases\": ["
     n=${#diag_rows[@]}; i=0
     for r in "${diag_rows[@]}"; do i=$((i+1)); [ $i -lt $n ] && echo "$r," || echo "$r"; done
