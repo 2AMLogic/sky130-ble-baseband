@@ -73,7 +73,7 @@ with a payload over 125 octets pulses `tx_reject` and sends nothing.
 |---|---|
 | `oqpsk_rx_fir` | 5-tap FIR `1 4 6 4 1`, `(acc+8)>>4`, saturate to signed 9; also the RSSI magnitude |
 | `le1m_rx_disc`, `le1m_rx_cordic` | discriminator products and CORDIC angle, **reused unchanged** from `rtl/le1m_rx/` (the model shares `le1m_rx.discriminate`) |
-| `rx_moving_sum` | 4-sample chip integrator, signed 18 — **shared** with `le1m_rx`, which instantiates it at `N=8` (the model's `integrate`/`chip_integrate` are the same sliding sum apart from the window) |
+| `rx_moving_sum` | 4-sample chip integrator, signed 18 — **shared** with `le1m_rx`, which instantiates it at `N=8` (the model's `le1m_rx.integrate` is the same sliding sum at either window length) |
 | `oqpsk_rx_corr` | 16 correlators over 31 chip-spaced taps (signed 23), `mag` (unsigned 23), argmax (lowest index on ties), accept rule, the 320-sample RSSI window |
 | `oqpsk_rx_sync` | preamble run of 4 symbol-0 matches, best of the next 4 indices, SFD (symbols 7 then 10, at most 16 further zeros) |
 | `oqpsk_rx_pkt` | symbol decisions, +/-1 timing step, PHR length, octets, FCS, trace taps |

@@ -62,14 +62,6 @@ def channel_filter(x):
     return le1m_rx.saturate((y + (1 << (FIR_SHIFT - 1))) >> FIR_SHIFT, FIR_OUT_BITS)
 
 
-def chip_integrate(f):
-    """4-sample moving sum, g[n] = f[n-3] + ... + f[n]. Nominal +/-16384."""
-    c = np.cumsum(f)
-    g = c.copy()
-    g[SPS_CHIP:] -= c[:-SPS_CHIP]
-    return g
-
-
 def correlate(g):
     """Symbol correlators. Window tap j (transition k = j + 1) is
     ``g[i + SPS_CHIP*j]``, so the window for corr index ``i`` ends (chip 31) at
@@ -117,14 +109,11 @@ def demodulate(iq, flags=None, gain=None):
     records), ``timing_steps``."""
     i_f = channel_filter(iq[:, 0])
     q_f = channel_filter(iq[:, 1])
-    g = chip_integrate(le1m_rx.discriminate(i_f, q_f))
+    g = le1m_rx.integrate(le1m_rx.discriminate(i_f, q_f), SPS_CHIP)
     corr, mag = correlate(g)
     ncorr = corr.shape[1]
 
-    records = []
-    if flags is not None and gain is not None:
-        for n in np.flatnonzero(np.asarray(flags) & 2):
-            records.append((int(n), "gain", int(gain[n])))
+    records = le1m_rx.gain_records(flags, gain)
     result = {"synced": False, "psdu": b"", "crc_ok": False, "length": None,
               "sync_index": None, "trace": records, "timing_steps": 0}
     if ncorr <= 0:

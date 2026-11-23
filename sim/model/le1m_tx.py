@@ -59,8 +59,13 @@ def crc24(pdu, init=DEFAULT_CRC_INIT):
 
     Returns the 24-bit register; spec position 23 is bit 23 and is sent first.
     """
+    return crc24_bits(bytes_to_bits(pdu), init)
+
+
+def crc24_bits(bits, init=DEFAULT_CRC_INIT):
+    """Bit-serial CRC-24 register over ``bits`` (Vol 6 Part B 3.1.1)."""
     state = init & 0xFFFFFF
-    for bit in bytes_to_bits(pdu):
+    for bit in bits:
         fb = ((state >> 23) & 1) ^ bit
         state = (state << 1) & 0xFFFFFF
         if fb:
@@ -72,14 +77,18 @@ def crc_bits(crc):
     return [(crc >> i) & 1 for i in range(23, -1, -1)]
 
 
+def preamble_aa_bits(access_address=DEFAULT_ACCESS_ADDRESS):
+    """Preamble + access address bits, on-air order (both unwhitened)."""
+    preamble = 0x55 if access_address & 1 else 0xAA
+    return bytes_to_bits(bytes([preamble])) + bytes_to_bits(access_address.to_bytes(4, "little"))
+
+
 def frame(pdu, channel, access_address=DEFAULT_ACCESS_ADDRESS, crc_init=DEFAULT_CRC_INIT):
     """On-air LE 1M bit sequence: preamble, access address, whitened PDU + CRC."""
     if len(pdu) > MAX_PDU_OCTETS:
         raise ValueError(f"PDU longer than {MAX_PDU_OCTETS} octets")
-    preamble = 0x55 if access_address & 1 else 0xAA
     pdu_bits = bytes_to_bits(pdu) + crc_bits(crc24(pdu, crc_init))
-    aa = bytes_to_bits(access_address.to_bytes(4, "little"))
-    return bytes_to_bits(bytes([preamble])) + aa + whiten(pdu_bits, channel)
+    return preamble_aa_bits(access_address) + whiten(pdu_bits, channel)
 
 
 def gaussian_shape(bits):
@@ -107,12 +116,7 @@ def tx_dev_words(pdu, channel, access_address=DEFAULT_ACCESS_ADDRESS, crc_init=D
     return gaussian_shape(frame(pdu, channel, access_address, crc_init))
 
 
-def trace_records(words):
-    """txact rises at index 0 and falls one sample after the last word."""
-    yield (0, "txact", 1)
-    for i, w in enumerate(words):
-        yield (i, "txdev", traces.to_unsigned(w, 8))
-    yield (len(words) + 1, "txact", 0)
+trace_records = traces.tx_trace_records
 
 
 def main(argv=None):

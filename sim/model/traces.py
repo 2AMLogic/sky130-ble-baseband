@@ -27,11 +27,6 @@ def _check(index, field, value, where):
         raise TraceError(f"{where}: value must be a non-negative integer, got {value!r}")
 
 
-def format_record(index, field, value):
-    _check(index, field, value, "record")
-    return f"{index} {field} {value:x}"
-
-
 def write_trace(path, records):
     """Write (index, field, value) records; indices must be non-decreasing."""
     last = 0
@@ -109,6 +104,15 @@ def compare_by_index(name, rtl_records, model_records, *, ignore=(), flip=None):
                 f"expected={[f'{v:x}' for v in gw.get(key, [])]} "
                 f"(rtl {len(rtl_records)} records, model {len(want)})")
     assert len(rtl_records) == len(want), f"{name}: record count rtl={len(rtl_records)} expected={len(want)}"
+
+
+def tx_trace_records(words):
+    """TX trace of one packet: ``txact`` rises at index 0 and falls one sample
+    after the last ``txdev`` word. Shared by both TX models (trace_format.md)."""
+    yield (0, "txact", 1)
+    for i, w in enumerate(words):
+        yield (i, "txdev", to_unsigned(w, 8))
+    yield (len(words) + 1, "txact", 0)
 
 
 def load_rx_case(vec, name):
