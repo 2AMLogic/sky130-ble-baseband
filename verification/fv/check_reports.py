@@ -36,10 +36,14 @@ from envelope_check import _ABS_HOST_PATH_RE, _walk_strings  # noqa: E402
 def _load(path, problems, expect):
     try:
         with open(path) as f:
-            return json.load(f)
+            report = json.load(f)
     except (OSError, ValueError) as e:
         problems.append(f"{path}: unreadable ({e}); expected {expect}")
         return None
+    if not isinstance(report, dict):
+        problems.append(f"{path}: not a JSON object; expected {expect}")
+        return None
+    return report
 
 
 def _check_common(path, rep, bench, problems):
