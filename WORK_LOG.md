@@ -5,6 +5,10 @@ triage role. Newest first.
 
 ### 2026-11-23
 
+- **PR #217**: fix: report non-object FV reports as named problems
+- **PR #205**: feat(synth): record ABC-stall diagnosis and add SYNTH_MODE=minmap route
+- **Issue #210** (closed): envelope_check: a JSON envelope that is not an object aborts the gate with a traceback instead of a named ::error
+- **Issue #201** (closed): Synthesis: find a mapping route that finishes on oqpsk_rx_corr and le1m_rx_sync (bounded trials; the stall is at the generic-synth ABC step)
 - **PR #216**: refactor(sim): share the last duplicate model helpers across PHYs
 - **PR #215**: fix: gitignore loom-daemon account-ranking.codex state file
 - **PR #212**: chore: drop dead ngspice-flow rules, reports negation from .gitignore
