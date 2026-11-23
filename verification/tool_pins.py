@@ -15,9 +15,8 @@ documented procedure for the wrong tool. This check ties them together:
 The scan surface follows `git ls-files`, not a directory list, so a literal
 placed anywhere tracked is guarded (issue #171). Excluded paths: `.loom/`
 and `.claude/` (installed tooling provisioned outside this repo), the
-vendored upstream checklist copy plus the byte-compared generated signoff
-record (`manifests/design-evidence-tiers.md`, `manifests/*.signoff.json`),
-and this check's own negative-control suite
+byte-compared generated signoff record
+(`manifests/*.signoff.json`), and this check's own negative-control suite
 (`verification/tests/test_tool_pins.py`) -- those are excluded because this
 repo cannot edit them to satisfy the check, not because they happen to be
 clean today. Unpinned mentions are not
@@ -44,16 +43,14 @@ _PIN = re.compile(r"pip install klayout-tools==(\S+)")
 _SITE = re.compile(r"klayout-tools==([0-9][\w.\-+]*)")
 
 # Paths this repo cannot edit to satisfy the check are excluded by policy, not
-# because they happen to be clean today: `manifests/design-evidence-tiers.md`
-# is vendored upstream text and `manifests/*.signoff.json` is the generated,
-# byte-compared record. `.loom/` and `.claude/` are installed tooling whose
-# sources live elsewhere. `verification/tests/test_tool_pins.py` is this
-# check's own negative-control suite: its fixture literals are the drifted
-# pins the tests deliberately assert on, so they cannot be edited to match
-# the pin without destroying the tests.
+# because they happen to be clean today: `manifests/*.signoff.json` is the
+# generated, byte-compared record. `.loom/` and `.claude/` are installed
+# tooling whose sources live elsewhere. `verification/tests/test_tool_pins.py`
+# is this check's own negative-control suite: its fixture literals are the
+# drifted pins the tests deliberately assert on, so they cannot be edited to
+# match the pin without destroying the tests.
 _EXCLUDED_PREFIXES = (".loom/", ".claude/")
-_EXCLUDED_FILES = ("manifests/design-evidence-tiers.md",
-                   "verification/tests/test_tool_pins.py")
+_EXCLUDED_FILES = ("verification/tests/test_tool_pins.py",)
 _EXCLUDED_GLOBS = ("manifests/*.signoff.json",)
 
 

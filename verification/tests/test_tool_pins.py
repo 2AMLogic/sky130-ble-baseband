@@ -145,7 +145,6 @@ def test_f_unpinned_mentions_are_not_flagged(tmp_path):
 
 
 @pytest.mark.parametrize("rel", [
-    "manifests/design-evidence-tiers.md",   # vendored upstream checklist
     "manifests/repo.signoff.json",          # generated, byte-compared record
     ".loom/scripts/probe.sh",               # installed Loom tooling
     ".claude/skills/repo/SKILL.md",         # installed repo-skills

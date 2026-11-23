@@ -36,13 +36,6 @@ rather than from prose.
   (part of `make lint`) re-validates all of that, plus that no report
   contains an absolute host path. Regenerate everything with
   `make fv-reports`.
-- **`design-evidence-tiers.md`** — the T1-T4 checklist the grader parses.
-  Vendored **byte-identical** from
-  [`2AMLogic/klayout-tools@e88f211`](https://github.com/2AMLogic/klayout-tools/blob/e88f211fa485959b382e2596c86648ce4e66ea78/docs/design-evidence-tiers.md)
-  `docs/design-evidence-tiers.md` (2026-10-17; upstream is MIT-licensed,
-  and this repo's license does not relicense the vendored copy). When
-  upstream moves, re-vendor the doc and regenerate the record in the same
-  PR.
 - **`sky130-ble-baseband.signoff.json`** — the **verdict of record**:
   committed output of the command below. Never hand-edit it. Today item 5
   reads `unmet` / `partial_coverage` (the functional half is cited; the
@@ -151,19 +144,29 @@ a manifest pin a `functional-verification` citation
 (`verification/tool_pins.py`, #171), so a bump changes `signoff.yml` and
 every command block here in the same commit.
 
+The T1-T4 checklist the grader parses is **not vendored in this repo**: it
+is the `docs/design-evidence-tiers.md` bundled inside the pinned
+`klayout-tools==0.9.2` wheel —
+[`2AMLogic/klayout-tools@v0.9.2`](https://github.com/2AMLogic/klayout-tools/blob/v0.9.2/docs/design-evidence-tiers.md)
+— so the pin alone selects it (decision
+[0012](../spec/decisions/0012-drop-vendored-tiers-doc.md); the earlier
+vendored copy was removed by the operator ruling of 2026-11-23). A pin bump
+can change the bundled checklist — and with it the record's item texts —
+which is one reason it regenerates the record in the same PR.
+
 ## Regenerate
 
 ```console
 uvx --from "klayout-tools==0.9.2" klt signoff \
     --manifest manifests/sky130-ble-baseband.json \
-    --tiers-doc manifests/design-evidence-tiers.md \
     --format json > manifests/sky130-ble-baseband.signoff.json
 ```
 
 The command exits `3` when at least one T1 item is `unmet` (a valid, clean
 run) and `0` when every item is `met`. Any change that affects the verdict
-— new evidence, a manifest edit, a vendored-doc bump, a version-pin bump —
-regenerates and commits the record in the same PR.
+— new evidence, a manifest edit, a version-pin bump (which may change the
+checklist bundled in the wheel) — regenerates and commits the record in the
+same PR.
 
 ### The item-5 functional evidence changed
 
