@@ -63,7 +63,7 @@ def _walk_strings(node, field=""):
 def is_fv_envelope(d):
     """The classifier the signoff gate always used: a klt functional-
     verification report carries `tests` plus `test_count`."""
-    return "tests" in d and "test_count" in d
+    return isinstance(d, dict) and "tests" in d and "test_count" in d
 
 
 def _shape_bad(f, detail):
@@ -139,6 +139,9 @@ def check_envelope(f, d, want):
     GitHub Actions `::error file=...::` diagnostics).
     """
     problems = []
+    if not isinstance(d, dict):
+        return [(f, f"envelope is a JSON {type(d).__name__}, not an object; "
+                    f"expected a klt envelope")]
     if is_fv_envelope(d):
         problems += _fv_shape_problems(f, d)
         problems += _host_path_problems(f, d)
@@ -192,6 +195,9 @@ def check_manifest(manifest_path, want):
             envelope_count += 1
             fv_count += 1 if is_fv_envelope(d) else 0
             problems += check_envelope(ef, d, want)
+    if envelope_count == 0 and not problems:
+        problems.append((f, "cites no evidence envelopes (every evidence "
+                            "entry is an empty list)"))
     return problems, envelope_count, fv_count
 
 

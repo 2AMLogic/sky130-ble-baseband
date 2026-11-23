@@ -308,6 +308,33 @@ def test_every_offending_envelope_reported(tmp_path, monkeypatch):
     assert "FAILED" in rc.stderr
 
 
+def test_cli_empty_evidence_lists_exit_1(tmp_path):
+    m = tmp_path / "manifests" / "block.json"
+    m.parent.mkdir(parents=True)
+    m.write_text(json.dumps({"evidence": {"5": []}}))
+    rc = run_cli(m, cwd=tmp_path)
+    assert rc.returncode == 1
+    assert "cites no evidence envelopes" in rc.stdout
+    assert "OK" not in rc.stdout
+
+
+@pytest.mark.parametrize("bad", [None, 7, True, [1], "text"])
+def test_cli_non_object_envelope_does_not_stop_validation(tmp_path, bad):
+    (tmp_path / "envs").mkdir()
+    (tmp_path / "envs" / "weird.json").write_text(json.dumps(bad))
+    (tmp_path / "envs" / "old.json").write_text(
+        json.dumps(provenance_envelope(version="0.8.0")))
+    m = tmp_path / "manifests" / "block.json"
+    m.parent.mkdir(parents=True)
+    m.write_text(json.dumps({"evidence": {"5": [
+        {"file": "envs/weird.json"}, {"file": "envs/old.json"}]}}))
+    rc = run_cli(m, cwd=tmp_path)
+    assert rc.returncode == 1
+    assert "Traceback" not in rc.stderr
+    assert "::error file=envs/weird.json::" in rc.stdout
+    assert "::error file=envs/old.json::" in rc.stdout
+
+
 # ----------------------------------------------------------- happy paths
 
 def test_manifest_mixed_kinds_pass(tmp_path, monkeypatch):
