@@ -5,10 +5,14 @@ triage role. Newest first.
 
 ### 2026-11-23
 
+- **PR #217**: fix: report non-object FV reports as named problems
 - **PR #216**: refactor(sim): share the last duplicate model helpers across PHYs
 - **PR #215**: fix: gitignore loom-daemon account-ranking.codex state file
 - **PR #212**: chore: drop dead ngspice-flow rules, reports negation from .gitignore
 - **PR #209**: feat(signoff): self-retiring FV provenance exemption + host-path check in envelope gate
+- **PR #205**: feat(synth): record ABC-stall diagnosis and add SYNTH_MODE=minmap route
+- **Issue #210** (closed): envelope_check: a JSON envelope that is not an object aborts the gate with a traceback instead of a named ::error
+- **Issue #201** (closed): Synthesis: find a mapping route that finishes on oqpsk_rx_corr and le1m_rx_sync (bounded trials; the stall is at the generic-synth ABC step)
 - **Issue #214** (closed): Dedupe the remaining un-shared helpers in sim/model/ and drop dead traces.format_record
 - **Issue #211** (closed): .loom/account-ranking.codex is untracked daemon state outside the loom-managed .gitignore block: check-main-clean.sh exits 3 on a clean main
 - **Issue #208** (closed): Make signoff.yml FV provenance exemption self-retiring and check for absolute host paths
