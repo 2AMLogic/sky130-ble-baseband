@@ -1,0 +1,55 @@
+{
+  "schema_version": 2,
+  "engine": "icarus",
+  "hdl_toplevel": "mac_addr_filter_154",
+  "testbench": "test_mac_addr_filter_154",
+  "status": "pass",
+  "test_count": 2,
+  "passed_count": 2,
+  "failed_count": 0,
+  "skipped_count": 0,
+  "tests": [
+    {
+      "name": "truth_table",
+      "status": "passed",
+      "sim_time_ns": 198.0,
+      "real_time_s": 0.00665283203125
+    },
+    {
+      "name": "spot_checks",
+      "status": "passed",
+      "sim_time_ns": 2.0,
+      "real_time_s": 8.678436279296875e-05
+    }
+  ],
+  "coverage": null,
+  "trace": null,
+  "environment": {
+    "engine": "icarus",
+    "engine_version": "13.0",
+    "tools": [],
+    "cocotb_version": "2.0.1",
+    "results_xml": {
+      "path": "flow/build/fv/mac_mac_addr_filter_154_16mhz/results_icarus.xml",
+      "scope": "repo",
+      "sha256": "sha256:21defab2f5718aa9ea24991857b14483251328aeb3a31546d6a276c2e9c3041c"
+    },
+    "test_log": {
+      "path": "flow/build/fv/mac_mac_addr_filter_154_16mhz/test_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:30aefb237120b7b0464f4962d514c78b0ee1042ec09103e0c0706e745a8738b6"
+    },
+    "build_log": {
+      "path": "flow/build/fv/mac_mac_addr_filter_154_16mhz/build_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "random_seed": 202,
+    "source_defines": {},
+    "env": {
+      "MAC_CLK_MHZ": "16"
+    },
+    "initial_state": null,
+    "sdf": null
+  }
+}

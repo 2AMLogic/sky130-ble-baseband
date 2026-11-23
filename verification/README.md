@@ -138,3 +138,21 @@ non-default CRC init). `make test-le1m-tx-negative` corrupts one expected
 `tx trace mismatch` message. `make lint` also lints the new RTL. The model is
 not run inside the simulator. The `txact` fall is recorded at the 4-clock slot
 index (last word index + 2), since no strobe occurs in the trailing slot.
+
+## klt functional-verification evidence (issue #202)
+
+`verification/fv/` is the T1 item-5 functional-evidence layer: the same
+benches this README documents, run through `klt functional-verification`
+so their per-test verdicts exist as committed JSON reports the block
+manifest cites (`manifests/reports/fv/`, one per bench in the item-9
+inventory plus the section-3 latency checks, with a recorded negative
+control for each). `suite.py` is the one bench table;
+`make_requests.py` derives every request's RTL sources from
+`rtl/baseband.f` through `rtl_sources.py` (never a second file list);
+the `bench_*.py` wrappers perform the pre-step of the four
+stimulus-generating runners (le1m_tx, le1m_rx, oqpsk_tx/rx) and re-export
+the unmodified benches; `check_reports.py` re-validates the committed
+reports. `make fv-reports` regenerates everything; `make fv-requests-check`
+and `make fv-check` (both part of `make lint`) guard against file-list and
+report drift. The runbook, including how stale evidence is caught and the
+known RTL-digest gap at the pinned klt, lives in `manifests/README.md`.

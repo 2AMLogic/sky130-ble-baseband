@@ -1,0 +1,53 @@
+{
+  "schema_version": 2,
+  "engine": "icarus",
+  "hdl_toplevel": "oqpsk_tx",
+  "testbench": "bench_oqpsk_tx",
+  "status": "pass",
+  "test_count": 2,
+  "passed_count": 2,
+  "failed_count": 0,
+  "skipped_count": 0,
+  "tests": [
+    {
+      "name": "replay_matches_model",
+      "status": "passed",
+      "sim_time_ns": 2613420.0,
+      "real_time_s": 18.178693294525146
+    },
+    {
+      "name": "refuses_bad_start",
+      "status": "passed",
+      "sim_time_ns": 184780.0,
+      "real_time_s": 1.2592394351959229
+    }
+  ],
+  "coverage": null,
+  "trace": null,
+  "environment": {
+    "engine": "icarus",
+    "engine_version": "13.0",
+    "tools": [],
+    "cocotb_version": "2.0.1",
+    "results_xml": {
+      "path": "flow/build/fv/oqpsk_tx/results_icarus.xml",
+      "scope": "repo",
+      "sha256": "sha256:7f36fc73b6759c5bc1d832b8bac36ca0700804bd83ab6eacd9ca24faa26f3043"
+    },
+    "test_log": {
+      "path": "flow/build/fv/oqpsk_tx/test_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:615624bb0fac11c18af1a88c5228372674263b993fe89a81eb48048515a45610"
+    },
+    "build_log": {
+      "path": "flow/build/fv/oqpsk_tx/build_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "random_seed": 202,
+    "source_defines": {},
+    "env": {},
+    "initial_state": null,
+    "sdf": null
+  }
+}

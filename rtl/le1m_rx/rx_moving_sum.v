@@ -1,5 +1,5 @@
 // RX moving-sum integrator shared by the LE 1M and 802.15.4 receivers
-// (models: le1m_rx.integrate, oqpsk_rx.chip_integrate): a sliding window of
+// (model: le1m_rx.integrate, at N=8 and N=4): a sliding window of
 // the last N 16-bit samples, s[n] = f[n-(N-1)] + ... + f[n], exact in signed
 // (16 + $clog2(N)) bits, zero history at reset. The sideband (the RSSI
 // magnitude) rides along unchanged. le1m_rx instantiates N=8, oqpsk_rx N=4.

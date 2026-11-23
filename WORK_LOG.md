@@ -3,6 +3,10 @@
 Chronological record of merged PRs and closed issues, maintained by the Guide
 triage role. Newest first.
 
+### 2026-11-20
+
+- **Issue #38** (closed): T1 item 9 (testbenches shipped): 0007 trace-replay cocotb benches (RTL vs model, bit-exact) and a testbench inventory attested with klt signoff --attest 9
+
 ### 2026-11-19
 
 - **PR #177**: fix(top): retune LE_L_DIG_CYCLES to the group-delay-corrected air end (139 -> 74)
@@ -54,7 +58,7 @@ triage role. Newest first.
 - **Issue #164** (closed): spec: 0010's subadditivity paragraph overstates the T_IFS comparison ("outside the whole T_IFS tolerance")
 - **Issue #162** (closed): 15.4 latency matrix: modulate(lead=) is not a timing-phase axis; the record says it is
 - **Issue #158** (closed): item-9 inventory: verification/rtl_sources.py is tracked-tree-present but unlisted — the inventory's 'every file except README' property is broken
-- **Issue #148** (closed): Committed item-10 attestation was produced by an unpinned klt dev build (0.9.2.dev1029) while CI and manifests/README.md pin klayout-tools==0.8.0
+- **Issue #148** (closed): Committed item-10 attestation was produced by an unpinned klt dev build (0.9.2.dev1029) while CI and manifests/README.md pinned klayout-tools to the 0.8.0 release
 - **Issue #136** (closed): manifests/README.md: say what to regenerate when a hygiene artifact changes (not the inventory)
 
 ### 2026-11-15

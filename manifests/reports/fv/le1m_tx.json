@@ -1,0 +1,89 @@
+{
+  "schema_version": 2,
+  "engine": "icarus",
+  "hdl_toplevel": "le1m_tx",
+  "testbench": "bench_le1m_tx",
+  "status": "pass",
+  "test_count": 8,
+  "passed_count": 8,
+  "failed_count": 0,
+  "skipped_count": 0,
+  "tests": [
+    {
+      "name": "replay/case=0",
+      "status": "passed",
+      "sim_time_ns": 157796.875,
+      "real_time_s": 0.29233598709106445
+    },
+    {
+      "name": "replay/case=1",
+      "status": "passed",
+      "sim_time_ns": 213796.875,
+      "real_time_s": 0.4036576747894287
+    },
+    {
+      "name": "replay/case=2",
+      "status": "passed",
+      "sim_time_ns": 285796.875,
+      "real_time_s": 0.530484676361084
+    },
+    {
+      "name": "replay/case=3",
+      "status": "passed",
+      "sim_time_ns": 85796.875,
+      "real_time_s": 0.2033538818359375
+    },
+    {
+      "name": "replay/case=4",
+      "status": "passed",
+      "sim_time_ns": 69796.875,
+      "real_time_s": 0.12036705017089844
+    },
+    {
+      "name": "replay/case=5",
+      "status": "passed",
+      "sim_time_ns": 2125796.875,
+      "real_time_s": 3.9637508392333984
+    },
+    {
+      "name": "replay/case=6",
+      "status": "passed",
+      "sim_time_ns": 133796.875,
+      "real_time_s": 0.24057984352111816
+    },
+    {
+      "name": "replay/case=7",
+      "status": "passed",
+      "sim_time_ns": 125796.875,
+      "real_time_s": 0.22789716720581055
+    }
+  ],
+  "coverage": null,
+  "trace": null,
+  "environment": {
+    "engine": "icarus",
+    "engine_version": "13.0",
+    "tools": [],
+    "cocotb_version": "2.0.1",
+    "results_xml": {
+      "path": "flow/build/fv/le1m_tx/results_icarus.xml",
+      "scope": "repo",
+      "sha256": "sha256:f3c7b5ab7dec67ac53efef421d1c8c1b1e6158f35520135b1e330ed08577783d"
+    },
+    "test_log": {
+      "path": "flow/build/fv/le1m_tx/test_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:f70465bbf81c2b266472902596451694ba1c9b94d1fbb01c63950cffc3b0f055"
+    },
+    "build_log": {
+      "path": "flow/build/fv/le1m_tx/build_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "random_seed": 202,
+    "source_defines": {},
+    "env": {},
+    "initial_state": null,
+    "sdf": null
+  }
+}
