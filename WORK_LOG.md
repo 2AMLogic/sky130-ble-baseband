@@ -3,6 +3,22 @@
 Chronological record of merged PRs and closed issues, maintained by the Guide
 triage role. Newest first.
 
+### 2026-11-23
+
+- **PR #216**: refactor(sim): share the last duplicate model helpers across PHYs
+- **PR #215**: fix: gitignore loom-daemon account-ranking.codex state file
+- **PR #212**: chore: drop dead ngspice-flow rules, reports negation from .gitignore
+- **PR #209**: feat(signoff): self-retiring FV provenance exemption + host-path check in envelope gate
+- **Issue #214** (closed): Dedupe the remaining un-shared helpers in sim/model/ and drop dead traces.format_record
+- **Issue #211** (closed): .loom/account-ranking.codex is untracked daemon state outside the loom-managed .gitignore block: check-main-clean.sh exits 3 on a clean main
+- **Issue #208** (closed): Make signoff.yml FV provenance exemption self-retiring and check for absolute host paths
+- **Issue #132** (closed): .gitignore: drop dead ngspice-flow rules and the dead flow/*/reports negation
+
+### 2026-11-22
+
+- **PR #207**: feat(verification): klt functional-verification evidence for the bit-exact suite, cited for T1 item 5
+- **Issue #202** (closed): T1 item 5a: klt functional-verification reports for the bit-exact RTL suite, cited in the manifest
+
 ### 2026-11-20
 
 - **Issue #38** (closed): T1 item 9 (testbenches shipped): 0007 trace-replay cocotb benches (RTL vs model, bit-exact) and a testbench inventory attested with klt signoff --attest 9
