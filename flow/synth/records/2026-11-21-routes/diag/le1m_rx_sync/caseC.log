@@ -1,0 +1,2 @@
+======== ABC command line "read_blif _tmp_yosys-abc-rnOUMC/input.blif; strash; write_blif flow/synth/records/2026-11-21-routes/diag/le1m_rx_sync/caseC-step1.blif"
+======== ABC command line "read_blif flow/synth/records/2026-11-21-routes/diag/le1m_rx_sync/caseC-step1.blif; &get -n; &fraig -x; &put; write_blif flow/synth/records/2026-11-21-routes/diag/le1m_rx_sync/caseC-step2.blif"

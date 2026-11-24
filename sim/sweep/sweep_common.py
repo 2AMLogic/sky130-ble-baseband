@@ -378,7 +378,10 @@ def merge_shards(shard_dir, *, full_grid, build_report):
     shards = []
     for n in names:
         with open(os.path.join(shard_dir, n), encoding="utf-8") as f:
-            shards.append((n, json.load(f)))
+            rep = json.load(f)
+        if not isinstance(rep, dict):
+            raise MergeError(f"{n}: top level is a JSON {type(rep).__name__}, not an object")
+        shards.append((n, rep))
     first = shards[0][1]
     for n, rep in shards:
         if rep.get("mode") != "full":
@@ -387,6 +390,8 @@ def merge_shards(shard_dir, *, full_grid, build_report):
             if rep.get(key) is None:
                 raise MergeError(f"{n}: missing {key}")
         sr = rep["stop_rule"]
+        if not isinstance(sr, dict):
+            raise MergeError(f"{n}: stop_rule is a JSON {type(sr).__name__}, not an object")
         for key in STOP_RULE_KEYS:
             if sr.get(key) is None:
                 raise MergeError(f"{n}: stop_rule missing {key}")

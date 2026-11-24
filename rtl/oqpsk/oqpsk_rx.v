@@ -16,9 +16,8 @@
 // instantiated unchanged (rtl/le1m_rx/le1m_rx_disc.v, le1m_rx_cordic.v): the
 // model shares le1m_rx.discriminate between the two PHYs. The chip integrator
 // is the shared rx_moving_sum (rtl/le1m_rx/rx_moving_sum.v), at N=4 where the
-// LE 1M chain uses N=8: the two model copies, le1m_rx.integrate and
-// oqpsk_rx.chip_integrate, are the same sliding sum apart from the window
-// length. The FIR and everything after the chip sum are new.
+// LE 1M chain uses N=8: the model's le1m_rx.integrate is the same sliding
+// sum at either window length. The FIR and everything after the chip sum are new.
 //
 // One packet per capture, as the model: after the SFD the engine decodes one
 // packet (or runs to rx_flush), then stays quiet until rst_n.

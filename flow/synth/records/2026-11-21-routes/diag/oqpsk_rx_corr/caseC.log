@@ -1,0 +1,12 @@
+======== ABC command line "read_blif _tmp_yosys-abc-KIsYr2/input.blif; strash; write_blif flow/synth/records/2026-11-21-routes/diag/oqpsk_rx_corr/caseC-step1.blif"
+======== ABC command line "read_blif flow/synth/records/2026-11-21-routes/diag/oqpsk_rx_corr/caseC-step1.blif; &get -n; &fraig -x; &put; write_blif flow/synth/records/2026-11-21-routes/diag/oqpsk_rx_corr/caseC-step2.blif"
+======== ABC command line "read_blif flow/synth/records/2026-11-21-routes/diag/oqpsk_rx_corr/caseC-step2.blif; scorr; write_blif flow/synth/records/2026-11-21-routes/diag/oqpsk_rx_corr/caseC-step3.blif"
+Warning: The network is combinational (run "fraig" or "fraig_sweep").
+======== ABC command line "read_blif flow/synth/records/2026-11-21-routes/diag/oqpsk_rx_corr/caseC-step3.blif; dc2; write_blif flow/synth/records/2026-11-21-routes/diag/oqpsk_rx_corr/caseC-step4.blif"
+Error: This command works only for strashed networks.
+======== ABC command line "read_blif flow/synth/records/2026-11-21-routes/diag/oqpsk_rx_corr/caseC-step4.blif; dretime; write_blif flow/synth/records/2026-11-21-routes/diag/oqpsk_rx_corr/caseC-step5.blif"
+Cannot open input file "flow/synth/records/2026-11-21-routes/diag/oqpsk_rx_corr/caseC-step4.blif". 
+======== ABC command line "read_blif flow/synth/records/2026-11-21-routes/diag/oqpsk_rx_corr/caseC-step5.blif; strash; write_blif flow/synth/records/2026-11-21-routes/diag/oqpsk_rx_corr/caseC-step6.blif"
+Cannot open input file "flow/synth/records/2026-11-21-routes/diag/oqpsk_rx_corr/caseC-step5.blif". 
+======== ABC command line "read_blif flow/synth/records/2026-11-21-routes/diag/oqpsk_rx_corr/caseC-step6.blif; &get -n; &dch -f; &nf; &put; write_blif flow/synth/records/2026-11-21-routes/diag/oqpsk_rx_corr/caseC-step7.blif"
+Cannot open input file "flow/synth/records/2026-11-21-routes/diag/oqpsk_rx_corr/caseC-step6.blif". 

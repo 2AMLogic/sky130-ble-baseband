@@ -1,0 +1,96 @@
+{
+ "tool": "Yosys 0.68+ (git sha1 a5af9d690, Release, GNU /usr/bin/c++ 13.3.0) [github.com/The-OpenROAD-Project/yosys at HEAD]",
+ "timeout_s": 300,
+ "liberty": "flow/build/synth-batch-lib/sky130_fd_sc_hd__tt_025C_1v80.lib",
+ "note": "issue 201 step-2 trial routes, sequential inside one repo-script shard; cells/flops are mapped liberty counts for the noabc_map* routes; cell counts are not timing claims",
+ "rows": [
+  {
+   "module": "oqpsk_rx_corr",
+   "status": "error",
+   "wall_s": 1.9,
+   "peak_rss_kb": 179068,
+   "cells": null,
+   "flops": null,
+   "noabc": false,
+   "route": "noabc_abc9",
+   "timeout_s": 300
+  },
+  {
+   "module": "le1m_rx_sync",
+   "status": "error",
+   "wall_s": 1.8,
+   "peak_rss_kb": 178588,
+   "cells": null,
+   "flops": null,
+   "noabc": false,
+   "route": "noabc_abc9",
+   "timeout_s": 300
+  },
+  {
+   "module": "oqpsk_rx_corr",
+   "status": "ok",
+   "wall_s": 176.7,
+   "peak_rss_kb": 186812,
+   "cells": 36560,
+   "flops": 5956,
+   "noabc": false,
+   "route": "noabc_map",
+   "timeout_s": 300
+  },
+  {
+   "module": "le1m_rx_sync",
+   "status": "timeout",
+   "wall_s": 300.0,
+   "peak_rss_kb": 396908,
+   "cells": null,
+   "flops": null,
+   "noabc": false,
+   "route": "noabc_map",
+   "timeout_s": 300
+  },
+  {
+   "module": "oqpsk_rx_corr",
+   "status": "error",
+   "wall_s": 3.6,
+   "peak_rss_kb": 181864,
+   "cells": null,
+   "flops": null,
+   "noabc": false,
+   "route": "noabc_mapfast",
+   "timeout_s": 300
+  },
+  {
+   "module": "le1m_rx_sync",
+   "status": "error",
+   "wall_s": 33.9,
+   "peak_rss_kb": 396856,
+   "cells": null,
+   "flops": null,
+   "noabc": false,
+   "route": "noabc_mapfast",
+   "timeout_s": 300
+  },
+  {
+   "module": "oqpsk_rx_corr",
+   "status": "ok",
+   "wall_s": 6.8,
+   "peak_rss_kb": 318676,
+   "cells": 45399,
+   "flops": 5956,
+   "noabc": false,
+   "route": "noabc_minmap",
+   "timeout_s": 300
+  },
+  {
+   "module": "le1m_rx_sync",
+   "status": "ok",
+   "wall_s": 38.4,
+   "peak_rss_kb": 399448,
+   "cells": 50965,
+   "flops": 9256,
+   "noabc": false,
+   "route": "noabc_minmap",
+   "timeout_s": 300
+  }
+ ]
+}

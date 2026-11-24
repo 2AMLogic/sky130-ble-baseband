@@ -27,37 +27,23 @@ HERE = Path(__file__).resolve().parent
 sys.path[:0] = [str(HERE)]
 
 import suite  # noqa: E402
-
-# Match any leading POSIX path, any embedded multi-segment POSIX path or known
-# host root (e.g. inside an assertion message), file:/// URIs, or Windows drive
-# paths, while ignoring relative paths like `flow/build/fv/...` or `replay/case=0`.
-_ABS_HOST_PATH_RE = re.compile(
-    r"(?:^/"
-    r"|(?<![A-Za-z0-9_./-])/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+"
-    r"|(?<![A-Za-z0-9_./-])/(?:home|Users|tmp|var|opt|root|etc|usr|srv|mnt|media|private|workspace|runner|github)(?:/|\b)"
-    r"|file:///"
-    r"|(?<![A-Za-z0-9_])[A-Za-z]:[/\\])"
-)
-
-
-def _walk_strings(node, field=""):
-    if isinstance(node, str):
-        yield field, node
-    elif isinstance(node, dict):
-        for k, v in node.items():
-            yield from _walk_strings(v, f"{field}.{k}" if field else k)
-    elif isinstance(node, list):
-        for i, v in enumerate(node):
-            yield from _walk_strings(v, f"{field}[{i}]")
+# The host-path regex and string walker live in envelope_check.py (issue
+# #208): pure stdlib, no cocotb, so the signoff CI job and this checker
+# share one copy of the invariant.
+from envelope_check import _ABS_HOST_PATH_RE, _walk_strings  # noqa: E402
 
 
 def _load(path, problems, expect):
     try:
         with open(path) as f:
-            return json.load(f)
+            report = json.load(f)
     except (OSError, ValueError) as e:
         problems.append(f"{path}: unreadable ({e}); expected {expect}")
         return None
+    if not isinstance(report, dict):
+        problems.append(f"{path}: not a JSON object; expected {expect}")
+        return None
+    return report
 
 
 def _check_common(path, rep, bench, problems):

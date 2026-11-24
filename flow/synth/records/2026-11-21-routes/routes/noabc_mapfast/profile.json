@@ -1,0 +1,13 @@
+{
+  "tool": "Yosys 0.68+ (git sha1 a5af9d690, Release, GNU /usr/bin/c++ 13.3.0) [github.com/The-OpenROAD-Project/yosys at HEAD]",
+  "command": "synth -top <module> -noabc; dfflibmap -liberty <liberty>; abc -fast -liberty <liberty>",
+  "timeout_s": 300,
+  "noabc": false,
+  "route": "noabc_mapfast",
+  "liberty": "flow/build/synth-batch-lib/sky130_fd_sc_hd__tt_025C_1v80.lib",
+  "note": "cells/flops are totals over the module and everything it instantiates; parent rows include their children",
+  "rows": [
+    {"module": "oqpsk_rx_corr", "status": "error", "wall_s": 3.6, "peak_rss_kb": 181864, "cells": null, "flops": null, "noabc": false, "route": "noabc_mapfast", "timeout_s": 300},
+    {"module": "le1m_rx_sync", "status": "error", "wall_s": 33.9, "peak_rss_kb": 396856, "cells": null, "flops": null, "noabc": false, "route": "noabc_mapfast", "timeout_s": 300}
+  ]
+}

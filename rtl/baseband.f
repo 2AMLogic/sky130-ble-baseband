@@ -41,8 +41,8 @@ rtl/oqpsk/oqpsk_tx.v
 rtl/oqpsk/oqpsk_rx_fir.v
 # oqpsk_rx shares three LE 1M RX stages: the discriminator and CORDIC reused
 # unchanged (the model shares le1m_rx.discriminate), the moving sum at N=4
-# where the LE 1M chain uses N=8 (le1m_rx.integrate and oqpsk_rx.chip_integrate
-# are the same sliding sum apart from the window), so they are in its list but
+# where the LE 1M chain uses N=8 (the model's le1m_rx.integrate is the same
+# sliding sum at either window length), so they are in its list but
 # not re-declared:
 # reuse: rtl/le1m_rx/le1m_rx_disc.v rtl/le1m_rx/le1m_rx_cordic.v rtl/le1m_rx/rx_moving_sum.v
 rtl/oqpsk/oqpsk_rx_corr.v

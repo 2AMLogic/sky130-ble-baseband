@@ -116,12 +116,7 @@ def modulate(words, lead=37, tail=300, amplitude=AMPLITUDE):
     return iq
 
 
-def trace_records(words):
-    """txact rises at index 0 and falls one sample after the last word."""
-    yield (0, "txact", 1)
-    for i, w in enumerate(words):
-        yield (i, "txdev", traces.to_unsigned(w, 8))
-    yield (len(words) + 1, "txact", 0)
+trace_records = traces.tx_trace_records
 
 
 def main(argv=None):
