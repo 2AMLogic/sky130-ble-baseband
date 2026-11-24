@@ -32,7 +32,7 @@ _None._
 
 Issues currently being built (`loom:building`).
 
-- **#126**: Drop the vendored design-evidence-tiers.md: it is byte-identical to the pinned klt wheel's own copy
+_None._
 
 ## PRs Awaiting Review
 
@@ -53,7 +53,6 @@ Issues carrying `loom:curated`.
 - **#5**: Track the gap to T1 (klayout-tools design-evidence-tiers.md) *(curated)*
 - **#52**: T1 item 1f: baseband top, real synthesis script, committed sky130_fd_sc_hd netlist, item-1 attestation *(curated)*
 - **#72**: baseband_top flat synthesis does not complete in 45 min (blocks item 1 netlist) *(curated)*
-- **#126**: Drop the vendored design-evidence-tiers.md: it is byte-identical to the pinned klt wheel's own copy *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -71,10 +70,10 @@ _None._
 | Very important | 0 |
 | Important | 2 |
 | Ready (`loom:issue`) | 0 |
-| In Progress (`loom:building`) | 1 |
+| In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 4 |
+| Curated | 3 |
 | Architect / Hermit proposals | 0 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
