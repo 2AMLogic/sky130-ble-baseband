@@ -3,6 +3,11 @@
 Chronological record of merged PRs and closed issues, maintained by the Guide
 triage role. Newest first.
 
+### 2026-11-24
+
+- **PR #213**: ci(signoff): grade against the checklist bundled in the pinned klt release
+- **Issue #126** (closed): Drop the vendored design-evidence-tiers.md: it is byte-identical to the pinned klt wheel's own copy
+
 ### 2026-11-23
 
 - **PR #220**: fix: refuse non-object shard and stop_rule in merge_shards
