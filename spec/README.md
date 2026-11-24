@@ -19,6 +19,7 @@ claim of qualification, certification or compliance.
 | [decisions/0009-le-ber-undelivered-packet-accounting.md](decisions/0009-le-ber-undelivered-packet-accounting.md) | LE BER accounting: a packet not delivered in full is not charged for bits it did not demodulate |
 | [decisions/0010-digital-latency-reference-points.md](decisions/0010-digital-latency-reference-points.md) | `L_tx` starts at the TX-command strobe; turnaround excluded from `L_dig`; jitter column bounds spread(`L_dig`) |
 | [decisions/0011-le-packet-loss-bound.md](decisions/0011-le-packet-loss-bound.md) | Ratified packet-loss bound on the LE 1M BER row: it passes only if the BER upper bound and a 1e-2 packet-loss ceiling (provisional) both hold |
+| [decisions/0012-drop-vendored-tiers-doc.md](decisions/0012-drop-vendored-tiers-doc.md) | Signoff checklist provenance: the pinned klayout-tools release alone selects the T1-T4 checklist; the vendored copy and `--tiers-doc` are removed |
 | [timing-and-area.md](timing-and-area.md) | Liberty corners, clock targets, digital latency `L_dig`, area budget |
 | [frontend-interface.md](frontend-interface.md) | RX/TX signal tables, turnaround budget |
 | [host-interface.md](host-interface.md) | Host interface |
@@ -26,7 +27,7 @@ claim of qualification, certification or compliance.
 Rules: cite specification section numbers only (never copy text or figures);
 mark unchecked citations `unverified`; agents do not relax a ratified spec to
 make results pass; changes go through a decision record. Decision records are
-numbered in one sequence (0001–0011); this file is the only index.
+numbered in one sequence (0001–0012); this file is the only index.
 
 ## Traceability to parent #2
 
