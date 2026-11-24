@@ -12,12 +12,12 @@
 
 The T1-T4 checklist `klt signoff` grades this block against is the
 `docs/design-evidence-tiers.md` bundled inside the pinned
-`klayout-tools==0.9.2` wheel
+`klayout-tools 0.9.2` wheel
 ([2AMLogic/klayout-tools@v0.9.2](https://github.com/2AMLogic/klayout-tools/blob/v0.9.2/docs/design-evidence-tiers.md)).
 Nothing in this repo duplicates it:
 
 - `manifests/design-evidence-tiers.md` (vendored 2026-10-17 in `4fd61d0`,
-  byte-identical to `klayout-tools==0.8.0`'s bundled copy at the time) is
+  byte-identical to `klayout-tools 0.8.0`'s bundled copy at the time) is
   deleted. No `.UPSTREAM` marker existed beside it.
 - Every `--tiers-doc` caller drops the flag: the regenerate command in
   `manifests/README.md` and both uses in `.github/workflows/signoff.yml`
@@ -38,13 +38,13 @@ an issue or record asked for the vendored copy by name.
 ## Evidence
 
 - **The vendored copy had drifted behind the pin it existed to mirror.** It
-  was byte-identical to `klayout-tools==0.8.0`'s bundled doc (1053 lines,
+  was byte-identical to `klayout-tools 0.8.0`'s bundled doc (1053 lines,
   `sha256:a26b9026…efdc7`) but the pin moved to 0.9.2, whose wheel bundles
   1116 lines (`sha256:d9287ec9…490a`) — 63 lines of checklist the record's
   `--tiers-doc` override was silently not grading against, while the record
   claimed the in-repo path as `source_doc`.
 - **The reversal moves no verdict.** The record was regenerated with
-  `klayout-tools==0.9.2` without `--tiers-doc` and compared field by field
+  `klayout-tools 0.9.2` without `--tiers-doc` and compared field by field
   against the committed one: every item `status` and `reason`, the tier
   result (`null`), `t1_item_count`/`build_t1_item_count`/`t1_met_count`,
   every citation, and the whole `build` block are identical. Only
