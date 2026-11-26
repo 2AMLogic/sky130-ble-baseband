@@ -3,6 +3,11 @@
 Chronological record of merged PRs and closed issues, maintained by the Guide
 triage role. Newest first.
 
+### 2026-11-26
+
+- **PR #226**: test: share one default quick BER run across three sweep tests
+- **Issue #225** (closed): Reuse the first quick BER run across three CLI tests
+
 ### 2026-11-24
 
 - **PR #213**: ci(signoff): grade against the checklist bundled in the pinned klt release
