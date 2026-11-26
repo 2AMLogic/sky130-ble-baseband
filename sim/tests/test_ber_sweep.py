@@ -38,8 +38,18 @@ def _run(tmp_path, name, *extra):
     return out, time.time() - t0
 
 
-def test_quick_run_contract_and_byte_identical_reruns(tmp_path):
-    a, elapsed = _run(tmp_path, "a")
+@pytest.fixture(scope="module")
+def quick(tmp_path_factory):
+    """One default quick run: report path, stdout and wall time."""
+    out = tmp_path_factory.mktemp("quick") / "ber.json"
+    t0 = time.time()
+    proc = subprocess.run([sys.executable, SWEEP, "--quick", "--out", str(out)],
+                          check=True, capture_output=True, text=True)
+    return out, proc.stdout, time.time() - t0
+
+
+def test_quick_run_contract_and_byte_identical_reruns(tmp_path, quick):
+    a, _, elapsed = quick
     b, _ = _run(tmp_path, "b")
     assert elapsed < 300
     assert a.read_bytes() == b.read_bytes()
@@ -61,9 +71,8 @@ def test_quick_run_contract_and_byte_identical_reruns(tmp_path):
     assert len({p["seed"] for p in rep["points"]}) == len(rep["points"])
 
 
-def test_quick_negative_control_is_flagged_and_visibly_worse(tmp_path):
-    out, _ = _run(tmp_path, "n")
-    rep = json.loads(out.read_text())
+def test_quick_negative_control_is_flagged_and_visibly_worse(quick):
+    rep = json.loads(quick[0].read_text())
     ctrl = [p for p in rep["points"] if p["negative_control"]]
     assert len(ctrl) == 1 and ctrl[0]["out_of_spec"]
     assert abs(ctrl[0]["impairments"]["cfo_hz"]) > 250e3
@@ -177,11 +186,8 @@ def test_row_summary_with_no_graded_points_has_no_rows():
     assert ber_sweep.row_summary([only_nc]) == {}
 
 
-def test_quick_run_prints_both_verdicts(tmp_path):
-    out = tmp_path / "ber.json"
-    proc = subprocess.run([sys.executable, SWEEP, "--quick", "--out", str(out)],
-                          check=True, capture_output=True, text=True)
-    row_lines = [ln for ln in proc.stdout.splitlines() if ln.startswith("row ")]
+def test_quick_run_prints_both_verdicts(quick):
+    row_lines = [ln for ln in quick[1].splitlines() if ln.startswith("row ")]
     assert row_lines
     for ln in row_lines:
         assert "packet loss" in ln
