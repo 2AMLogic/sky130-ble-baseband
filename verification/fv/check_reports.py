@@ -13,9 +13,16 @@ Checks every report the suite declares, against the bench table in suite.py:
 - no string anywhere in a report is or embeds an absolute host path
   (2AMLogic/klayout-tools#6005 tracks the remaining open klt fields; #5784
   is closed): committed evidence must not name the machine that produced it;
+- every report has the klt functional-verification envelope shape
+  (status/counts/tests). Both rules are the signoff gate's own, imported
+  from `envelope_check.py`, so `make fv-check` and the gate apply one copy
+  of each;
 - no extra undeclared `*.json` report sits in the reports directory.
 
-Pure Python (stdlib only) and read-only, so `make lint` can run it in CI.
+Read-only, but not stdlib-only: importing `suite` pulls in the `run_*.py`
+runners and through them `cocotb`, so run it under the repo venv
+(`make fv-check` does). A malformed report is a named `ERROR:` line and
+exit 1, never a traceback.
 """
 
 import json
@@ -27,10 +34,11 @@ HERE = Path(__file__).resolve().parent
 sys.path[:0] = [str(HERE)]
 
 import suite  # noqa: E402
-# The host-path regex and string walker live in envelope_check.py (issue
-# #208): pure stdlib, no cocotb, so the signoff CI job and this checker
-# share one copy of the invariant.
-from envelope_check import _ABS_HOST_PATH_RE, _walk_strings  # noqa: E402
+# The envelope shape (status/counts/tests) and the host-path rule live in
+# envelope_check.py (issue #208): pure stdlib, no cocotb, so the signoff CI
+# job and this checker share one copy of each invariant.
+from envelope_check import (  # noqa: E402
+    fv_shape_problems, host_path_problems, is_count)
 
 
 def _load(path, problems, expect):
@@ -47,30 +55,14 @@ def _load(path, problems, expect):
 
 
 def _check_common(path, rep, bench, problems):
-    for field, s in _walk_strings(rep):
-        if _ABS_HOST_PATH_RE.search(s):
-            problems.append(f"{path}: absolute host path at {field}: {s!r}")
+    problems += [f"{path}: {m}" for m in host_path_problems(rep)]
     if rep.get("hdl_toplevel") != bench["hdl_toplevel"]:
         problems.append(f"{path}: hdl_toplevel is {rep.get('hdl_toplevel')!r}, "
                         f"expected {bench['hdl_toplevel']!r}")
     if rep.get("testbench") != bench["module"]:
         problems.append(f"{path}: testbench is {rep.get('testbench')!r}, "
                         f"expected {bench['module']!r}")
-    tests = rep.get("tests")
-    counts = {k: rep.get(k) for k in ("test_count", "passed_count",
-                                      "failed_count", "skipped_count")}
-    if not isinstance(tests, list) or not all(isinstance(v, int) and v >= 0
-                                              for v in counts.values()):
-        problems.append(f"{path}: missing tests/counts")
-        return
-    if not (counts["passed_count"] + counts["failed_count"]
-            + counts["skipped_count"] == counts["test_count"] == len(tests)):
-        problems.append(f"{path}: counts disagree with tests[]: {counts} "
-                        f"vs {len(tests)} test records")
-    for t in tests:
-        if t.get("status") not in ("passed", "failed", "skipped"):
-            problems.append(f"{path}: test {t.get('name')!r} has status "
-                            f"{t.get('status')!r}")
+    problems += [f"{path}: {m}" for m in fv_shape_problems(rep)]
 
 
 def main(argv):
@@ -93,7 +85,8 @@ def main(argv):
             problems.append(f"{path}: {rep.get('failed_count')} failed test(s)")
         if rep.get("skipped_count") != 0:
             problems.append(f"{path}: {rep.get('skipped_count')} skipped test(s)")
-        if rep.get("passed_count", 0) < 1:
+        passed = rep.get("passed_count")
+        if is_count(passed) and passed < 1:
             problems.append(f"{path}: no test passed")
     for neg in suite.NEGATIVE:
         bench = suite.positive_by_name(neg["base"])
@@ -105,8 +98,10 @@ def main(argv):
         if rep.get("status") != "fail":
             problems.append(f"{path}: status is {rep.get('status')!r}, expected "
                             f"'fail' (negative control detected nothing)")
-        failures = [t.get("error_message") or "" for t in rep.get("tests", [])
-                    if t.get("status") == "failed"]
+        tests = rep.get("tests")
+        failures = ([t.get("error_message") or "" for t in tests
+                     if isinstance(t, dict) and t.get("status") == "failed"]
+                    if isinstance(tests, list) else [])
         if not failures:
             problems.append(f"{path}: no failed test recorded")
         elif not any(re.search(neg["reason"], m) for m in failures):

@@ -27,8 +27,11 @@ assertion instead of being skipped silently while the gate stays green.
 Pure Python stdlib on purpose: `.github/workflows/signoff.yml` runs this on
 bare system Python with only klayout-tools installed (no `.venv`, no
 cocotb), so this module must not import `check_reports.py` or `suite.py`
-(`suite` imports `run_mac` -> `cocotb`). `check_reports.py` imports the
-host-path regex and string walker from here, keeping one copy of each.
+(`suite` imports `run_mac` -> `cocotb`). The dependency runs the other way:
+`check_reports.py` imports the FV shape validator, the host-path check and
+the count predicate from here (`fv_shape_problems`, `host_path_problems`,
+`is_count`), so `make fv-check` and this gate apply one copy of each
+invariant.
 Envelope paths in the manifest are repo-relative: run from the repo root.
 """
 
@@ -66,52 +69,58 @@ def is_fv_envelope(d):
     return isinstance(d, dict) and "tests" in d and "test_count" in d
 
 
-def _shape_bad(f, detail):
-    return (f, "not a well-formed klt functional-verification envelope "
-               f"(status/counts/tests): {detail}")
+def is_count(v):
+    """A klt count: a non-negative int. bool is an int subclass, so `true`
+    is not a count."""
+    return isinstance(v, int) and not isinstance(v, bool) and v >= 0
 
 
-def _fv_shape_problems(f, d):
+def fv_shape_problems(d):
+    """Messages naming every way `d` is not a well-formed klt
+    functional-verification envelope (status/counts/tests); empty when it is
+    one. Shared with `check_reports.py`, so `make fv-check` and this gate
+    cannot drift apart."""
     problems = []
     if d.get("status") not in ("pass", "fail"):
-        problems.append(_shape_bad(f, f"status is {d.get('status')!r}, "
-                                      "expected 'pass' or 'fail'"))
+        problems.append(f"status is {d.get('status')!r}, "
+                        "expected 'pass' or 'fail'")
     counts = {}
     for k in ("test_count", "passed_count", "failed_count", "skipped_count"):
         v = d.get(k)
-        # bool is an int subclass: `true` is not a count.
-        if not isinstance(v, int) or isinstance(v, bool) or v < 0:
-            problems.append(_shape_bad(f, f"{k} is {v!r}, expected a "
-                                          "non-negative int"))
+        if not is_count(v):
+            problems.append(f"{k} is {v!r}, expected a non-negative int")
         else:
             counts[k] = v
     tests = d.get("tests")
     if not isinstance(tests, list):
-        problems.append(_shape_bad(f, f"tests is {tests!r}, expected a list"))
+        problems.append(f"tests is {tests!r}, expected a list")
         tests = None
     if len(counts) == 4 and tests is not None:
         total = counts["passed_count"] + counts["failed_count"] + counts["skipped_count"]
         if not (total == counts["test_count"] == len(tests)):
-            problems.append(_shape_bad(
-                f, f"counts disagree with tests[]: passed+failed+skipped="
-                   f"{total}, test_count={counts['test_count']}, "
-                   f"len(tests)={len(tests)}"))
+            problems.append("counts disagree with tests[]: "
+                            f"passed+failed+skipped={total}, "
+                            f"test_count={counts['test_count']}, "
+                            f"len(tests)={len(tests)}")
     if tests is not None:
         for t in tests:
             status = t.get("status") if isinstance(t, dict) else None
             if status not in ("passed", "failed", "skipped"):
                 name = t.get("name") if isinstance(t, dict) else t
-                problems.append(_shape_bad(f, f"test {name!r} has status "
-                                              f"{status!r}"))
-    return problems
+                problems.append(f"test {name!r} has status {status!r}")
+    return ["not a well-formed klt functional-verification envelope "
+            f"(status/counts/tests): {detail}" for detail in problems]
 
 
-def _host_path_problems(f, d):
-    """Every offending field is reported, not just the first: one envelope
-    can embed several host paths, and each names a leak to fix."""
-    return [(f, f"absolute host path at {field}: {s!r}")
-            for field, s in _walk_strings(d)
-            if _ABS_HOST_PATH_RE.search(s)]
+def host_path_problems(d):
+    """One message per string in `d` that is or embeds an absolute host path.
+
+    Every offending field is reported, not just the first: one envelope can
+    embed several host paths, and each names a leak to fix. Shared with
+    `check_reports.py`.
+    """
+    return [f"absolute host path at {field}: {s!r}"
+            for field, s in _walk_strings(d) if _ABS_HOST_PATH_RE.search(s)]
 
 
 def _provenance_problems(f, d, want):
@@ -143,8 +152,8 @@ def check_envelope(f, d, want):
         return [(f, f"envelope is a JSON {type(d).__name__}, not an object; "
                     f"expected a klt envelope")]
     if is_fv_envelope(d):
-        problems += _fv_shape_problems(f, d)
-        problems += _host_path_problems(f, d)
+        problems += [(f, m) for m in
+                     fv_shape_problems(d) + host_path_problems(d)]
         # Self-retiring exemption: an FV report is exempt from the
         # klt_version assertion only for as long as it actually lacks a
         # provenance block. A present one (dict or not) is held to it.
