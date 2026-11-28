@@ -104,10 +104,17 @@ def fv_shape_problems(d):
                             f"len(tests)={len(tests)}")
     if tests is not None:
         for t in tests:
-            status = t.get("status") if isinstance(t, dict) else None
+            if not isinstance(t, dict):
+                problems.append(f"test {t!r} has status None")
+                continue
+            name = t.get("name")
+            status = t.get("status")
             if status not in ("passed", "failed", "skipped"):
-                name = t.get("name") if isinstance(t, dict) else t
                 problems.append(f"test {name!r} has status {status!r}")
+            err = t.get("error_message")
+            if err is not None and not isinstance(err, str):
+                problems.append(f"test {name!r} has error_message {err!r}, "
+                                "expected a string or null")
     return ["not a well-formed klt functional-verification envelope "
             f"(status/counts/tests): {detail}" for detail in problems]
 

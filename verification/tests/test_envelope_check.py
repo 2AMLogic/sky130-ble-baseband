@@ -16,7 +16,9 @@ GitHub-Actions `::error file=<f>::...` diagnostics:
   file:///, Windows drive) are flagged; relative paths such as
   `flow/build/fv/...` or `model_traces/tx_adv_ch37.trace` are not
 - malformed FV shape (status, per-key counts, bool/negative counts, tests not
-  a list, count disagreement, per-test status) fails naming the detail
+  a list, count disagreement, per-test status, a non-string per-test
+  error_message) fails naming the detail; an omitted, null or string
+  error_message passes
 - non-FV envelopes: matching provenance passes; missing provenance block and
   mismatching klt_version fail
 - manifest-level failures are loud, never a vacuous pass: unreadable JSON,
@@ -197,6 +199,43 @@ def test_fv_shape_failures_name_the_detail(over, detail):
     assert "not a well-formed klt functional-verification envelope" \
         in problems[0][1]
     assert detail in problems[0][1]
+
+
+@pytest.mark.parametrize("bad", [
+    5, 0, 2.5, True, False, ["x"], [], {"k": 1}, {},
+])
+def test_fv_error_message_non_string_is_named(bad):
+    d = fv_envelope(status="fail", passed_count=0, failed_count=1,
+                    tests=[{"name": "t0", "status": "failed",
+                            "error_message": bad}])
+    problems = envelope_check.check_envelope("e.json", d, PIN)
+    assert len(problems) == 1
+    assert problems[0][0] == "e.json"
+    assert "not a well-formed klt functional-verification envelope" \
+        in problems[0][1]
+    assert f"test 't0' has error_message {bad!r}, expected a string or null" \
+        in problems[0][1]
+
+
+def test_fv_error_message_type_checked_on_every_test():
+    d = fv_envelope(tests=[{"name": "t0", "status": "passed",
+                            "error_message": 5}])
+    problems = envelope_check.check_envelope("e.json", d, PIN)
+    assert len(problems) == 1
+    assert "test 't0' has error_message 5, expected a string or null" \
+        in problems[0][1]
+
+
+@pytest.mark.parametrize("entry", [
+    {"name": "t0", "status": "failed"},
+    {"name": "t0", "status": "failed", "error_message": None},
+    {"name": "t0", "status": "failed", "error_message": ""},
+    {"name": "t0", "status": "failed", "error_message": "tx trace mismatch"},
+])
+def test_fv_error_message_absent_null_or_str_passes(entry):
+    d = fv_envelope(status="fail", passed_count=0, failed_count=1,
+                    tests=[entry])
+    assert envelope_check.check_envelope("e.json", d, PIN) == []
 
 
 def test_fv_shape_reports_every_violation():
