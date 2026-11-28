@@ -63,6 +63,7 @@ import cm_a  # noqa: E402
 import cm_a_oqpsk  # noqa: E402
 import le1m_rx  # noqa: E402
 import oqpsk_rx  # noqa: E402
+import oqpsk_tx  # noqa: E402
 import per_sweep  # noqa: E402
 import sweep_common  # noqa: E402
 
@@ -256,7 +257,7 @@ def assert_frac0_reproduces_committed():
     """Two packets at 5 dB through both paths; the frac_bits=0 arm must match
     the committed demodulation on every result field."""
     rng = np.random.Generator(np.random.PCG64(0))
-    psdu = per_sweep.oqpsk_tx.with_fcs(
+    psdu = oqpsk_tx.with_fcs(
         bytes(rng.integers(0, 256, PSDU_OCTETS - 2, dtype=np.uint8).tolist()))
     params = cm_a_oqpsk.OqpskParams(snr_db=5.0)
     fields = ("synced", "psdu", "crc_ok", "length", "sync_index", "timing_steps")
@@ -271,18 +272,7 @@ def assert_frac0_reproduces_committed():
 
 # ------------------------------------------------------------------- run loop
 
-def run_point_variant(variant, overrides, snr_db, packet_cap, min_errors, base_seed, run_index):
-    """One sweep point through the unmodified ``per_sweep.run_point`` with this
-    arm's constants overridden around the call. Same seed derivation as the
-    committed sweep, so the packet stream is shared across arms (common random
-    numbers): packet k carries the same stimulus in every arm."""
-    desc = dict(cm_a_oqpsk.OqpskParams(snr_db=snr_db).describe(), psdu_octets=PSDU_OCTETS)
-    seed = sweep_common.point_seed(ROW_ID, desc, SNR_POINT_INDEX[snr_db], run_index, base_seed)
-    t0 = time.time()
-    with override_constants(overrides):
-        p = per_sweep.run_point(ROW_ID, SNR_POINT_INDEX[snr_db],
-                                cm_a_oqpsk.OqpskParams(snr_db=snr_db), PSDU_OCTETS,
-                                packet_cap, min_errors, base_seed, run_index=run_index)
+def _annotate_point(p, variant, overrides, t0):
     p["variant"] = variant
     p["overrides"] = dict(overrides)
     p["wall_s"] = round(time.time() - t0, 3)
@@ -291,49 +281,30 @@ def run_point_variant(variant, overrides, snr_db, packet_cap, min_errors, base_s
     return p
 
 
-def run_point_fine(snr_db, frac_bits, packet_cap, min_errors, base_seed, run_index):
-    """One sweep point with the input quantization refined, mirroring
-    ``per_sweep.run_point``'s loop exactly: same seed, same draw order (PSDU
-    body first, then the channel's per-packet draws; ``keep_float`` adds no
-    draw), so its packets are the committed stream's packets."""
-    params = cm_a_oqpsk.OqpskParams(snr_db=snr_db)
-    desc = dict(params.describe(), psdu_octets=PSDU_OCTETS)
-    seed = sweep_common.point_seed(ROW_ID, desc, SNR_POINT_INDEX[snr_db], run_index, base_seed)
-    rng = np.random.Generator(np.random.PCG64(seed))
-    errors = packets = sync_misses = fcs_failures = clipped = samples = 0
+def run_point_variant(variant, overrides, snr_db, packet_cap, min_errors, base_seed, run_index):
+    """Run the shared PER sweep with this arm's receiver constants."""
     t0 = time.time()
-    while errors < min_errors and packets < packet_cap:
-        body = bytes(rng.integers(0, 256, PSDU_OCTETS - 2, dtype=np.uint8).tolist())
-        psdu = per_sweep.oqpsk_tx.with_fcs(body)
-        out = cm_a_oqpsk.generate_packet(psdu, params, rng, keep_float=True)
-        quantize_float_frac0_matches_int8(out)      # per-packet anchor
-        rx = demodulate_fine(out, frac_bits)
-        packets += 1
-        clipped += out.clipped
-        samples += len(out.iq)
-        if not rx["synced"]:
-            sync_misses += 1
-            errors += 1
-        elif not rx["crc_ok"] or rx["psdu"] != psdu:
-            fcs_failures += 0 if rx["crc_ok"] else 1
-            errors += 1
-    lower, upper = sweep_common.clopper_pearson(errors, packets)
-    capped = errors < min_errors
-    r = sweep_common._round
-    return {
-        "row_id": ROW_ID, "label": LABEL, "channel_model": "CM-A",
-        "variant": f"quant_frac{frac_bits}",
-        "overrides": {"FIR_OUT_BITS": oqpsk_rx.FIR_OUT_BITS + frac_bits},
-        "point_index": SNR_POINT_INDEX[snr_db], "run_index": run_index, "seed": seed,
-        "snr_db": snr_db, "impairments": desc,
-        "packets": packets, "errors": errors, "per": r(errors / packets),
-        "cp_lower": r(lower), "cp_upper": r(upper),
-        "stopped_by": "packet_cap" if capped else "errors", "bound_only": capped,
-        "sync_misses": sync_misses, "fcs_failures": fcs_failures,
-        "residual": errors - sync_misses - fcs_failures,
-        "clipped_samples": clipped, "samples": samples,
-        "frac_bits": frac_bits, "wall_s": round(time.time() - t0, 3),
-    }
+    with override_constants(overrides):
+        p = per_sweep.run_point(ROW_ID, SNR_POINT_INDEX[snr_db],
+                                cm_a_oqpsk.OqpskParams(snr_db=snr_db), PSDU_OCTETS,
+                                packet_cap, min_errors, base_seed, run_index=run_index)
+    return _annotate_point(p, variant, overrides, t0)
+
+
+def run_point_fine(snr_db, frac_bits, packet_cap, min_errors, base_seed, run_index):
+    """Run the same packet stream with finer input quantization."""
+    def demod(out):
+        quantize_float_frac0_matches_int8(out)
+        return demodulate_fine(out, frac_bits)
+
+    t0 = time.time()
+    p = per_sweep.run_point(ROW_ID, SNR_POINT_INDEX[snr_db],
+                            cm_a_oqpsk.OqpskParams(snr_db=snr_db), PSDU_OCTETS,
+                            packet_cap, min_errors, base_seed, run_index=run_index,
+                            keep_float=True, demod=demod)
+    p["frac_bits"] = frac_bits
+    overrides = {"FIR_OUT_BITS": oqpsk_rx.FIR_OUT_BITS + frac_bits}
+    return _annotate_point(p, f"quant_frac{frac_bits}", overrides, t0)
 
 
 # -------------------------------------------------------------------- summary

@@ -45,10 +45,11 @@ def _p(**kw):
 
 
 def run_point(row_id, point_index, params, psdu_octets, packet_cap, min_errors,
-              base_seed, run_index=0, flags=None):
+              base_seed, run_index=0, flags=None, *, keep_float=False, demod=None):
     """Run one sweep point until ``min_errors`` packet errors or ``packet_cap`` packets.
     A packet is in error unless it is detected and its PSDU (FCS included) is
-    returned bit-exact with the FCS passing."""
+    returned bit-exact with the FCS passing. An optional ``demod`` receives the
+    channel output for each packet. Set ``keep_float`` to retain its pre-gain IQ."""
     desc = dict(params.describe(), psdu_octets=psdu_octets)
     seed = sweep_common.point_seed(row_id, desc, point_index, run_index, base_seed)
     rng = np.random.Generator(np.random.PCG64(seed))
@@ -56,8 +57,8 @@ def run_point(row_id, point_index, params, psdu_octets, packet_cap, min_errors,
     while errors < min_errors and packets < packet_cap:
         body = bytes(rng.integers(0, 256, psdu_octets - 2, dtype=np.uint8).tolist())
         psdu = oqpsk_tx.with_fcs(body)
-        out = cm_a_oqpsk.generate_packet(psdu, params, rng)
-        rx = oqpsk_rx.demodulate(out.iq, out.flags, out.gain)
+        out = cm_a_oqpsk.generate_packet(psdu, params, rng, keep_float=keep_float)
+        rx = oqpsk_rx.demodulate(out.iq, out.flags, out.gain) if demod is None else demod(out)
         packets += 1
         clipped += out.clipped
         samples += len(out.iq)
