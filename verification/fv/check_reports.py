@@ -99,12 +99,13 @@ def main(argv):
             problems.append(f"{path}: status is {rep.get('status')!r}, expected "
                             f"'fail' (negative control detected nothing)")
         tests = rep.get("tests")
-        failures = ([t.get("error_message") or "" for t in tests
+        failures = ([t.get("error_message") for t in tests
                      if isinstance(t, dict) and t.get("status") == "failed"]
                     if isinstance(tests, list) else [])
         if not failures:
             problems.append(f"{path}: no failed test recorded")
-        elif not any(re.search(neg["reason"], m) for m in failures):
+        elif not any(isinstance(m, str) and re.search(neg["reason"], m)
+                     for m in failures):
             problems.append(f"{path}: failed for the wrong reason; no "
                             f"error_message matches {neg['reason']!r}")
     expected = ({f"{b['name']}.json" for b in suite.POSITIVE}
