@@ -4,6 +4,7 @@ crossing/slope arithmetic, and the frac_bits=0 reproduction anchor."""
 import json
 import os
 import sys
+from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -16,6 +17,7 @@ import cm_a_oqpsk  # noqa: E402
 import oqpsk_rx  # noqa: E402
 import oqpsk_tx  # noqa: E402
 import oqpsk_sensitivity_budget as sb  # noqa: E402
+import sweep_common  # noqa: E402
 
 
 def point(snr=5.0, packets=1000, errors=100, sync=60, fcs=20, cap=False, per=None):
@@ -130,6 +132,30 @@ def test_fine_quantization_harness_runs_and_keeps_threshold_semantics():
     assert isinstance(rx["synced"], bool)
     # the discriminator is an angle: gate thresholds keep their absolute values
     assert oqpsk_rx.MIN_AMPLITUDE * oqpsk_rx.NTAPS == 126976
+
+
+def test_frac0_sweep_shares_baseline_packets_and_point_record(monkeypatch):
+    streams = {False: [], True: []}
+    generate_packet = cm_a_oqpsk.generate_packet
+
+    def capture_packet(psdu, params, rng, keep_float=False):
+        out = generate_packet(psdu, params, rng, keep_float=keep_float)
+        streams[keep_float].append((psdu, out.iq.tobytes()))
+        return out
+
+    monkeypatch.setattr(cm_a_oqpsk, "generate_packet", capture_packet)
+    args = dict(snr_db=5.0, packet_cap=4, min_errors=10, base_seed=7, run_index=2)
+    baseline = sb.run_point_variant("baseline", {}, **args)
+    with patch.object(sweep_common, "point_record", wraps=sweep_common.point_record) as record:
+        fine = sb.run_point_fine(frac_bits=0, **args)
+    record.assert_called_once()
+
+    assert len(streams[False]) == args["packet_cap"]
+    assert streams[True] == streams[False]
+    fields = ("seed", "packets", "errors", "sync_misses", "fcs_failures", "per",
+              "cp_lower", "cp_upper", "residual", "classes", "dominant",
+              "out_of_spec", "negative_control")
+    assert {k: fine[k] for k in fields} == {k: baseline[k] for k in fields}
 
 
 # ------------------------------------------- crossing / slope arithmetic (AC 4)
