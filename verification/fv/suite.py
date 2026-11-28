@@ -9,13 +9,14 @@ documents (`manifests/requests/fv/`) are generated from this table by
 validated against it by `check_reports.py`, and `run_suite.sh` regenerates
 them; this file is the one place the suite is declared.
 
-Run under the repo venv (`$(PYTHON)`): importing `run_mac` pulls in
-`cocotb_run`, so the cycle-budget table stays defined once, in the runner the
-cold start already executes. The four benches whose runners generate stimulus
-before the simulator starts (le1m_tx, le1m_rx, oqpsk_tx/rx) run here through
-a thin wrapper module (`bench_*.py` in this directory) that performs the same
-pre-step the `run_*.py` script does and then re-exports the unmodified
-`@cocotb.test()` suite; the benches themselves are not touched.
+Run under the repo venv (`$(PYTHON)`): importing `run_mac` and `run_host`
+pulls in `cocotb_run`, so the cycle-budget and host-configuration tables
+stay defined once, in the runners the cold start already executes. The four
+benches whose runners generate stimulus before the simulator starts
+(le1m_tx, le1m_rx, oqpsk_tx/rx) run here through a thin wrapper module
+(`bench_*.py` in this directory) that performs the same pre-step the
+`run_*.py` script does and then re-exports the unmodified `@cocotb.test()`
+suite; the benches themselves are not touched.
 """
 
 import os
@@ -26,9 +27,12 @@ HERE = Path(__file__).resolve().parent
 VERIFICATION = HERE.parent
 ROOT = VERIFICATION.parent
 
-sys.path[:0] = [str(VERIFICATION), str(VERIFICATION / "mac")]
+sys.path[:0] = [str(VERIFICATION), str(VERIFICATION / "mac"),
+               str(VERIFICATION / "host")]
 
-from rtl_sources import block_sources, rtl_sources  # noqa: E402
+from rtl_sources import (  # noqa: E402
+    block_modules, block_sources, rtl_sources)
+import run_host  # noqa: E402
 import run_mac  # noqa: E402
 
 REQUESTS_DIR = ROOT / "manifests" / "requests" / "fv"
@@ -39,17 +43,18 @@ REPORTS_DIR = ROOT / "manifests" / "reports" / "fv"
 # environment.random_seed either way).
 RANDOM_SEED = 202
 
-MAC_MODULES = run_mac.block_modules("mac")
+MAC_MODULES = block_modules("mac")
 
 
 def _repo_rel(paths):
     return [str(Path(p).resolve().relative_to(ROOT)) for p in paths]
 
 
-HOST_CONFIGS = [
-    ("host_d288_c32", {"FIFO_DEPTH": 288, "CLK_PER_US": 32}),
-    ("host_d5_c16", {"FIFO_DEPTH": 5, "CLK_PER_US": 16}),
-]
+# The ratified host configurations (FIFO depth, clocks per microsecond) are
+# declared once, in the cold-start host runner; each row is named after the
+# runner's own d<depth>_c<clocks> build tag.
+HOST_CONFIGS = [(f"host_d{cfg['FIFO_DEPTH']}_c{cfg['CLK_PER_US']}", cfg)
+                for cfg in run_host.CONFIGS]
 
 POSITIVE = [
     dict(

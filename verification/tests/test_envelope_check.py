@@ -25,8 +25,10 @@ GitHub-Actions `::error file=<f>::...` diagnostics:
 - multiple offending envelopes are all reported before the non-zero exit
 - the repo's committed manifests/sky130-ble-baseband.json passes whole
   (24 envelopes, 22 functional-verification) against the recorded pin
-- usage errors exit 2; check_reports.py keeps no second copy of the regex or
-  walker, and envelope_check.py imports no cocotb-reachable module
+- usage errors exit 2; check_reports.py shares the shape and host-path
+  validators (no second copy of the regex, the walker or either shape table),
+  suite.py shares the runner tables (run_host.CONFIGS, rtl_sources), and
+  envelope_check.py imports no cocotb-reachable module
 
 Pure Python: no simulator, no PDK, no cocotb. Carried by `make parser-test`.
 """
@@ -392,20 +394,91 @@ def test_cli_usage_errors_exit_2(tmp_path):
 
 # ---------------------------------------------- single source of truth
 
+def _parsed(name):
+    return ast.parse((SCRIPT.parent / name).read_text())
+
+
+def _imported_modules(tree):
+    """The modules `tree` imports with `import x`."""
+    return {a.name for node in ast.walk(tree) if isinstance(node, ast.Import)
+            for a in node.names}
+
+
+def _imported_names(tree, module):
+    """The names `tree` imports from `module` with `from module import x`."""
+    return {n.name for node in ast.walk(tree)
+            if isinstance(node, ast.ImportFrom) and node.module == module
+            for n in node.names}
+
+
+def _attributes(tree):
+    """Every `name.attr` reference in `tree`."""
+    return {(node.value.id, node.attr) for node in ast.walk(tree)
+            if isinstance(node, ast.Attribute)
+            and isinstance(node.value, ast.Name)}
+
+
+def _literals(tree):
+    """The string sets of every tuple and list literal in `tree`."""
+    return {frozenset(e.value for e in node.elts
+                      if isinstance(e, ast.Constant))
+            for node in ast.walk(tree)
+            if isinstance(node, (ast.Tuple, ast.List))}
+
+
+def _assigns(tree, name):
+    """The right-hand sides assigned to the plain name `name`."""
+    return [node.value for node in ast.walk(tree)
+            if isinstance(node, ast.Assign)
+            and any(isinstance(t, ast.Name) and t.id == name
+                    for t in node.targets)]
+
+
 def test_check_reports_imports_the_shared_copies():
-    src = (SCRIPT.parent / "check_reports.py").read_text()
-    tree = ast.parse(src)
-    imported = {n.name for node in ast.walk(tree)
-                if isinstance(node, ast.ImportFrom) and node.module == "envelope_check"
-                for n in node.names}
-    assert {"_ABS_HOST_PATH_RE", "_walk_strings"} <= imported
+    tree = _parsed("check_reports.py")
+    imported = _imported_names(tree, "envelope_check")
+    assert {"fv_shape_problems", "host_path_problems", "is_count"} <= imported
+    # shared directly: the regex, the walker and the private names stay here
+    assert not imported & {"_ABS_HOST_PATH_RE", "_walk_strings",
+                           "_fv_shape_problems", "_host_path_problems"}
+    names = {n.id for n in ast.walk(tree) if isinstance(n, ast.Name)}
+    assert not names & {"_walk_strings", "_ABS_HOST_PATH_RE"}
     defined = {node.name for node in ast.walk(tree)
                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))}
-    assert "_walk_strings" not in defined
+    assert not defined & {"_walk_strings", "fv_shape_problems",
+                          "host_path_problems"}
     assigned = {t.id for node in ast.walk(tree)
                 if isinstance(node, ast.Assign)
                 for t in node.targets if isinstance(t, ast.Name)}
     assert "_ABS_HOST_PATH_RE" not in assigned
+    # no second copy of either invariant: no local host-path pattern is
+    # compiled, and neither shape table (the klt count keys, the per-test
+    # statuses) is enumerated in check_reports.py
+    calls = [node.func.attr for node in ast.walk(tree)
+             if isinstance(node, ast.Call)
+             and isinstance(node.func, ast.Attribute)]
+    assert "compile" not in calls
+    literals = _literals(tree)
+    assert frozenset({"test_count", "passed_count", "failed_count",
+                      "skipped_count"}) not in literals
+    assert frozenset({"passed", "failed", "skipped"}) not in literals
+
+
+def test_suite_shares_the_runner_tables():
+    """suite.py declares no host configuration of its own: the host rows are
+    run_host.CONFIGS under the runner's d<depth>_c<clocks> names, and the mac
+    modules come from rtl_sources like every other block."""
+    tree = _parsed("suite.py")
+    assert "run_host" in _imported_modules(tree)
+    assert "block_modules" in _imported_names(tree, "rtl_sources")
+    assert ("run_mac", "block_modules") not in _attributes(tree)
+    host_configs = _assigns(tree, "HOST_CONFIGS")
+    assert len(host_configs) == 1
+    assert ("run_host", "CONFIGS") in _attributes(host_configs[0])
+    dict_keys = {k.value for node in ast.walk(tree)
+                 if isinstance(node, ast.Dict)
+                 for k in node.keys if isinstance(k, ast.Constant)}
+    assert not dict_keys & {"FIFO_DEPTH", "CLK_PER_US"}
 
 
 def test_envelope_check_stays_cocotb_free():
